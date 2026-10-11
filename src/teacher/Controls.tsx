@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import {
   endSession,
@@ -5,27 +6,41 @@ import {
   requestPulse,
   setControl,
 } from "../firebase/client";
-import type { Control, Mode, Session } from "../firebase/types";
+import {
+  type Control,
+  DEFAULT_CHAT_LIMIT,
+  type Mode,
+  type Session,
+} from "../firebase/types";
 import { routes } from "../routes";
 import { Groups } from "./Groups";
+import { ChatIcon, GridIcon, PersonIcon } from "./icons";
 import { Reveal } from "./Reveal";
+import { Stepper } from "./Stepper";
 import { Thumbnails } from "./Thumbnails";
+import "./teacher.css";
 
-/** Anonymous Spotlight is Spotlight with the Anonymous toggle on, so it has no button. */
-const MODE_LABELS: [Exclude<Mode, "anonymousSpotlight">, string][] = [
-  ["demo", "Demo"],
-  ["independent", "Independent"],
-  ["spotlight", "Spotlight"],
-  ["gallery", "Gallery"],
-  ["group", "Group"],
-  ["paced", "Paced"],
-  ["reveal", "Reveal"],
-  ["freeze", "Freeze"],
-  ["focus", "Focus"],
+/** Watch, Work and Stop groups, in switcher and number-key order. */
+const MODE_GROUPS: [Mode, string][][] = [
+  [
+    ["demo", "Demo"],
+    ["reveal", "Reveal"],
+    ["spotlight", "Spotlight"],
+    ["anonymousSpotlight", "Anonymous"],
+    ["gallery", "Gallery"],
+  ],
+  [
+    ["independent", "Independent"],
+    ["paced", "Paced"],
+    ["group", "Group"],
+  ],
+  [
+    ["freeze", "Freeze"],
+    ["focus", "Focus"],
+  ],
 ];
-
-const isSpotlight = (m: Mode) =>
-  m === "spotlight" || m === "anonymousSpotlight";
+const KEY_ORDER = MODE_GROUPS.flat().map(([m]) => m);
+const END_CONFIRM_MS = 3000;
 
 /** Control fields a mode needs, filled in when it is first entered. */
 function defaultsFor(mode: Mode, data: Session): Partial<Control> {
@@ -37,7 +52,11 @@ function defaultsFor(mode: Mode, data: Session): Partial<Control> {
   return {};
 }
 
-/** The controls overlay. Toggled with Ctrl+. or Cmd+. */
+const isTyping = (t: EventTarget | null) =>
+  t instanceof HTMLElement &&
+  (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable);
+
+/** The controls overlay and the thumbnail drawer. Toggled with Ctrl+. or Cmd+. */
 export function Controls({
   session,
   data,
@@ -48,135 +67,150 @@ export function Controls({
   const navigate = useNavigate();
   const control = data.control;
   const students = Object.keys(data.students ?? {});
-  const online = Object.keys(data.presence ?? {}).length;
+  const online = students.filter((s) => data.presence?.[s]).length;
   const classPulsePending = Object.values(data.pulses ?? {}).some(
     (p) => !p.student && p.status === "pending",
   );
+  const chatLimit = control.chatLimit ?? DEFAULT_CHAT_LIMIT;
+  const [thumbsOpen, setThumbsOpen] = useState(false);
+  const [endArmed, setEndArmed] = useState(false);
 
-  const pick = (mode: Mode) => {
-    if (isSpotlight(mode) && isSpotlight(control.mode)) return;
-    setControl(session, { mode, ...defaultsFor(mode, data) });
-  };
+  const latest = useRef(data);
+  latest.current = data;
+  const pick = (mode: Mode) =>
+    setControl(session, { mode, ...defaultsFor(mode, latest.current) });
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: pick reads the latest data through a ref
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey || e.altKey || isTyping(e.target)) return;
+      const i = "1234567890".indexOf(e.key);
+      if (i < 0 || i >= KEY_ORDER.length) return;
+      e.preventDefault();
+      pick(KEY_ORDER[i]);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [session]);
+
+  useEffect(() => {
+    if (!endArmed) return;
+    const t = setTimeout(() => setEndArmed(false), END_CONFIRM_MS);
+    return () => clearTimeout(t);
+  }, [endArmed]);
 
   const end = async () => {
+    if (!endArmed) return setEndArmed(true);
     await endSession(session, data.code);
     navigate(routes.library);
   };
 
   return (
-    <aside className="controls">
-      <header className="controls-head">
+    <>
+      <aside className="controls">
         <output className="join-code" aria-label="Join code">
           {data.code}
         </output>
-        <output className="stat" aria-label="Students online">
-          {online}/{students.length}
-        </output>
-      </header>
 
-      <div className="modes">
-        {MODE_LABELS.map(([mode, label]) => (
+        <div className="presence">
+          <output aria-label="Students online" className="stat">
+            <PersonIcon />
+            {online}/{students.length}
+            {students.length > 0 && online === students.length && (
+              <span className="dot success" />
+            )}
+          </output>
           <button
-            key={mode}
             type="button"
-            aria-pressed={
-              mode === "spotlight"
-                ? isSpotlight(control.mode)
-                : control.mode === mode
-            }
-            onClick={() => pick(mode)}
+            className="quiet icon-button"
+            aria-label="Student screens"
+            aria-pressed={thumbsOpen}
+            onClick={() => setThumbsOpen((o) => !o)}
           >
-            {label}
+            <GridIcon />
           </button>
-        ))}
-      </div>
+        </div>
 
-      {control.mode === "demo" && (
-        <button
-          type="button"
-          className="primary"
-          onClick={() => handoff(session, students)}
-        >
-          Handoff
-        </button>
-      )}
-      {isSpotlight(control.mode) && (
-        <button
-          type="button"
-          aria-pressed={control.mode === "anonymousSpotlight"}
-          onClick={() =>
-            setControl(session, {
-              mode:
-                control.mode === "anonymousSpotlight"
-                  ? "spotlight"
-                  : "anonymousSpotlight",
-            })
+        <div className="modes">
+          {MODE_GROUPS.map((group) => (
+            <div key={group[0][0]} className="mode-group">
+              {group.map(([mode, label]) => (
+                <button
+                  key={mode}
+                  type="button"
+                  data-mode={mode}
+                  aria-pressed={control.mode === mode}
+                  onClick={() => pick(mode)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          ))}
+        </div>
+
+        {control.mode === "paced" && <Paced session={session} data={data} />}
+        {control.mode === "reveal" && <Reveal session={session} data={data} />}
+        {control.mode === "group" && <Groups session={session} data={data} />}
+
+        <div className="actions">
+          <button
+            type="button"
+            className="primary handoff"
+            onClick={() => handoff(session, students)}
+          >
+            Handoff
+          </button>
+          <button
+            type="button"
+            aria-busy={classPulsePending}
+            disabled={classPulsePending}
+            onClick={() => requestPulse(session)}
+          >
+            Pulse
+          </button>
+        </div>
+
+        <Stepper
+          label={
+            <span
+              className="stepper-label"
+              role="img"
+              aria-label="Chats per minute"
+            >
+              <ChatIcon />
+            </span>
           }
-        >
-          Anonymous
-        </button>
-      )}
-      {control.mode === "paced" && <Paced session={session} data={data} />}
-      {control.mode === "reveal" && <Reveal session={session} data={data} />}
-      {control.mode === "group" && <Groups session={session} data={data} />}
+          value={chatLimit === 0 ? "∞" : chatLimit}
+          current={chatLimit}
+          min={0}
+          onStep={(d) => setControl(session, { chatLimit: chatLimit + d })}
+        />
 
-      <div className="row">
         <button
           type="button"
-          disabled={classPulsePending}
-          onClick={() => requestPulse(session)}
+          className={endArmed ? "end armed" : "quiet end"}
+          onClick={end}
         >
-          Pulse
+          End
         </button>
-        <label className="field">
-          Chats per minute
-          <input
-            type="number"
-            min={0}
-            value={control.chatLimit ?? ""}
-            onChange={(e) =>
-              setControl(session, {
-                chatLimit:
-                  e.target.value === "" ? null : Math.max(0, +e.target.value),
-              })
-            }
-          />
-        </label>
-      </div>
-
-      <Thumbnails session={session} data={data} />
-
-      <button type="button" className="quiet" onClick={end}>
-        End
-      </button>
-    </aside>
+      </aside>
+      {thumbsOpen && <Thumbnails session={session} data={data} />}
+    </>
   );
 }
 
-/** Steps the phase everyone is held to. */
+/** Steps the phase everyone is held to, by the applet's phase names. */
 function Paced({ session, data }: { session: string; data: Session }) {
   const phases = data.applet.manifest.phases;
   const at = Math.min(data.control.pacedPhase ?? 0, phases.length - 1);
-  const go = (pacedPhase: number) => setControl(session, { pacedPhase });
   return (
-    <div className="stepper">
-      <button
-        type="button"
-        aria-label="Previous phase"
-        disabled={at <= 0}
-        onClick={() => go(at - 1)}
-      >
-        ‹
-      </button>
-      <output>{phases[at]}</output>
-      <button
-        type="button"
-        aria-label="Next phase"
-        disabled={at >= phases.length - 1}
-        onClick={() => go(at + 1)}
-      >
-        ›
-      </button>
-    </div>
+    <Stepper
+      value={phases[at]}
+      current={at}
+      min={0}
+      max={phases.length - 1}
+      onStep={(d) => setControl(session, { pacedPhase: at + d })}
+    />
   );
 }

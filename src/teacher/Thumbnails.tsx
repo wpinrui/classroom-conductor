@@ -1,8 +1,14 @@
+import { useEffect, useRef, useState } from "react";
 import { AppletFrame } from "../applet/AppletFrame";
 import { requestPulse, setControl } from "../firebase/client";
-import type { Session } from "../firebase/types";
+import type { Session, StoredState } from "../firebase/types";
+import { CheckIcon, PulseIcon, SpotlightIcon } from "./icons";
 
-/** Live, view-only thumbnails of every student. Doubles as the Spotlight and Gallery picker. */
+/** Applets render at this size, then scale down to fit the tile. */
+const FRAME_WIDTH = 1280;
+const MIN_DRAWER_PX = 120;
+
+/** Bottom drawer of live, view-only student screens. It is also the Spotlight and Gallery picker. */
 export function Thumbnails({
   session,
   data,
@@ -11,20 +17,22 @@ export function Thumbnails({
   data: Session;
 }) {
   const { mode, spotlight, gallery = {} } = data.control;
-  const pickOne = mode === "spotlight" || mode === "anonymousSpotlight";
-  const pickMany = mode === "gallery";
+  const spotlighting = mode === "spotlight" || mode === "anonymousSpotlight";
+  const pulses = Object.values(data.pulses ?? {});
   const pending = new Set(
-    Object.values(data.pulses ?? {})
-      .filter((p) => p.student && p.status === "pending")
-      .map((p) => p.student),
+    pulses.filter((p) => p.status === "pending").map((p) => p.student),
+  );
+  const hasPulse = new Set(
+    pulses.filter((p) => p.status === "done").map((p) => p.student),
   );
   const students = Object.entries(data.students ?? {}).sort(([, a], [, b]) =>
     a.name.localeCompare(b.name),
   );
+  const [height, setHeight] = useState<number | null>(null);
 
-  const select = (uid: string) => {
-    if (pickOne) setControl(session, { spotlight: uid });
-    else {
+  const click = (uid: string) => {
+    if (spotlighting) setControl(session, { spotlight: uid });
+    else if (mode === "gallery") {
       const next = { ...gallery };
       if (next[uid]) delete next[uid];
       else next[uid] = true;
@@ -32,42 +40,114 @@ export function Thumbnails({
     }
   };
 
+  const resize = (e: React.PointerEvent) => {
+    e.currentTarget.setPointerCapture(e.pointerId);
+    const move = (m: PointerEvent) =>
+      setHeight(Math.max(MIN_DRAWER_PX, window.innerHeight - m.clientY));
+    const up = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  };
+
   return (
-    <ul className="thumbs">
-      {students.map(([uid, s]) => (
-        <li
-          key={uid}
-          className="thumb"
-          data-offline={!data.presence?.[uid] || undefined}
-        >
-          <div className="thumb-view">
-            <AppletFrame
-              html={data.applet.html}
-              state={data.states?.[uid] ?? null}
-              interactive={false}
-              className="thumb-frame"
-            />
-          </div>
-          <span className="thumb-name">{s.name}</span>
-          {(pickOne || pickMany) && (
+    <section
+      className="thumbs-drawer"
+      style={height ? { height } : undefined}
+      aria-label="Student screens"
+    >
+      <div
+        className="drawer-handle"
+        aria-hidden="true"
+        onPointerDown={resize}
+      />
+      <ul className="thumbs">
+        {students.map(([uid, s]) => (
+          <li
+            key={uid}
+            className="thumb"
+            data-offline={!data.presence?.[uid] || undefined}
+            data-selected={
+              (spotlighting
+                ? spotlight === uid
+                : mode === "gallery" && !!gallery[uid]) || undefined
+            }
+          >
             <button
               type="button"
-              className="thumb-pick"
+              className="thumb-view"
               aria-label={s.name}
-              aria-pressed={pickOne ? spotlight === uid : !!gallery[uid]}
-              onClick={() => select(uid)}
-            />
-          )}
-          <button
-            type="button"
-            className="thumb-pulse"
-            disabled={pending.has(uid)}
-            onClick={() => requestPulse(session, uid)}
-          >
-            Pulse
-          </button>
-        </li>
-      ))}
-    </ul>
+              onClick={() => click(uid)}
+            >
+              <Thumb
+                html={data.applet.html}
+                state={data.states?.[uid] ?? null}
+              />
+            </button>
+            <span className="thumb-name">{s.name}</span>
+            {hasPulse.has(uid) && <span className="dot accent thumb-dot" />}
+            {mode === "gallery" && gallery[uid] && (
+              <span className="thumb-badge">
+                <CheckIcon />
+              </span>
+            )}
+            <div className="thumb-actions">
+              <button
+                type="button"
+                aria-label="Spotlight"
+                onClick={() =>
+                  setControl(session, {
+                    spotlight: uid,
+                    ...(spotlighting ? {} : { mode: "spotlight" }),
+                  })
+                }
+              >
+                <SpotlightIcon />
+              </button>
+              <button
+                type="button"
+                aria-label="Pulse"
+                aria-busy={pending.has(uid)}
+                disabled={pending.has(uid)}
+                onClick={() => requestPulse(session, uid)}
+              >
+                <PulseIcon />
+              </button>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+/** One scaled, non-interactive applet that tracks its tile's width. */
+function Thumb({ html, state }: { html: string; state: StoredState | null }) {
+  const box = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(0);
+  useEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([e]) =>
+      setScale(e.contentRect.width / FRAME_WIDTH),
+    );
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  return (
+    <div
+      ref={box}
+      className="thumb-box"
+      style={{ "--thumb-scale": scale } as React.CSSProperties}
+    >
+      <AppletFrame
+        html={html}
+        state={state}
+        interactive={false}
+        className="thumb-frame"
+      />
+    </div>
   );
 }

@@ -326,4 +326,3 @@ export function moveToGroup(
   updates[`${paths.student(session, student)}/group`] = target;
   return update(ref(db), updates);
 }
-
