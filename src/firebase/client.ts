@@ -21,6 +21,7 @@ import { paths } from "./paths";
 import type {
   ChatMessage,
   Control,
+  EngineRequest,
   Group,
   JoinCode,
   LibraryApplet,
@@ -159,6 +160,40 @@ export async function handoff(session: string, students: string[]) {
   return update(ref(db), updates);
 }
 
+/** Snapshots current states, of the class or one student, and queues a Pulse for the Engine. */
+export async function requestPulse(
+  session: string,
+  student?: string,
+): Promise<string> {
+  const path = student ? paths.state(session, student) : paths.states(session);
+  const snap = await get(ref(db, path));
+  const states: Record<string, StoredState> = student
+    ? snap.exists()
+      ? { [student]: snap.val() }
+      : {}
+    : (snap.val() ?? {});
+  const at = Date.now();
+  const pulse: Pulse = {
+    ...(student ? { student } : {}),
+    input: JSON.stringify(states),
+    at,
+    status: "pending",
+  };
+  const pid = push(ref(db, paths.pulses(session))).key as string;
+  const rid = push(ref(db, paths.requests(session))).key as string;
+  const request: EngineRequest = {
+    kind: "pulse",
+    pulse: pid,
+    at,
+    status: "pending",
+  };
+  await update(ref(db), {
+    [paths.pulse(session, pid)]: pulse,
+    [`${paths.requests(session)}/${rid}`]: request,
+  });
+  return pid;
+}
+
 // Students
 
 export class JoinError extends Error {
@@ -292,47 +327,3 @@ export function moveToGroup(
   return update(ref(db), updates);
 }
 
-// Pulse
-
-/** Snapshots current states and asks the Engine for a Pulse on the class, or on one student. */
-export async function requestPulse(session: string, student?: string) {
-  const [statesSnap, studentsSnap] = await Promise.all([
-    get(ref(db, paths.states(session))),
-    get(ref(db, paths.students(session))),
-  ]);
-  const states = (statesSnap.val() ?? {}) as Record<string, StoredState>;
-  const students = (studentsSnap.val() ?? {}) as Record<string, Student>;
-  const ids = student ? [student] : Object.keys(students);
-  const input = Object.fromEntries(
-    ids.map((id) => {
-      const s = states[id];
-      return [
-        id,
-        {
-          name: students[id]?.name ?? null,
-          phase: s?.phase ?? null,
-          state: s ? JSON.parse(s.json) : null,
-        },
-      ];
-    }),
-  );
-  const at = Date.now();
-  const pid = push(ref(db, paths.pulses(session))).key as string;
-  const rid = push(ref(db, paths.requests(session))).key as string;
-  const pulse: Pulse = {
-    ...(student ? { student } : {}),
-    input: JSON.stringify(input),
-    at,
-    status: "pending",
-  };
-  await update(ref(db), {
-    [paths.pulse(session, pid)]: pulse,
-    [`${paths.requests(session)}/${rid}`]: {
-      kind: "pulse",
-      pulse: pid,
-      at,
-      status: "pending",
-    },
-  });
-  return pid;
-}
