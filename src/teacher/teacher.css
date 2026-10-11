@@ -1,6 +1,10 @@
 /* Teacher session layout. Colours and type come from tokens. See docs/design.md. */
 
 .stage .controls {
+  position: absolute;
+  overflow: auto;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   top: var(--space-4);
   right: var(--space-4);
   bottom: var(--space-4);
@@ -20,6 +24,9 @@
 }
 
 .stage .join-code {
+  text-align: center;
+  letter-spacing: 0.15em;
+  color: var(--color-accent);
   font-family: var(--font-mono);
   font-size: var(--font-size-display);
   font-weight: var(--font-weight-display);
@@ -29,10 +36,11 @@
 .presence {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: var(--space-1);
 }
 
 .presence .stat {
+  margin-right: auto;
   display: flex;
   align-items: center;
   gap: var(--space-2);
@@ -74,7 +82,9 @@
   gap: var(--space-2);
 }
 
-button[data-mode="focus"][aria-pressed="true"] {
+button[data-mode="focus"][aria-pressed="true"],
+button[data-mode="focus"][aria-pressed="true"]:not(:disabled):hover {
+  background: var(--color-danger-subtle);
   border-color: var(--color-danger);
   color: var(--color-danger);
 }
@@ -118,6 +128,13 @@ button[aria-busy="true"]::after {
   display: flex;
   align-items: center;
   gap: var(--space-2);
+}
+
+.stage .stepper button {
+  width: 40px;
+  padding: 0;
+  font-size: var(--font-size-lg);
+  line-height: 1;
 }
 
 .stepper output {

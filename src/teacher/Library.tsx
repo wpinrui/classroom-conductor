@@ -10,6 +10,7 @@ export function Library() {
   const library = useLibrary(user?.uid ?? null);
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
+  const [dragging, setDragging] = useState(false);
 
   const upload = async (files: FileList | null) => {
     setError(null);
@@ -32,7 +33,24 @@ export function Library() {
   );
 
   return (
-    <main className="library">
+    <main
+      className="library"
+      data-dragging={dragging || undefined}
+      onDragOver={(e) => {
+        if (!e.dataTransfer.types.includes("Files")) return;
+        e.preventDefault();
+        setDragging(true);
+      }}
+      onDragLeave={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node))
+          setDragging(false);
+      }}
+      onDrop={(e) => {
+        e.preventDefault();
+        setDragging(false);
+        upload(e.dataTransfer.files);
+      }}
+    >
       <label className="upload primary">
         Upload applet
         <input
@@ -55,7 +73,7 @@ export function Library() {
             </button>
             <button
               type="button"
-              className="quiet"
+              className="quiet destructive"
               aria-label="Delete"
               onClick={() => deleteApplet(id)}
             >

@@ -29,6 +29,22 @@ export async function createGroup(session: string, uid: string) {
   }
 }
 
+/**
+ * Creates a group unless the server already has the student in one. A local
+ * view can briefly see the old group deleted before the new pointer arrives,
+ * as when the teacher shuffles, so the check reads the server.
+ */
+export async function ensureGroup(session: string, uid: string) {
+  const gid = (await get(pointer(session, uid))).val() as string | null;
+  if (gid) {
+    const member = await get(
+      ref(db, `${paths.group(session, gid)}/members/${uid}`),
+    );
+    if (member.exists()) return gid;
+  }
+  return createGroup(session, uid);
+}
+
 /** Moves the student into the group with this code. The rules enforce the size cap. */
 export async function joinGroup(
   session: string,

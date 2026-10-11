@@ -6,7 +6,7 @@ import type { StoredState, Student } from "../firebase/types";
 import { useGroup, useThrottledWriter } from "../hooks/session";
 import { useValue } from "../hooks/useValue";
 import { Loading } from "./Cues";
-import { createGroup, joinGroup } from "./groups";
+import { ensureGroup, joinGroup } from "./groups";
 import type { StageProps } from "./OwnApplet";
 
 // One create in flight per student, so a remount cannot make a second group.
@@ -27,7 +27,7 @@ export function GroupView(props: StageProps) {
     if (!missing || creating.has(key)) return;
     creating.set(
       key,
-      createGroup(session, uid)
+      ensureGroup(session, uid)
         .catch(() => {})
         .finally(() => creating.delete(key)),
     );
