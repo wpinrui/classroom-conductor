@@ -185,6 +185,19 @@ describe("student work", () => {
     await assertFails(get(ref(student(), `${S}/pulses`)));
   });
 
+  it("teachers request Pulses and students cannot", async () => {
+    const pulse = { input: "{}", at: 1, status: "pending" };
+    const request = { kind: "pulse", pulse: "p1", at: 1, status: "pending" };
+    await assertSucceeds(
+      update(ref(teacher(), S), {
+        "pulses/p1": pulse,
+        "requests/r1": request,
+      }),
+    );
+    await assertSucceeds(get(ref(teacher(), `${S}/pulses/p1`)));
+    await assertFails(set(ref(student(), `${S}/pulses/p2`), pulse));
+  });
+
   it("only group members write group state", async () => {
     await assertSucceeds(
       set(ref(student(), `${S}/groups/g1`), {
