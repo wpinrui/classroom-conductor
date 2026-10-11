@@ -39,7 +39,7 @@ describe("contrast gate", () => {
         const exception = excepted.get(pairing);
         if (exception) {
           console.info(
-            `contrast exception: ${pairing} = ${ratio.toFixed(2)}:1 — ${exception.reason}`,
+            `contrast exception: ${pairing} = ${ratio.toFixed(2)}:1. ${exception.reason}`,
           );
           return;
         }
