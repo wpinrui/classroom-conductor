@@ -2,13 +2,26 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { sendChat } from "../firebase/client";
 import { useChat, useControl } from "../hooks/session";
 import { chatCooldown } from "./rateLimit";
+import { setChat, useChatState } from "./store";
 import "./chat.css";
 
-/** The student's chatbot: a launcher bottom right that opens a drawer. */
-export function Chat({ session, uid }: { session: string; uid: string }) {
+/**
+ * The chatbot drawer. Students open it from a launcher bottom right. The
+ * teacher has no launcher and no rate limit, and opens it with ChatToggle.
+ */
+export function Chat({
+  session,
+  uid,
+  teacher = false,
+}: {
+  session: string;
+  uid: string;
+  teacher?: boolean;
+}) {
   const control = useControl(session);
   const chat = useChat(session, uid);
-  const [open, setOpen] = useState(false);
+  const { open } = useChatState();
+  const setOpen = (o: boolean) => setChat({ open: o });
   const [seen, setSeen] = useState(0);
   const [draft, setDraft] = useState("");
   const [failed, setFailed] = useState(false);
@@ -24,7 +37,10 @@ export function Chat({ session, uid }: { session: string; uid: string }) {
   const pending = last?.role === "user";
   const unread = !open && lastReply > seen;
   const sent = messages.filter((m) => m.role === "user").map((m) => m.at);
-  const cooldown = chatCooldown(sent, control?.chatLimit, now);
+  const cooldown = teacher ? null : chatCooldown(sent, control?.chatLimit, now);
+
+  useEffect(() => setChat({ unread }), [unread]);
+  useEffect(() => () => setChat({ open: false, unread: false }), []);
 
   // Replies already there on load count as read.
   const loaded = chat !== undefined;
@@ -51,7 +67,7 @@ export function Chat({ session, uid }: { session: string; uid: string }) {
     if (!open) return;
     input.current?.focus();
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
+      if (e.key === "Escape") setChat({ open: false });
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -84,17 +100,23 @@ export function Chat({ session, uid }: { session: string; uid: string }) {
 
   return (
     <>
-      <button
-        type="button"
-        className="chat-launcher"
-        aria-label="Chat"
-        aria-expanded={open}
-        onClick={() => setOpen(true)}
+      {!teacher && (
+        <button
+          type="button"
+          className="chat-launcher"
+          aria-label="Chat"
+          aria-expanded={open}
+          onClick={() => setOpen(true)}
+        >
+          <SpeechIcon />
+          {unread && <span className="chat-unread" />}
+        </button>
+      )}
+      <aside
+        className={teacher ? "chat-drawer chat-over" : "chat-drawer"}
+        data-open={open}
+        inert={!open}
       >
-        <SpeechIcon />
-        {unread && <span className="chat-unread" />}
-      </button>
-      <aside className="chat-drawer" data-open={open} inert={!open}>
         <button
           type="button"
           className="quiet chat-close"
@@ -170,6 +192,23 @@ export function Chat({ session, uid }: { session: string; uid: string }) {
         </form>
       </aside>
     </>
+  );
+}
+
+/** Opens and closes the teacher's chat drawer from the controls panel. */
+export function ChatToggle({ className }: { className?: string }) {
+  const { open, unread } = useChatState();
+  return (
+    <button
+      type="button"
+      className={`chat-toggle ${className ?? ""}`}
+      aria-label="Chat"
+      aria-pressed={open}
+      onClick={() => setChat({ open: !open })}
+    >
+      <SpeechIcon />
+      {unread && <span className="chat-unread" />}
+    </button>
   );
 }
 

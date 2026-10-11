@@ -185,6 +185,26 @@ describe("student work", () => {
     await assertFails(get(ref(student(), `${S}/pulses`)));
   });
 
+  it("teachers chat with the Engine in their own thread", async () => {
+    await assertSucceeds(
+      set(ref(teacher(), `${S}/chat/${TEACHER}/m1`), {
+        role: "user",
+        text: "hi",
+        at: 1,
+      }),
+    );
+    await assertSucceeds(
+      set(ref(teacher(), `${S}/requests/r1`), {
+        kind: "chat",
+        student: TEACHER,
+        at: 1,
+        status: "pending",
+      }),
+    );
+    await assertSucceeds(get(ref(teacher(), `${S}/chat/${TEACHER}`)));
+    await assertFails(get(ref(student(), `${S}/chat/${TEACHER}`)));
+  });
+
   it("teachers request Pulses and students cannot", async () => {
     const pulse = { input: "{}", at: 1, status: "pending" };
     const request = { kind: "pulse", pulse: "p1", at: 1, status: "pending" };
