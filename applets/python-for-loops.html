@@ -4,6 +4,379 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>For loops in Python</title>
+<script type="application/json" id="conductor-manifest">
+{
+  "title": "For loops in Python",
+  "phases": [
+    "Predict",
+    "Trace",
+    "range()",
+    "Modify",
+    "Make"
+  ],
+  "instructions": "You are a patient Python tutor in a beginner lesson on for loops.\nThe applet has five phases. Predict asks students to predict output before running code. Trace steps through an accumulator loop line by line. range() explores start, stop and step. Modify asks students to change working code. Make asks students to write loops from scratch.\nCode runs in a small Python subset: for, while, if, elif, else, break, continue, print, range, len, str, int, float, abs, round, min, max, list, append, upper, lower, strip and f-strings. sum() and str.count() are switched off so students practise loops.\nNever give a complete solution. Never write the corrected line for them.\nAsk one guiding question at a time. Prefer questions that make the student predict or trace, such as \"What is i the first time through?\" or \"What does range(1, 5) give?\"\nIf the student is still stuck after a few exchanges, point to the line to look at.\nName the misconception when you see one. Common ones: range stops before the stop value, range starts at 0 by default, a running total reset inside the loop, a line indented out of the loop, and thinking the loop variable must be called i.\nKeep replies under 80 words. Use plain language and short code snippets.\nIf the student's applet state is included, use it to see their code and results. The phase index runs 0 Predict, 1 Trace, 2 range(), 3 Modify, 4 Make.",
+  "pulsePrompt": "Write a Pulse for the teacher of a beginner lesson on Python for loops. The input is each student's applet state and phase.\n\nThe phase is an index: 0 Predict, 1 Trace, 2 range(), 3 Modify, 4 Make.\n\nState fields:\n- predict[id]: guess is the predicted output. ran is true once they ran it. correct says whether the prediction matched. tags lists detected misconceptions: starts-at-1, includes-stop, wrong-iteration-count, prints-variable-name, indentation. p-range is range(4), p-names loops over a list of names, p-indent has a print after the loop.\n- trace.step is how far they have stepped. trace.answers[eventIndex].attempts lists their guesses for total at each pass. revealed is true when three wrong guesses made the applet show the answer.\n- range.challenges[id]: attempts lists the range() arguments they tried. solved says whether they got it. r-1-5 targets 1 to 5, r-even targets 0 2 4 6 8, r-down targets 10 down to 1.\n- tasks[id]: code is their current code. runs counts runs. solved says whether it passes. outcomes lists recent results: solved, wrong, noloop (no for loop), hardcoded (only works for the given data), or error:<Type>. m-count, m-bug and m-sevens are Modify tasks. m-bug resets the total inside the loop. k-average, k-count and k-triangle are Make tasks.\n\nFor the whole class, produce in this order:\n1. How many students are on each phase.\n2. The top misconceptions, each with a count and up to three student names. Rank by count.\n3. Students who look stuck. Stuck means five or more runs on a task without solving it, a revealed trace answer, or the same error type three times. Name the task and the likely cause.\n4. One next move for the teacher. Prepared Reveal states exist. \"range(1, 10) stops at 9\" shows range(1, 10) stopping at 9. \"Total reset inside the loop\" shows the reset bug mid-trace. \"Model solutions\" shows model solutions. A Spotlight on a named student's work is another option.\n\nFor a single student, give their phase, what they have finished, their misconceptions, and one question the teacher could ask them.\nBe brief. Use counts, not percentages.",
+  "preparedStates": [
+    {
+      "name": "range(1, 10) stops at 9",
+      "state": {
+        "version": 1,
+        "predict": {
+          "p-range": {
+            "guess": "",
+            "ran": false,
+            "correct": false,
+            "tags": [],
+            "view": "edit",
+            "step": 0
+          },
+          "p-names": {
+            "guess": "",
+            "ran": false,
+            "correct": false,
+            "tags": [],
+            "view": "edit",
+            "step": 0
+          },
+          "p-indent": {
+            "guess": "",
+            "ran": false,
+            "correct": false,
+            "tags": [],
+            "view": "edit",
+            "step": 0
+          }
+        },
+        "trace": {
+          "step": 0,
+          "answers": {}
+        },
+        "range": {
+          "start": "1",
+          "stop": "10",
+          "step": "1",
+          "challenges": {
+            "r-1-5": {
+              "input": "",
+              "attempts": [],
+              "solved": false
+            },
+            "r-even": {
+              "input": "",
+              "attempts": [],
+              "solved": false
+            },
+            "r-down": {
+              "input": "",
+              "attempts": [],
+              "solved": false
+            }
+          }
+        },
+        "tasks": {
+          "m-count": {
+            "code": "for i in range(4):\n    print(i)",
+            "ranCode": null,
+            "runs": 0,
+            "solved": false,
+            "outcomes": [],
+            "view": "edit",
+            "step": 0
+          },
+          "m-bug": {
+            "code": "numbers = [4, 7, 2]\nfor n in numbers:\n    total = 0\n    total = total + n\nprint(total)",
+            "ranCode": null,
+            "runs": 0,
+            "solved": false,
+            "outcomes": [],
+            "view": "edit",
+            "step": 0
+          },
+          "m-sevens": {
+            "code": "for i in range(1, 4):\n    print(i)",
+            "ranCode": null,
+            "runs": 0,
+            "solved": false,
+            "outcomes": [],
+            "view": "edit",
+            "step": 0
+          },
+          "k-average": {
+            "code": "scores = [12, 18, 9, 15]\n",
+            "ranCode": null,
+            "runs": 0,
+            "solved": false,
+            "outcomes": [],
+            "view": "edit",
+            "step": 0
+          },
+          "k-count": {
+            "code": "word = \"banana\"\n",
+            "ranCode": null,
+            "runs": 0,
+            "solved": false,
+            "outcomes": [],
+            "view": "edit",
+            "step": 0
+          },
+          "k-triangle": {
+            "code": "",
+            "ranCode": null,
+            "runs": 0,
+            "solved": false,
+            "outcomes": [],
+            "view": "edit",
+            "step": 0
+          }
+        }
+      },
+      "phase": 2
+    },
+    {
+      "name": "Total reset inside the loop",
+      "state": {
+        "version": 1,
+        "predict": {
+          "p-range": {
+            "guess": "",
+            "ran": false,
+            "correct": false,
+            "tags": [],
+            "view": "edit",
+            "step": 0
+          },
+          "p-names": {
+            "guess": "",
+            "ran": false,
+            "correct": false,
+            "tags": [],
+            "view": "edit",
+            "step": 0
+          },
+          "p-indent": {
+            "guess": "",
+            "ran": false,
+            "correct": false,
+            "tags": [],
+            "view": "edit",
+            "step": 0
+          }
+        },
+        "trace": {
+          "step": 0,
+          "answers": {}
+        },
+        "range": {
+          "start": "0",
+          "stop": "5",
+          "step": "1",
+          "challenges": {
+            "r-1-5": {
+              "input": "",
+              "attempts": [],
+              "solved": false
+            },
+            "r-even": {
+              "input": "",
+              "attempts": [],
+              "solved": false
+            },
+            "r-down": {
+              "input": "",
+              "attempts": [],
+              "solved": false
+            }
+          }
+        },
+        "tasks": {
+          "m-count": {
+            "code": "for i in range(4):\n    print(i)",
+            "ranCode": null,
+            "runs": 0,
+            "solved": false,
+            "outcomes": [],
+            "view": "edit",
+            "step": 0
+          },
+          "m-bug": {
+            "code": "numbers = [4, 7, 2]\nfor n in numbers:\n    total = 0\n    total = total + n\nprint(total)",
+            "ranCode": "numbers = [4, 7, 2]\nfor n in numbers:\n    total = 0\n    total = total + n\nprint(total)",
+            "runs": 0,
+            "solved": false,
+            "outcomes": [],
+            "view": "trace",
+            "step": 6
+          },
+          "m-sevens": {
+            "code": "for i in range(1, 4):\n    print(i)",
+            "ranCode": null,
+            "runs": 0,
+            "solved": false,
+            "outcomes": [],
+            "view": "edit",
+            "step": 0
+          },
+          "k-average": {
+            "code": "scores = [12, 18, 9, 15]\n",
+            "ranCode": null,
+            "runs": 0,
+            "solved": false,
+            "outcomes": [],
+            "view": "edit",
+            "step": 0
+          },
+          "k-count": {
+            "code": "word = \"banana\"\n",
+            "ranCode": null,
+            "runs": 0,
+            "solved": false,
+            "outcomes": [],
+            "view": "edit",
+            "step": 0
+          },
+          "k-triangle": {
+            "code": "",
+            "ranCode": null,
+            "runs": 0,
+            "solved": false,
+            "outcomes": [],
+            "view": "edit",
+            "step": 0
+          }
+        }
+      },
+      "phase": 3
+    },
+    {
+      "name": "Model solutions",
+      "state": {
+        "version": 1,
+        "predict": {
+          "p-range": {
+            "guess": "",
+            "ran": false,
+            "correct": false,
+            "tags": [],
+            "view": "edit",
+            "step": 0
+          },
+          "p-names": {
+            "guess": "",
+            "ran": false,
+            "correct": false,
+            "tags": [],
+            "view": "edit",
+            "step": 0
+          },
+          "p-indent": {
+            "guess": "",
+            "ran": false,
+            "correct": false,
+            "tags": [],
+            "view": "edit",
+            "step": 0
+          }
+        },
+        "trace": {
+          "step": 0,
+          "answers": {}
+        },
+        "range": {
+          "start": "0",
+          "stop": "5",
+          "step": "1",
+          "challenges": {
+            "r-1-5": {
+              "input": "",
+              "attempts": [],
+              "solved": false
+            },
+            "r-even": {
+              "input": "",
+              "attempts": [],
+              "solved": false
+            },
+            "r-down": {
+              "input": "",
+              "attempts": [],
+              "solved": false
+            }
+          }
+        },
+        "tasks": {
+          "m-count": {
+            "code": "for i in range(1, 11):\n    print(i)",
+            "ranCode": "for i in range(1, 11):\n    print(i)",
+            "runs": 1,
+            "solved": true,
+            "outcomes": [
+              "solved"
+            ],
+            "view": "edit",
+            "step": 0
+          },
+          "m-bug": {
+            "code": "numbers = [4, 7, 2]\ntotal = 0\nfor n in numbers:\n    total = total + n\nprint(total)",
+            "ranCode": "numbers = [4, 7, 2]\ntotal = 0\nfor n in numbers:\n    total = total + n\nprint(total)",
+            "runs": 1,
+            "solved": true,
+            "outcomes": [
+              "solved"
+            ],
+            "view": "edit",
+            "step": 0
+          },
+          "m-sevens": {
+            "code": "for i in range(1, 11):\n    print(i * 7)",
+            "ranCode": "for i in range(1, 11):\n    print(i * 7)",
+            "runs": 1,
+            "solved": true,
+            "outcomes": [
+              "solved"
+            ],
+            "view": "edit",
+            "step": 0
+          },
+          "k-average": {
+            "code": "scores = [12, 18, 9, 15]\ntotal = 0\nfor s in scores:\n    total = total + s\nprint(total / len(scores))",
+            "ranCode": "scores = [12, 18, 9, 15]\ntotal = 0\nfor s in scores:\n    total = total + s\nprint(total / len(scores))",
+            "runs": 1,
+            "solved": true,
+            "outcomes": [
+              "solved"
+            ],
+            "view": "edit",
+            "step": 0
+          },
+          "k-count": {
+            "code": "word = \"banana\"\ncount = 0\nfor letter in word:\n    if letter == \"a\":\n        count = count + 1\nprint(count)",
+            "ranCode": "word = \"banana\"\ncount = 0\nfor letter in word:\n    if letter == \"a\":\n        count = count + 1\nprint(count)",
+            "runs": 1,
+            "solved": true,
+            "outcomes": [
+              "solved"
+            ],
+            "view": "edit",
+            "step": 0
+          },
+          "k-triangle": {
+            "code": "for i in range(1, 5):\n    print(\"*\" * i)",
+            "ranCode": "for i in range(1, 5):\n    print(\"*\" * i)",
+            "runs": 1,
+            "solved": true,
+            "outcomes": [
+              "solved"
+            ],
+            "view": "edit",
+            "step": 0
+          }
+        }
+      },
+      "phase": 3
+    }
+  ]
+}
+</script>
 <style>
 :root {
   color-scheme: dark;
@@ -995,34 +1368,6 @@ const TASKS = [
   },
 ];
 
-const CHATBOT_INSTRUCTIONS = `You are a patient Python tutor in a beginner lesson on for loops.
-The applet has five phases. Predict asks students to predict output before running code. Trace steps through an accumulator loop line by line. range() explores start, stop and step. Modify asks students to change working code. Make asks students to write loops from scratch.
-Code runs in a small Python subset: for, while, if, elif, else, break, continue, print, range, len, str, int, float, abs, round, min, max, list, append, upper, lower, strip and f-strings. sum() and str.count() are switched off so students practise loops.
-Never give a complete solution. Never write the corrected line for them.
-Ask one guiding question at a time. Prefer questions that make the student predict or trace, such as "What is i the first time through?" or "What does range(1, 5) give?"
-If the student is still stuck after a few exchanges, point to the line to look at.
-Name the misconception when you see one. Common ones: range stops before the stop value, range starts at 0 by default, a running total reset inside the loop, a line indented out of the loop, and thinking the loop variable must be called i.
-Keep replies under 80 words. Use plain language and short code snippets.
-If the student's applet state is included, use it to see their current phase, code and results.`;
-
-const PULSE_PROMPT = `Write a Pulse for the teacher of a beginner lesson on Python for loops. The input is each student's applet state.
-
-State fields:
-- phase: the phase the student is on. One of predict, trace, range, modify, make.
-- predict[id]: guess is the predicted output. ran is true once they ran it. correct says whether the prediction matched. tags lists detected misconceptions: starts-at-1, includes-stop, wrong-iteration-count, prints-variable-name, indentation. p-range is range(4), p-names loops over a list of names, p-indent has a print after the loop.
-- trace.step is how far they have stepped. trace.answers[eventIndex].attempts lists their guesses for total at each pass. revealed is true when three wrong guesses made the applet show the answer.
-- range.challenges[id]: attempts lists the range() arguments they tried. solved says whether they got it. r-1-5 targets 1 to 5, r-even targets 0 2 4 6 8, r-down targets 10 down to 1.
-- tasks[id]: code is their current code. runs counts runs. solved says whether it passes. outcomes lists recent results: solved, wrong, noloop (no for loop), hardcoded (only works for the given data), or error:<Type>. m-count, m-bug and m-sevens are Modify tasks. m-bug resets the total inside the loop. k-average, k-count and k-triangle are Make tasks.
-
-For the whole class, produce in this order:
-1. How many students are on each phase.
-2. The top misconceptions, each with a count and up to three student names. Rank by count.
-3. Students who look stuck. Stuck means five or more runs on a task without solving it, a revealed trace answer, or the same error type three times. Name the task and the likely cause.
-4. One next move for the teacher. Prepared Reveal states exist: range-stop shows range(1, 10) stopping at 9, bug-trace shows the reset bug mid-trace, solutions shows model solutions. A Spotlight on a named student's work is another option.
-
-For a single student, give their phase, what they have finished, their misconceptions, and one question the teacher could ask them.
-Be brief. Use counts, not percentages.`;
-
 // State.
 function defaultState() {
   const map = (items, make) => Object.fromEntries(items.map((x) => [x.id, make(x)]));
@@ -1057,7 +1402,11 @@ function normalize(s) {
   };
   state.trace.answers = { ...(state.trace.answers || {}) };
   for (const k in state.trace.answers) {
-    const a = state.trace.answers[k] || {};
+    const a = state.trace.answers[k];
+    if (!a) {
+      delete state.trace.answers[k];
+      continue;
+    }
     state.trace.answers[k] = { correct: false, revealed: false, ...a, attempts: arr(a.attempts) };
   }
   for (const p of Object.values(state.predict)) p.tags = arr(p.tags);
@@ -1069,44 +1418,8 @@ function normalize(s) {
   return state;
 }
 
-function preparedState(edit) {
-  const s = defaultState();
-  edit(s);
-  return s;
-}
-
-const PREPARED_STATES = [
-  {
-    id: "range-stop",
-    title: "range(1, 10) stops at 9",
-    state: preparedState((s) => {
-      s.phase = "range";
-      s.range.start = "1";
-      s.range.stop = "10";
-    }),
-  },
-  {
-    id: "bug-trace",
-    title: "Total reset inside the loop",
-    state: preparedState((s) => {
-      s.phase = "modify";
-      Object.assign(s.tasks["m-bug"], { ranCode: BUGGY_TOTAL, view: "trace", step: 6 });
-    }),
-  },
-  {
-    id: "solutions",
-    title: "Model solutions",
-    state: preparedState((s) => {
-      s.phase = "modify";
-      for (const t of TASKS) Object.assign(s.tasks[t.id], { code: t.solution, ranCode: t.solution, runs: 1, solved: true, outcomes: ["solved"] });
-    }),
-  },
-];
-
 let state = defaultState();
-let readOnly = false;
-let phaseLocked = false;
-const listeners = new Set();
+let maxPhase = null;
 
 const cache = new Map();
 function runCached(code) {
@@ -1119,12 +1432,13 @@ function runCached(code) {
   return r;
 }
 
-const snapshot = () => JSON.parse(JSON.stringify(state));
+const phaseIndex = () => PHASES.findIndex((p) => p.id === state.phase);
+const allowed = (i) => maxPhase === null || i <= maxPhase;
 
+// The phase travels beside the state, not inside it.
 function notify() {
-  const s = snapshot();
-  for (const fn of listeners) fn(s);
-  if (window.parent !== window) window.parent.postMessage({ type: "conductor:state", state: s }, "*");
+  const { phase, ...rest } = state;
+  host.update(rest, phaseIndex());
 }
 
 function commit() {
@@ -1385,9 +1699,9 @@ function restoreFocus(f) {
 function render() {
   const focus = captureFocus();
   const nav = PHASES.map(
-    (p, i) => `<button data-action="phase" data-id="${p.id}" class="${state.phase === p.id ? "on" : ""} ${isPhaseDone(p.id) ? "done" : ""}" ${phaseLocked ? "disabled" : ""}><span class="n">${i + 1}</span>${esc(p.title)}</button>`,
+    (p, i) => `<button data-action="phase" data-id="${p.id}" class="${state.phase === p.id ? "on" : ""} ${isPhaseDone(p.id) ? "done" : ""}" ${allowed(i) ? "" : "disabled"}><span class="n">${i + 1}</span>${esc(p.title)}</button>`,
   ).join("");
-  root.innerHTML = `<fieldset ${readOnly ? "disabled" : ""}><nav class="phases">${nav}</nav>${renderPhase()}</fieldset>`;
+  root.innerHTML = `<fieldset><nav class="phases">${nav}</nav>${renderPhase()}</fieldset>`;
   restoreFocus(focus);
 }
 
@@ -1401,6 +1715,7 @@ function setPath(path, value) {
 
 const actions = {
   phase({ id }) {
+    if (!allowed(PHASES.findIndex((p) => p.id === id))) return false;
     state.phase = id;
     window.scrollTo(0, 0);
   },
@@ -1474,7 +1789,7 @@ const actions = {
 };
 
 function act(name, data) {
-  if (readOnly || !actions[name]) return;
+  if (!actions[name]) return;
   if (actions[name](data) === false) return;
   commit();
 }
@@ -1528,51 +1843,20 @@ root.addEventListener("keydown", (e) => {
   }
 });
 
-// Contract.
-const applet = {
-  contractVersion: 1,
-  phases: PHASES,
-  chatbotInstructions: CHATBOT_INSTRUCTIONS,
-  pulsePrompt: PULSE_PROMPT,
-  preparedStates: PREPARED_STATES,
-  getState: snapshot,
-  setState(s) {
+// Contract. Without a Conductor the page still runs on its own.
+const host = window.conductor ?? { connect() {}, update() {} };
+host.connect({
+  setState(s, p) {
     state = normalize(JSON.parse(JSON.stringify(s ?? null)));
+    state.phase = PHASES[p]?.id ?? PHASES[0].id;
     render();
   },
-  subscribe(fn) {
-    listeners.add(fn);
-    return () => listeners.delete(fn);
-  },
-  setPhase(id) {
-    if (!PHASES.some((p) => p.id === id)) return;
-    state.phase = id;
+  setPhaseLimit(m) {
+    maxPhase = m;
     render();
   },
-  setPhaseLocked(locked) {
-    phaseLocked = !!locked;
-    render();
-  },
-  setReadOnly(on) {
-    readOnly = !!on;
-    render();
-  },
-};
-window.conductorApplet = applet;
-
-const MANIFEST_KEYS = ["contractVersion", "phases", "chatbotInstructions", "pulsePrompt", "preparedStates"];
-if (window.parent !== window) {
-  window.addEventListener("message", (e) => {
-    const m = e.data;
-    if (e.source !== window.parent || !m || m.type !== "conductor:call") return;
-    const fn = applet[m.method];
-    if (typeof fn !== "function" || m.method === "subscribe") return;
-    const result = fn.apply(applet, Array.isArray(m.args) ? m.args : []);
-    window.parent.postMessage({ type: "conductor:result", id: m.id, result: result ?? null }, "*");
-  });
-  window.parent.postMessage({ type: "conductor:ready", manifest: Object.fromEntries(MANIFEST_KEYS.map((k) => [k, applet[k]])) }, "*");
-}
-
+});
+notify();
 render();
 </script>
 </body>
