@@ -40,3 +40,6 @@ temp/
 
 # Background subagent worktrees
 .claude/worktrees/
+
+# Firebase emulator logs
+*-debug.log

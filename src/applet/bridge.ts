@@ -1,0 +1,32 @@
+// Script injected at the top of every applet page. It gives the applet
+// window.conductor and speaks the postMessage protocol in contract.ts.
+const BRIDGE = `<script>(function(){
+var handlers=null;
+function send(m){parent.postMessage(m,"*");}
+window.conductor={
+connect:function(h){handlers=h;send({cc:"connect"});},
+update:function(state,phase){send({cc:"update",state:JSON.parse(JSON.stringify(state===undefined?null:state)),phase:phase|0});}
+};
+window.addEventListener("message",function(e){
+if(e.source!==parent||!handlers)return;
+var m=e.data;
+if(!m)return;
+if(m.cc==="setState")handlers.setState(m.state,m.phase);
+else if(m.cc==="phaseLimit"&&handlers.setPhaseLimit)handlers.setPhaseLimit(m.maxPhase);
+});
+window.addEventListener("keydown",function(e){
+if((e.ctrlKey||e.metaKey)&&e.key==="."){e.preventDefault();send({cc:"shortcut"});}
+},true);
+})();</script>`;
+
+/** Returns the applet page with the bridge running before any applet script. */
+export function withBridge(html: string): string {
+  for (const tag of [/<head[^>]*>/i, /<html[^>]*>/i]) {
+    const m = tag.exec(html);
+    if (m) {
+      const at = m.index + m[0].length;
+      return html.slice(0, at) + BRIDGE + html.slice(at);
+    }
+  }
+  return BRIDGE + html;
+}

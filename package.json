@@ -11,22 +11,28 @@
     "lint": "biome check",
     "format": "biome format --write",
     "typecheck": "tsc --noEmit",
-    "prepare": "husky"
+    "prepare": "husky",
+    "test:rules": "firebase --config firebase.test.json emulators:exec --only database \"vitest run --config vitest.rules.config.ts\"",
+    "emulators": "firebase emulators:start --only auth,database"
   },
   "dependencies": {
+    "firebase": "^12",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "react-dom": "^19.1.0",
+    "react-router": "^8.4.0"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.16",
     "@commitlint/cli": "^21.0.2",
     "@commitlint/config-conventional": "^21.0.2",
+    "@firebase/rules-unit-testing": "^5",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/react": "^16.3.0",
     "@types/node": "^24.0.0",
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",
     "@vitejs/plugin-react": "^6.0.0",
+    "firebase-tools": "^15.33.0",
     "husky": "^9.1.7",
     "jsdom": "^29.0.0",
     "typescript": "^5.7.3",

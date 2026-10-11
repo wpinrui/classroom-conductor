@@ -1,0 +1,107 @@
+{
+  "rules": {
+    "teachers": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid && auth.token.firebase.sign_in_provider !== 'anonymous'",
+        ".write": "auth != null && auth.uid === $uid && auth.token.firebase.sign_in_provider !== 'anonymous'"
+      }
+    },
+    "codes": {
+      "$code": {
+        ".read": "auth != null",
+        ".write": "auth != null && auth.token.firebase.sign_in_provider !== 'anonymous' && (data.exists() ? data.child('teacher').val() === auth.uid && !newData.exists() : newData.child('teacher').val() === auth.uid)",
+        ".validate": "$code.matches(/^[A-Z0-9]{4,8}$/) && newData.hasChildren(['teacher', 'session'])"
+      }
+    },
+    "live": {
+      "$sid": {
+        ".write": "auth != null && root.child('sessions').child($sid).child('teacher').val() === auth.uid",
+        ".validate": "newData.val() === true"
+      }
+    },
+    "sessions": {
+      "$sid": {
+        ".read": "auth != null && data.child('teacher').val() === auth.uid",
+        ".write": "auth != null && auth.token.firebase.sign_in_provider !== 'anonymous' && (data.exists() ? data.child('teacher').val() === auth.uid : newData.child('teacher').val() === auth.uid)",
+        "applet": {
+          ".read": "auth != null && root.child('sessions').child($sid).child('students').child(auth.uid).exists()"
+        },
+        "control": {
+          ".read": "auth != null && root.child('sessions').child($sid).child('students').child(auth.uid).exists()"
+        },
+        "teacherState": {
+          ".read": "auth != null && root.child('sessions').child($sid).child('students').child(auth.uid).exists()",
+          ".validate": "newData.hasChildren(['json', 'phase', 'at']) && newData.child('json').isString() && newData.child('json').val().length < 2000000 && newData.child('phase').isNumber()"
+        },
+        "students": {
+          ".read": "auth != null && root.child('sessions').child($sid).child('students').child(auth.uid).exists()",
+          "$uid": {
+            ".read": "auth != null && auth.uid === $uid",
+            ".write": "auth != null && auth.uid === $uid && !data.exists() && !root.child('sessions').child($sid).child('ended').exists() && root.child('sessions').child($sid).child('teacher').exists() && (!root.child('sessions').child($sid).child('namelist').exists() || root.child('sessions').child($sid).child('namelist').child(newData.child('key').val()).exists())",
+            ".validate": "newData.hasChildren(['name', 'key', 'joinedAt'])",
+            "name": {
+              ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 60"
+            },
+            "key": {
+              ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 60"
+            },
+            "joinedAt": { ".validate": "newData.isNumber()" },
+            "group": {
+              ".write": "auth != null && auth.uid === $uid && data.parent().exists() && (!newData.exists() || root.child('sessions').child($sid).child('groups').child(newData.val()).child('members').child(auth.uid).exists())",
+              ".validate": "newData.isString()"
+            },
+            "$other": { ".validate": false }
+          }
+        },
+        "presence": {
+          ".read": "auth != null && root.child('sessions').child($sid).child('students').child(auth.uid).exists()",
+          "$uid": {
+            ".write": "auth != null && auth.uid === $uid && root.child('sessions').child($sid).child('students').child(auth.uid).exists()",
+            ".validate": "newData.val() === true"
+          }
+        },
+        "states": {
+          ".read": "auth != null && root.child('sessions').child($sid).child('students').child(auth.uid).exists()",
+          "$uid": {
+            ".write": "auth != null && auth.uid === $uid && root.child('sessions').child($sid).child('students').child(auth.uid).exists() && root.child('sessions').child($sid).child('control/mode').val() !== 'freeze'",
+            ".validate": "newData.hasChildren(['json', 'phase', 'at']) && newData.child('json').isString() && newData.child('json').val().length < 2000000 && newData.child('phase').isNumber()"
+          }
+        },
+        "groups": {
+          ".read": "auth != null && root.child('sessions').child($sid).child('students').child(auth.uid).exists()",
+          "$gid": {
+            ".write": "auth != null && !data.exists() && root.child('sessions').child($sid).child('students').child(auth.uid).exists() && newData.child('members').child(auth.uid).exists()",
+            ".validate": "newData.hasChildren(['code', 'members'])",
+            "code": { ".validate": "newData.isString()" },
+            "members": {
+              "$uid": {
+                ".write": "auth != null && auth.uid === $uid && root.child('sessions').child($sid).child('students').child(auth.uid).exists()",
+                ".validate": "newData.val() === true"
+              }
+            },
+            "state": {
+              ".write": "auth != null && data.parent().child('members').child(auth.uid).exists() && root.child('sessions').child($sid).child('control/mode').val() !== 'freeze'",
+              ".validate": "newData.hasChildren(['json', 'phase', 'at']) && newData.child('json').isString() && newData.child('json').val().length < 2000000 && newData.child('phase').isNumber()"
+            },
+            "$other": { ".validate": false }
+          }
+        },
+        "chat": {
+          "$uid": {
+            ".read": "auth != null && auth.uid === $uid",
+            "$mid": {
+              ".write": "auth != null && auth.uid === $uid && !data.exists() && root.child('sessions').child($sid).child('students').child(auth.uid).exists()",
+              ".validate": "newData.child('role').val() === 'user' && newData.child('text').isString() && newData.child('text').val().length <= 4000 && newData.child('at').isNumber()"
+            }
+          }
+        },
+        "requests": {
+          "$rid": {
+            ".write": "auth != null && !data.exists() && root.child('sessions').child($sid).child('students').child(auth.uid).exists()",
+            ".validate": "newData.child('at').isNumber() && newData.child('status').isString() && (root.child('sessions').child($sid).child('teacher').val() === auth.uid || (newData.child('kind').val() === 'chat' && newData.child('student').val() === auth.uid && newData.child('status').val() === 'pending'))"
+          }
+        }
+      }
+    }
+  }
+}

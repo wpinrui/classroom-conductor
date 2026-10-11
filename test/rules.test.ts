@@ -1,0 +1,208 @@
+import { readFileSync } from "node:fs";
+import {
+  assertFails,
+  assertSucceeds,
+  initializeTestEnvironment,
+  type RulesTestEnvironment,
+} from "@firebase/rules-unit-testing";
+import { get, ref, set, update } from "firebase/database";
+import { afterAll, beforeAll, beforeEach, describe, it } from "vitest";
+
+let env: RulesTestEnvironment;
+
+const TEACHER = "teacher1";
+const STUDENT = "student1";
+const OTHER = "student2";
+const SID = "s1";
+const S = `sessions/${SID}`;
+const state = { json: "{}", phase: 0, at: 1 };
+
+const teacher = () =>
+  env
+    .authenticatedContext(TEACHER, {
+      firebase: { sign_in_provider: "google.com" },
+    })
+    .database();
+const student = (uid = STUDENT) =>
+  env
+    .authenticatedContext(uid, { firebase: { sign_in_provider: "anonymous" } })
+    .database();
+const joined = (name = "Ann", key = "ann") => ({ name, key, joinedAt: 1 });
+
+beforeAll(async () => {
+  env = await initializeTestEnvironment({
+    projectId: "demo-classroom-conductor",
+    database: {
+      rules: readFileSync("database.rules.json", "utf8"),
+      host: "127.0.0.1",
+      port: 9000,
+    },
+  });
+});
+
+afterAll(() => env.cleanup());
+
+beforeEach(async () => {
+  await env.clearDatabase();
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await set(ref(ctx.database(), S), {
+      teacher: TEACHER,
+      code: "ABC234",
+      createdAt: 1,
+      applet: { name: "a", html: "<p>", manifest: {} },
+      control: { mode: "independent" },
+    });
+    await set(ref(ctx.database(), "codes/ABC234"), {
+      teacher: TEACHER,
+      session: SID,
+    });
+  });
+});
+
+async function join(uid = STUDENT) {
+  await assertSucceeds(
+    set(ref(student(uid), `${S}/students/${uid}`), joined()),
+  );
+}
+
+describe("teachers", () => {
+  it("own their library", async () => {
+    await assertSucceeds(
+      set(ref(teacher(), `teachers/${TEACHER}/applets/x`), { name: "a" }),
+    );
+    await assertFails(get(ref(student(), `teachers/${TEACHER}`)));
+  });
+
+  it("anonymous users cannot start sessions", async () => {
+    await assertFails(
+      set(ref(student(), "sessions/s2"), { teacher: STUDENT, code: "X" }),
+    );
+    await assertSucceeds(
+      set(ref(teacher(), "sessions/s2"), { teacher: TEACHER, code: "X" }),
+    );
+  });
+
+  it("codes cannot be overwritten", async () => {
+    await assertFails(
+      set(ref(teacher(), "codes/ABC234"), { teacher: TEACHER, session: "s9" }),
+    );
+    await assertSucceeds(
+      set(ref(teacher(), "codes/NEW234"), { teacher: TEACHER, session: "s9" }),
+    );
+  });
+});
+
+describe("joining", () => {
+  it("anyone signed in can resolve a code", async () => {
+    await assertSucceeds(get(ref(student(), "codes/ABC234")));
+    await assertFails(get(ref(student(), "codes")));
+  });
+
+  it("students cannot read a session before joining", async () => {
+    await assertFails(get(ref(student(), `${S}/control`)));
+    await join();
+    await assertSucceeds(get(ref(student(), `${S}/control`)));
+    await assertSucceeds(get(ref(student(), `${S}/applet`)));
+    await assertFails(get(ref(student(), S)));
+  });
+
+  it("enforces the namelist", async () => {
+    await env.withSecurityRulesDisabled((ctx) =>
+      set(ref(ctx.database(), `${S}/namelist`), { ann: "Ann" }),
+    );
+    await assertFails(
+      set(ref(student(OTHER), `${S}/students/${OTHER}`), joined("Bob", "bob")),
+    );
+    await join();
+  });
+
+  it("refuses joins after the session ends", async () => {
+    await env.withSecurityRulesDisabled((ctx) =>
+      set(ref(ctx.database(), `${S}/ended`), 5),
+    );
+    await assertFails(
+      set(ref(student(), `${S}/students/${STUDENT}`), joined()),
+    );
+  });
+
+  it("students cannot write as someone else", async () => {
+    await assertFails(set(ref(student(), `${S}/students/${OTHER}`), joined()));
+  });
+});
+
+describe("student work", () => {
+  beforeEach(() => join());
+
+  it("students write only their own state", async () => {
+    await assertSucceeds(set(ref(student(), `${S}/states/${STUDENT}`), state));
+    await assertFails(set(ref(student(), `${S}/states/${OTHER}`), state));
+  });
+
+  it("Freeze blocks state writes", async () => {
+    await env.withSecurityRulesDisabled((ctx) =>
+      set(ref(ctx.database(), `${S}/control/mode`), "freeze"),
+    );
+    await assertFails(set(ref(student(), `${S}/states/${STUDENT}`), state));
+  });
+
+  it("students cannot change control", async () => {
+    await assertFails(
+      update(ref(student(), `${S}/control`), { mode: "independent" }),
+    );
+  });
+
+  it("chat is private and requests are chat only", async () => {
+    await assertSucceeds(
+      set(ref(student(), `${S}/chat/${STUDENT}/m1`), {
+        role: "user",
+        text: "hi",
+        at: 1,
+      }),
+    );
+    await assertFails(
+      set(ref(student(), `${S}/chat/${STUDENT}/m2`), {
+        role: "assistant",
+        text: "hi",
+        at: 1,
+      }),
+    );
+    await assertSucceeds(
+      set(ref(student(), `${S}/requests/r1`), {
+        kind: "chat",
+        student: STUDENT,
+        at: 1,
+        status: "pending",
+      }),
+    );
+    await assertFails(
+      set(ref(student(), `${S}/requests/r2`), {
+        kind: "pulse",
+        pulse: "p",
+        at: 1,
+        status: "pending",
+      }),
+    );
+    await assertFails(get(ref(student(), `${S}/pulses`)));
+  });
+
+  it("only group members write group state", async () => {
+    await assertSucceeds(
+      set(ref(student(), `${S}/groups/g1`), {
+        code: "QW",
+        members: { [STUDENT]: true },
+      }),
+    );
+    await assertSucceeds(set(ref(student(), `${S}/groups/g1/state`), state));
+    await assertSucceeds(
+      set(ref(student(), `${S}/students/${STUDENT}/group`), "g1"),
+    );
+    await join(OTHER);
+    await assertFails(set(ref(student(OTHER), `${S}/groups/g1/state`), state));
+    await assertSucceeds(
+      set(ref(student(OTHER), `${S}/groups/g1/members/${OTHER}`), true),
+    );
+    await assertSucceeds(
+      set(ref(student(OTHER), `${S}/groups/g1/state`), state),
+    );
+  });
+});
