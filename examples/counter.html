@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <script type="application/json" id="conductor-manifest">
+      {
+        "title": "Counter",
+        "phases": ["Count", "Explain"],
+        "instructions": "Help the student reason about counting. Never give the answer outright.",
+        "pulsePrompt": "Group students by how high they counted and show who has not started.",
+        "preparedStates": [{ "name": "Ten", "state": { "count": 10, "note": "" }, "phase": 0 }]
+      }
+    </script>
+    <style>
+      body { font-family: system-ui, sans-serif; display: grid; place-items: center; min-height: 100vh; margin: 0; }
+      button { font-size: 2rem; padding: 0.5rem 1.5rem; }
+      output { font-size: 4rem; display: block; text-align: center; }
+      textarea { width: 20rem; height: 6rem; font: inherit; }
+      [hidden] { display: none; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section id="count">
+        <output id="n">0</output>
+        <button id="inc" type="button">+1</button>
+        <button id="next" type="button">→</button>
+      </section>
+      <section id="explain" hidden>
+        <textarea id="note" aria-label="Explain"></textarea>
+        <button id="back" type="button">←</button>
+      </section>
+    </main>
+    <script>
+      let state = { count: 0, note: "" };
+      let phase = 0;
+      let maxPhase = null;
+      const $ = (id) => document.getElementById(id);
+
+      function render() {
+        $("n").textContent = state.count;
+        if ($("note").value !== state.note) $("note").value = state.note;
+        $("count").hidden = phase !== 0;
+        $("explain").hidden = phase !== 1;
+        $("next").disabled = maxPhase !== null && maxPhase < 1;
+      }
+      function change() {
+        render();
+        conductor.update(state, phase);
+      }
+
+      $("inc").onclick = () => { state = { ...state, count: state.count + 1 }; change(); };
+      $("next").onclick = () => { phase = 1; change(); };
+      $("back").onclick = () => { phase = 0; change(); };
+      $("note").oninput = (e) => { state = { ...state, note: e.target.value }; change(); };
+
+      conductor.connect({
+        setState(s, p) { state = s; phase = p; render(); },
+        setPhaseLimit(m) { maxPhase = m; render(); },
+      });
+      conductor.update(state, phase);
+      render();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,23 @@
+// Every database path in one place. See types.ts for what lives where.
+export const paths = {
+  applets: (teacher: string) => `teachers/${teacher}/applets`,
+  applet: (teacher: string, id: string) => `teachers/${teacher}/applets/${id}`,
+  code: (code: string) => `codes/${code}`,
+  live: (session: string) => `live/${session}`,
+  session: (s: string) => `sessions/${s}`,
+  control: (s: string) => `sessions/${s}/control`,
+  teacherState: (s: string) => `sessions/${s}/teacherState`,
+  students: (s: string) => `sessions/${s}/students`,
+  student: (s: string, uid: string) => `sessions/${s}/students/${uid}`,
+  presence: (s: string) => `sessions/${s}/presence`,
+  presenceOf: (s: string, uid: string) => `sessions/${s}/presence/${uid}`,
+  states: (s: string) => `sessions/${s}/states`,
+  state: (s: string, uid: string) => `sessions/${s}/states/${uid}`,
+  groups: (s: string) => `sessions/${s}/groups`,
+  group: (s: string, g: string) => `sessions/${s}/groups/${g}`,
+  groupState: (s: string, g: string) => `sessions/${s}/groups/${g}/state`,
+  chat: (s: string, uid: string) => `sessions/${s}/chat/${uid}`,
+  requests: (s: string) => `sessions/${s}/requests`,
+  pulses: (s: string) => `sessions/${s}/pulses`,
+  pulse: (s: string, p: string) => `sessions/${s}/pulses/${p}`,
+};
