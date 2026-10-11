@@ -1,0 +1,1579 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>For loops in Python</title>
+<style>
+:root {
+  color-scheme: dark;
+  --bg: #0d1117;
+  --surface: #161b22;
+  --raised: #21262d;
+  --border: #30363d;
+  --text: #e6edf3;
+  --muted: #9ba7b4;
+  --accent: #4493f8;
+  --on-accent: #0d1117;
+  --good: #3fb950;
+  --bad: #f85149;
+  --kw: #ff7b72;
+  --str: #a5d6ff;
+  --num: #79c0ff;
+  --fn: #d2a8ff;
+  --comment: #8b949e;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html { font-size: 16px; }
+body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--sans); line-height: 1.5; }
+#app { max-width: 1040px; margin: 0 auto; padding: 0 16px 32px; }
+fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
+
+button { font: inherit; color: var(--text); background: var(--raised); border: 1px solid var(--border); border-radius: 6px; padding: 6px 14px; cursor: pointer; }
+button:hover:not(:disabled) { border-color: var(--muted); }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 600; }
+button.ghost { background: transparent; color: var(--muted); }
+button:disabled { opacity: 0.45; cursor: default; }
+
+.phases { display: flex; gap: 8px; flex-wrap: wrap; position: sticky; top: 0; z-index: 1; background: var(--bg); padding: 12px 0; margin-bottom: 8px; }
+.phases button { display: flex; align-items: center; gap: 8px; border-radius: 999px; padding: 4px 14px 4px 4px; }
+.phases .n { display: inline-grid; place-items: center; width: 1.75rem; height: 1.75rem; border-radius: 50%; background: var(--bg); font-size: 0.875rem; font-weight: 600; }
+.phases .on { border-color: var(--accent); background: var(--accent); color: var(--on-accent); font-weight: 600; }
+.phases .done .n { background: var(--good); color: var(--on-accent); }
+.phases .on .n { background: var(--on-accent); color: var(--accent); }
+
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 16px; display: grid; gap: 12px; }
+.card.solved { border-color: var(--good); }
+.prompt { margin: 0; font-size: 1.125rem; font-weight: 600; }
+.solved .prompt::after { content: " \2713"; color: var(--good); }
+.grid2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 720px) { .grid2 { grid-template-columns: minmax(0, 1fr); } }
+.side { display: grid; gap: 12px; }
+.actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.actions .end { margin-left: auto; }
+.label { display: block; font-size: 0.875rem; color: var(--muted); margin-bottom: 4px; }
+
+.code, .out, textarea, input { font-family: var(--mono); font-size: 0.9375rem; }
+.code { margin: 0; padding: 8px 0; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; overflow-x: auto; line-height: 1.6; }
+.code .line { display: block; white-space: pre; padding-right: 12px; border-left: 3px solid transparent; }
+.code .ln { display: inline-block; width: 2.5em; padding-right: 12px; text-align: right; color: var(--comment); user-select: none; }
+.code .cur { background: color-mix(in srgb, var(--accent) 22%, transparent); border-left-color: var(--accent); }
+.code .nxt { border-left-color: var(--muted); }
+.code .err { background: color-mix(in srgb, var(--bad) 20%, transparent); border-left-color: var(--bad); }
+.kw { color: var(--kw); }
+.str { color: var(--str); }
+.num { color: var(--num); }
+.fn { color: var(--fn); }
+.comment { color: var(--comment); }
+
+textarea, input { background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; }
+textarea { width: 100%; resize: vertical; tab-size: 4; line-height: 1.6; }
+textarea:focus, input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+textarea[readonly] { color: var(--muted); }
+.out { margin: 0; min-height: 3.2em; padding: 8px 12px; white-space: pre; overflow-x: auto; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; line-height: 1.6; }
+.out .ok { color: var(--good); }
+.out .bad { color: var(--bad); }
+.error { font-family: var(--mono); color: var(--bad); }
+.error b { margin-right: 8px; }
+.note { color: var(--bad); font-weight: 600; }
+
+.vars { border-collapse: collapse; font-family: var(--mono); min-width: 60%; }
+.vars td { padding: 4px 12px; border-bottom: 1px solid var(--border); }
+.vars td:first-child { color: var(--muted); }
+.vars .changed td { background: color-mix(in srgb, var(--accent) 18%, transparent); }
+.vars .changed td:last-child { font-weight: 700; }
+.progress { height: 4px; border-radius: 2px; background: var(--raised); overflow: hidden; }
+.progress span { display: block; height: 100%; background: var(--accent); }
+.ask { display: flex; gap: 8px; align-items: center; font-family: var(--mono); }
+.ask input { width: 6em; }
+.miss { color: var(--bad); text-decoration: line-through; font-family: var(--mono); }
+
+.chips { display: flex; flex-wrap: wrap; gap: 6px; min-height: 2rem; }
+.chip { min-width: 2.25em; padding: 2px 10px; border-radius: 6px; background: var(--raised); font-family: var(--mono); text-align: center; }
+.chips.empty { width: 4em; border: 1px dashed var(--border); border-radius: 6px; }
+.chips.mine .chip { background: color-mix(in srgb, var(--bad) 22%, transparent); }
+.range-line { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 4px; font-family: var(--mono); font-size: 1.0625rem; }
+.range-line > span { padding-top: 8px; }
+.range-line .arg { display: grid; justify-items: center; }
+.range-line .arg input { width: 4.5em; text-align: center; }
+.range-line .arg span { font-size: 0.875rem; color: var(--muted); }
+.challenge { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: center; padding: 12px 0; border-top: 1px solid var(--border); }
+.challenge:first-child { border-top: 0; padding-top: 0; }
+@media (max-width: 720px) { .challenge { grid-template-columns: minmax(0, 1fr); } }
+.challenge .try { display: flex; align-items: center; gap: 6px; font-family: var(--mono); }
+.challenge .try input { width: 9em; }
+.challenge.solved .try::after { content: "\2713"; color: var(--good); font-size: 1.25rem; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+"use strict";
+
+// A small Python subset interpreter. It records one trace event per executed line
+// so students can step through their own programs.
+const Py = (() => {
+  class PyError extends Error {
+    constructor(type, message, line) {
+      super(message);
+      this.type = type;
+      this.line = line;
+    }
+  }
+  class PyFloat {
+    constructor(v) {
+      this.v = v;
+    }
+  }
+  class PyRange {
+    constructor(start, stop, step) {
+      this.start = start;
+      this.stop = stop;
+      this.step = step;
+    }
+    get length() {
+      return Math.max(0, Math.ceil((this.stop - this.start) / this.step));
+    }
+    at(i) {
+      return this.start + i * this.step;
+    }
+  }
+  class PyBuiltin {
+    constructor(name) {
+      this.name = name;
+    }
+  }
+  class LoopSignal {
+    constructor(kind, line) {
+      this.kind = kind;
+      this.line = line;
+    }
+  }
+
+  const MAX_STEPS = 5000;
+  const MAX_OUTPUT = 20000;
+  const MAX_ITEMS = 100000;
+  const KEYWORDS = new Set(["for", "in", "if", "elif", "else", "while", "and", "or", "not", "True", "False", "None", "break", "continue", "pass", "def", "return", "import", "from", "class", "lambda", "is", "with", "try", "except"]);
+  const UNAVAILABLE = new Set(["def", "return", "import", "from", "class", "lambda", "with", "try", "except"]);
+  const COMPOUND = new Set(["for", "while", "if", "elif", "else"]);
+  const ASSIGN_OPS = ["=", "+=", "-=", "*=", "/=", "//=", "%=", "**="];
+  const TOKEN = /\s*(?:(#.*)|(\d+\.\d*|\.\d+|\d+)|([fF]?)("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')|([A-Za-z_]\w*)|(\*\*=|\/\/=|\*\*|\/\/|==|!=|<=|>=|\+=|-=|\*=|\/=|%=|[-+*/%<>=()[\],:.]))/y;
+  const ESCAPES = { n: "\n", t: "\t" };
+
+  const syntax = (message, line) => new PyError("SyntaxError", message, line);
+
+  function tokenize(text, line) {
+    const tokens = [];
+    let pos = 0;
+    while (pos < text.length) {
+      TOKEN.lastIndex = pos;
+      const m = TOKEN.exec(text);
+      if (!m) {
+        const rest = text.slice(pos).trimStart();
+        if (rest === "") break;
+        const ch = rest[0];
+        throw syntax(ch === '"' || ch === "'" ? "unterminated string literal" : `invalid character '${ch}'`, line);
+      }
+      pos = TOKEN.lastIndex;
+      if (m[1] !== undefined) break;
+      if (m[2] !== undefined) tokens.push({ t: "num", v: m[2] });
+      else if (m[4] !== undefined) {
+        const v = m[4].slice(1, -1).replace(/\\(.)/g, (_, c) => ESCAPES[c] ?? c);
+        tokens.push({ t: m[3] ? "fstr" : "str", v });
+      } else if (m[5] !== undefined) tokens.push({ t: "name", v: m[5] });
+      else tokens.push({ t: "op", v: m[6] });
+    }
+    return tokens;
+  }
+
+  class Parser {
+    constructor(tokens, line) {
+      this.toks = tokens;
+      this.i = 0;
+      this.line = line;
+    }
+    peek(o = 0) {
+      return this.toks[this.i + o];
+    }
+    isOp(v, o = 0) {
+      const t = this.peek(o);
+      return !!t && t.t === "op" && t.v === v;
+    }
+    isName(v, o = 0) {
+      const t = this.peek(o);
+      return !!t && t.t === "name" && t.v === v;
+    }
+    done() {
+      return this.i >= this.toks.length;
+    }
+    fail(message = "invalid syntax") {
+      throw syntax(message, this.line);
+    }
+    expectOp(v) {
+      if (!this.isOp(v)) this.fail(`expected '${v}'`);
+      this.i++;
+    }
+    expectName() {
+      const t = this.toks[this.i++];
+      if (t?.t !== "name" || KEYWORDS.has(t.v)) this.fail();
+      return t.v;
+    }
+    end() {
+      if (!this.done()) this.fail();
+    }
+    expr() {
+      return this.or();
+    }
+    or() {
+      let l = this.and();
+      while (this.isName("or")) {
+        this.i++;
+        l = { k: "or", l, r: this.and() };
+      }
+      return l;
+    }
+    and() {
+      let l = this.not();
+      while (this.isName("and")) {
+        this.i++;
+        l = { k: "and", l, r: this.not() };
+      }
+      return l;
+    }
+    not() {
+      if (this.isName("not")) {
+        this.i++;
+        return { k: "not", v: this.not() };
+      }
+      return this.cmp();
+    }
+    cmp() {
+      const first = this.sum();
+      const ops = [];
+      const rights = [];
+      for (;;) {
+        const t = this.peek();
+        let op = null;
+        if (t && t.t === "op" && ["==", "!=", "<", ">", "<=", ">="].includes(t.v)) {
+          op = t.v;
+          this.i++;
+        } else if (this.isName("in")) {
+          op = "in";
+          this.i++;
+        } else if (this.isName("not") && this.isName("in", 1)) {
+          op = "not in";
+          this.i += 2;
+        } else break;
+        ops.push(op);
+        rights.push(this.sum());
+      }
+      return ops.length ? { k: "cmp", first, ops, rights } : first;
+    }
+    sum() {
+      let l = this.term();
+      while (this.isOp("+") || this.isOp("-")) {
+        const op = this.toks[this.i++].v;
+        l = { k: "bin", op, l, r: this.term() };
+      }
+      return l;
+    }
+    term() {
+      let l = this.unary();
+      while (this.isOp("*") || this.isOp("/") || this.isOp("//") || this.isOp("%")) {
+        const op = this.toks[this.i++].v;
+        l = { k: "bin", op, l, r: this.unary() };
+      }
+      return l;
+    }
+    unary() {
+      if (this.isOp("-") || this.isOp("+")) {
+        const op = this.toks[this.i++].v;
+        return { k: "unary", op, v: this.unary() };
+      }
+      return this.power();
+    }
+    power() {
+      const base = this.postfix();
+      if (this.isOp("**")) {
+        this.i++;
+        return { k: "bin", op: "**", l: base, r: this.unary() };
+      }
+      return base;
+    }
+    postfix() {
+      let e = this.atom();
+      for (;;) {
+        if (this.isOp("(")) {
+          this.i++;
+          const { args, kwargs } = this.callArgs();
+          e = { k: "call", fn: e, args, kwargs };
+        } else if (this.isOp("[")) {
+          this.i++;
+          if (this.isOp(":")) this.fail("slices are not available in this lesson");
+          const index = this.expr();
+          if (this.isOp(":")) this.fail("slices are not available in this lesson");
+          this.expectOp("]");
+          e = { k: "index", obj: e, index };
+        } else if (this.isOp(".")) {
+          this.i++;
+          const name = this.expectName();
+          if (!this.isOp("(")) this.fail(`'.${name}' is not available in this lesson`);
+          this.i++;
+          const { args, kwargs } = this.callArgs();
+          e = { k: "method", obj: e, name, args, kwargs };
+        } else return e;
+      }
+    }
+    callArgs() {
+      const args = [];
+      const kwargs = {};
+      while (!this.isOp(")")) {
+        if (this.done()) this.fail("'(' was never closed");
+        const t = this.peek();
+        if (t.t === "name" && this.isOp("=", 1)) {
+          this.i += 2;
+          kwargs[t.v] = this.expr();
+        } else args.push(this.expr());
+        if (!this.isOp(")")) this.expectOp(",");
+      }
+      this.i++;
+      return { args, kwargs };
+    }
+    atom() {
+      const t = this.toks[this.i++];
+      if (!t) this.fail();
+      if (t.t === "num") return { k: "lit", v: /[.]/.test(t.v) ? new PyFloat(Number(t.v)) : Number(t.v) };
+      if (t.t === "str") return { k: "lit", v: t.v };
+      if (t.t === "fstr") return parseFString(t.v, this.line);
+      if (t.t === "name") {
+        if (t.v === "True") return { k: "lit", v: true };
+        if (t.v === "False") return { k: "lit", v: false };
+        if (t.v === "None") return { k: "lit", v: null };
+        if (KEYWORDS.has(t.v)) this.fail();
+        return { k: "name", v: t.v };
+      }
+      if (t.v === "(") {
+        if (this.isOp(")")) this.fail("tuples are not available in this lesson");
+        const e = this.expr();
+        if (this.isOp(",")) this.fail("tuples are not available in this lesson");
+        this.expectOp(")");
+        return e;
+      }
+      if (t.v === "[") {
+        const items = [];
+        while (!this.isOp("]")) {
+          if (this.done()) this.fail("'[' was never closed");
+          items.push(this.expr());
+          if (!this.isOp("]")) this.expectOp(",");
+        }
+        this.i++;
+        return { k: "list", items };
+      }
+      this.fail();
+    }
+  }
+
+  function parseFString(raw, line) {
+    const parts = [];
+    let buf = "";
+    let i = 0;
+    while (i < raw.length) {
+      const c = raw[i];
+      if ((c === "{" || c === "}") && raw[i + 1] === c) {
+        buf += c;
+        i += 2;
+      } else if (c === "{") {
+        const close = raw.indexOf("}", i);
+        if (close < 0) throw syntax("f-string: expecting '}'", line);
+        let inner = raw.slice(i + 1, close);
+        let spec = "";
+        const colon = inner.lastIndexOf(":");
+        if (colon >= 0) {
+          spec = inner.slice(colon + 1);
+          inner = inner.slice(0, colon);
+        }
+        if (buf) parts.push(buf);
+        buf = "";
+        const p = new Parser(tokenize(inner, line), line);
+        const e = p.expr();
+        p.end();
+        parts.push({ e, spec });
+        i = close + 1;
+      } else if (c === "}") {
+        throw syntax("f-string: single '}' is not allowed", line);
+      } else {
+        buf += c;
+        i++;
+      }
+    }
+    if (buf) parts.push(buf);
+    return { k: "fstr", parts };
+  }
+
+  function parseStatement(tokens, line) {
+    const p = new Parser(tokens, line);
+    const t = p.peek();
+    const compound = (node) => {
+      p.expectOp(":");
+      if (!p.done()) node.body = [parseStatement(tokens.slice(p.i), line)];
+      return node;
+    };
+    if (t.t === "name") {
+      if (UNAVAILABLE.has(t.v)) throw syntax(`'${t.v}' is not available in this lesson`, line);
+      switch (t.v) {
+        case "for": {
+          p.i++;
+          const target = p.expectName();
+          if (!p.isName("in")) p.fail("expected 'in'");
+          p.i++;
+          const iter = p.expr();
+          return compound({ k: "for", target, iter, line, body: null });
+        }
+        case "while":
+        case "if":
+        case "elif": {
+          p.i++;
+          const test = p.expr();
+          return compound({ k: t.v, test, line, body: null });
+        }
+        case "else":
+          p.i++;
+          return compound({ k: "else", line, body: null });
+        case "pass":
+        case "break":
+        case "continue":
+          p.i++;
+          p.end();
+          return { k: t.v, line };
+      }
+      const op = p.peek(1);
+      if (!KEYWORDS.has(t.v) && op && op.t === "op" && ASSIGN_OPS.includes(op.v)) {
+        p.i += 2;
+        const value = p.expr();
+        p.end();
+        return { k: "assign", target: t.v, op: op.v, value, line };
+      }
+    }
+    const e = p.expr();
+    if (p.isOp("=")) p.fail("cannot assign to expression here");
+    p.end();
+    return { k: "expr", e, line };
+  }
+
+  function parseBlock(lines, start, indent) {
+    const body = [];
+    let i = start;
+    while (i < lines.length) {
+      const L = lines[i];
+      if (L.indent < indent) break;
+      if (L.indent > indent) {
+        const unindent = i > 0 && lines[i - 1].indent > L.indent;
+        throw new PyError("IndentationError", unindent ? "unindent does not match any outer indentation level" : "unexpected indent", L.line);
+      }
+      const s = parseStatement(L.tokens, L.line);
+      i++;
+      if (COMPOUND.has(s.k) && !s.body) {
+        const next = lines[i];
+        if (!next || next.indent <= indent) throw new PyError("IndentationError", `expected an indented block after line ${L.line}`, next ? next.line : L.line);
+        [s.body, i] = parseBlock(lines, i, next.indent);
+      }
+      if (s.k === "elif" || s.k === "else") {
+        const prev = body[body.length - 1];
+        if (prev?.k !== "if" || prev.orelse) throw syntax("invalid syntax", s.line);
+        if (s.k === "elif") prev.branches.push({ test: s.test, body: s.body, line: s.line });
+        else prev.orelse = s.body;
+        continue;
+      }
+      if (s.k === "if") {
+        body.push({ k: "if", branches: [{ test: s.test, body: s.body, line: s.line }], orelse: null, line: s.line });
+        continue;
+      }
+      body.push(s);
+    }
+    return [body, i];
+  }
+
+  function parse(code) {
+    const lines = [];
+    code.replace(/\r/g, "").split("\n").forEach((raw, idx) => {
+      const text = raw.replace(/\t/g, "    ");
+      const tokens = tokenize(text, idx + 1);
+      if (tokens.length) lines.push({ indent: text.length - text.trimStart().length, tokens, line: idx + 1 });
+    });
+    const [body, i] = parseBlock(lines, 0, 0);
+    if (i < lines.length) throw new PyError("IndentationError", "unindent does not match any outer indentation level", lines[i].line);
+    return body;
+  }
+
+  const isInt = (v) => typeof v === "number" || typeof v === "boolean";
+  const isNum = (v) => isInt(v) || v instanceof PyFloat;
+  const nv = (v) => (v instanceof PyFloat ? v.v : +v);
+  const mk = (x, float) => (float ? new PyFloat(x) : x);
+
+  function typeName(v) {
+    if (v === null) return "NoneType";
+    if (typeof v === "boolean") return "bool";
+    if (typeof v === "number") return "int";
+    if (v instanceof PyFloat) return "float";
+    if (typeof v === "string") return "str";
+    if (Array.isArray(v)) return "list";
+    if (v instanceof PyRange) return "range";
+    return "builtin_function_or_method";
+  }
+
+  function floatRepr(x) {
+    if (Number.isNaN(x)) return "nan";
+    if (!Number.isFinite(x)) return x > 0 ? "inf" : "-inf";
+    if (Number.isInteger(x) && Math.abs(x) < 1e16) return x.toFixed(1);
+    return String(x);
+  }
+
+  function repr(v) {
+    if (v === null) return "None";
+    if (v === true) return "True";
+    if (v === false) return "False";
+    if (typeof v === "number") return String(v);
+    if (v instanceof PyFloat) return floatRepr(v.v);
+    if (typeof v === "string") {
+      const q = v.includes("'") && !v.includes('"') ? '"' : "'";
+      return q + v.replace(/\\/g, "\\\\").replace(/\n/g, "\\n").replace(/\t/g, "\\t").split(q).join(`\\${q}`) + q;
+    }
+    if (Array.isArray(v)) return `[${v.map(repr).join(", ")}]`;
+    if (v instanceof PyRange) return v.step === 1 ? `range(${v.start}, ${v.stop})` : `range(${v.start}, ${v.stop}, ${v.step})`;
+    return `<built-in function ${v.name}>`;
+  }
+
+  const str = (v) => (typeof v === "string" ? v : repr(v));
+
+  function truthy(v) {
+    if (v === null || v === false || v === "") return false;
+    if (isNum(v)) return nv(v) !== 0;
+    if (Array.isArray(v)) return v.length > 0;
+    if (v instanceof PyRange) return v.length > 0;
+    return true;
+  }
+
+  function* iterate(v, line) {
+    if (Array.isArray(v)) {
+      for (let i = 0; i < v.length; i++) yield v[i];
+    } else if (typeof v === "string") {
+      yield* v;
+    } else if (v instanceof PyRange) {
+      for (let i = 0; i < v.length; i++) yield v.at(i);
+    } else {
+      throw new PyError("TypeError", `'${typeName(v)}' object is not iterable`, line);
+    }
+  }
+
+  function binop(op, a, b, line) {
+    if (isNum(a) && isNum(b)) {
+      const fl = a instanceof PyFloat || b instanceof PyFloat;
+      const x = nv(a);
+      const y = nv(b);
+      const zero = () => new PyError("ZeroDivisionError", "division by zero", line);
+      switch (op) {
+        case "+":
+          return mk(x + y, fl);
+        case "-":
+          return mk(x - y, fl);
+        case "*":
+          return mk(x * y, fl);
+        case "/":
+          if (y === 0) throw zero();
+          return new PyFloat(x / y);
+        case "//":
+          if (y === 0) throw zero();
+          return mk(Math.floor(x / y), fl);
+        case "%":
+          if (y === 0) throw zero();
+          return mk(x - y * Math.floor(x / y), fl);
+        case "**":
+          return mk(x ** y, fl || y < 0);
+      }
+    }
+    if (op === "+") {
+      if (typeof a === "string" && typeof b === "string") return a + b;
+      if (Array.isArray(a) && Array.isArray(b)) return [...a, ...b];
+      if (typeof a === "string") throw new PyError("TypeError", `can only concatenate str (not "${typeName(b)}") to str`, line);
+    }
+    if (op === "*") {
+      const [seq, n] = isInt(b) ? [a, b] : [b, a];
+      const count = Math.max(0, +n);
+      if (isInt(n) && (typeof seq === "string" || Array.isArray(seq)) && seq.length * count > MAX_ITEMS) throw new PyError("MemoryError", "result is too big for this lesson", line);
+      if (isInt(n) && typeof seq === "string") return seq.repeat(count);
+      if (isInt(n) && Array.isArray(seq)) return Array.from({ length: count }, () => seq).flat();
+    }
+    throw new PyError("TypeError", `unsupported operand type(s) for ${op}: '${typeName(a)}' and '${typeName(b)}'`, line);
+  }
+
+  function eq(a, b) {
+    if (isNum(a) && isNum(b)) return nv(a) === nv(b);
+    if (Array.isArray(a) && Array.isArray(b)) return a.length === b.length && a.every((x, i) => eq(x, b[i]));
+    return a === b;
+  }
+
+  function order(op, a, b, line) {
+    const both = (isNum(a) && isNum(b)) || (typeof a === "string" && typeof b === "string");
+    if (!both) throw new PyError("TypeError", `'${op}' not supported between instances of '${typeName(a)}' and '${typeName(b)}'`, line);
+    const x = isNum(a) ? nv(a) : a;
+    const y = isNum(b) ? nv(b) : b;
+    if (op === "<") return x < y;
+    if (op === ">") return x > y;
+    if (op === "<=") return x <= y;
+    return x >= y;
+  }
+
+  function contains(container, item, line) {
+    if (typeof container === "string") {
+      if (typeof item !== "string") throw new PyError("TypeError", `'in <string>' requires string as left operand, not ${typeName(item)}`, line);
+      return container.includes(item);
+    }
+    if (Array.isArray(container)) return container.some((x) => eq(x, item));
+    if (container instanceof PyRange) {
+      if (!isInt(item)) return false;
+      const k = (+item - container.start) / container.step;
+      return Number.isInteger(k) && k >= 0 && k < container.length;
+    }
+    throw new PyError("TypeError", `argument of type '${typeName(container)}' is not iterable`, line);
+  }
+
+  function run(code) {
+    const env = new Map();
+    const events = [];
+    let output = "";
+    let error = null;
+    let hasFor = false;
+
+    const fail = (type, message, line) => new PyError(type, message, line);
+
+    function record(line, extra) {
+      if (events.length >= MAX_STEPS) throw fail("RuntimeError", `stopped after ${MAX_STEPS} steps`, line);
+      events.push({ line, vars: [...env].map(([k, v]) => [k, repr(v)]), out: output.length, ...extra });
+    }
+
+    function intArg(v, line) {
+      if (!isInt(v)) throw fail("TypeError", `'${typeName(v)}' object cannot be interpreted as an integer`, line);
+      return +v;
+    }
+
+    function roundHalfEven(x) {
+      const r = Math.round(x);
+      return Math.abs(x % 1) === 0.5 ? 2 * Math.round(x / 2) : r;
+    }
+
+    const builtins = {
+      print(args, kw) {
+        const sep = kw.sep === undefined ? " " : str(kw.sep);
+        const end = kw.end === undefined ? "\n" : str(kw.end);
+        output += args.map(str).join(sep) + end;
+        if (output.length > MAX_OUTPUT) throw fail("RuntimeError", "too much output", this.line);
+        return null;
+      },
+      range(args) {
+        if (args.length < 1 || args.length > 3) throw fail("TypeError", `range expected 1 to 3 arguments, got ${args.length}`, this.line);
+        const n = args.map((a) => intArg(a, this.line));
+        const [start, stop, step] = n.length === 1 ? [0, n[0], 1] : [n[0], n[1], n[2] ?? 1];
+        if (step === 0) throw fail("ValueError", "range() arg 3 must not be zero", this.line);
+        return new PyRange(start, stop, step);
+      },
+      len([v]) {
+        if (typeof v === "string" || Array.isArray(v)) return v.length;
+        if (v instanceof PyRange) return v.length;
+        throw fail("TypeError", `object of type '${typeName(v)}' has no len()`, this.line);
+      },
+      str(args) {
+        return args.length ? str(args[0]) : "";
+      },
+      int([v = 0]) {
+        if (typeof v === "string") {
+          if (!/^\s*[-+]?\d+\s*$/.test(v)) throw fail("ValueError", `invalid literal for int() with base 10: ${repr(v)}`, this.line);
+          return Number.parseInt(v, 10);
+        }
+        if (isNum(v)) return Math.trunc(nv(v));
+        throw fail("TypeError", `int() argument must be a string or a number, not '${typeName(v)}'`, this.line);
+      },
+      float([v = 0]) {
+        if (typeof v === "string") {
+          const x = Number(v.trim());
+          if (v.trim() === "" || Number.isNaN(x)) throw fail("ValueError", `could not convert string to float: ${repr(v)}`, this.line);
+          return new PyFloat(x);
+        }
+        if (isNum(v)) return new PyFloat(nv(v));
+        throw fail("TypeError", `float() argument must be a string or a number, not '${typeName(v)}'`, this.line);
+      },
+      abs([v]) {
+        if (!isNum(v)) throw fail("TypeError", `bad operand type for abs(): '${typeName(v)}'`, this.line);
+        return mk(Math.abs(nv(v)), v instanceof PyFloat);
+      },
+      round([v, digits]) {
+        if (!isNum(v)) throw fail("TypeError", `type ${typeName(v)} doesn't define __round__ method`, this.line);
+        if (digits === undefined || digits === null) return roundHalfEven(nv(v));
+        const f = 10 ** intArg(digits, this.line);
+        return mk(roundHalfEven(nv(v) * f) / f, v instanceof PyFloat);
+      },
+      min(args) {
+        return this.extreme(args, "<");
+      },
+      max(args) {
+        return this.extreme(args, ">");
+      },
+      list(args) {
+        if (args[0] instanceof PyRange && args[0].length > MAX_ITEMS) throw fail("MemoryError", "list is too big for this lesson", this.line);
+        return args.length ? [...iterate(args[0], this.line)] : [];
+      },
+      extreme(args, op) {
+        const items = args.length === 1 ? [...iterate(args[0], this.line)] : args;
+        if (!items.length) throw fail("ValueError", "arg is an empty sequence", this.line);
+        return items.reduce((best, x) => (order(op, x, best, this.line) ? x : best));
+      },
+    };
+    const CALLABLE = ["print", "range", "len", "str", "int", "float", "abs", "round", "min", "max", "list"];
+    const SWITCHED_OFF = { sum: "sum() is switched off for this lesson. Use a for loop.", input: "input() is not available here" };
+
+    function callMethod(obj, name, args, line) {
+      if (typeof obj === "string") {
+        if (name === "upper") return obj.toUpperCase();
+        if (name === "lower") return obj.toLowerCase();
+        if (name === "strip") return obj.trim();
+        if (name === "count") throw fail("NameError", "count() is switched off for this lesson. Use a for loop.", line);
+      }
+      if (Array.isArray(obj) && name === "append") {
+        if (args.length !== 1) throw fail("TypeError", `list.append() takes exactly one argument (${args.length} given)`, line);
+        obj.push(args[0]);
+        return null;
+      }
+      throw fail("AttributeError", `'${typeName(obj)}' object has no attribute '${name}'`, line);
+    }
+
+    function evaluate(n, line) {
+      switch (n.k) {
+        case "lit":
+          return n.v;
+        case "fstr":
+          return n.parts
+            .map((p) => {
+              if (typeof p === "string") return p;
+              const v = evaluate(p.e, line);
+              if (!p.spec) return str(v);
+              const m = /^\.(\d+)f$/.exec(p.spec);
+              if (!m || !isNum(v)) throw fail("ValueError", `invalid format specifier '${p.spec}'`, line);
+              return nv(v).toFixed(Number(m[1]));
+            })
+            .join("");
+        case "name":
+          if (env.has(n.v)) return env.get(n.v);
+          if (CALLABLE.includes(n.v) || n.v in SWITCHED_OFF) return new PyBuiltin(n.v);
+          throw fail("NameError", `name '${n.v}' is not defined`, line);
+        case "list":
+          return n.items.map((x) => evaluate(x, line));
+        case "unary": {
+          const v = evaluate(n.v, line);
+          if (!isNum(v)) throw fail("TypeError", `bad operand type for unary ${n.op}: '${typeName(v)}'`, line);
+          return n.op === "-" ? mk(-nv(v), v instanceof PyFloat) : mk(nv(v), v instanceof PyFloat);
+        }
+        case "not":
+          return !truthy(evaluate(n.v, line));
+        case "and": {
+          const l = evaluate(n.l, line);
+          return truthy(l) ? evaluate(n.r, line) : l;
+        }
+        case "or": {
+          const l = evaluate(n.l, line);
+          return truthy(l) ? l : evaluate(n.r, line);
+        }
+        case "bin":
+          return binop(n.op, evaluate(n.l, line), evaluate(n.r, line), line);
+        case "cmp": {
+          let left = evaluate(n.first, line);
+          for (let i = 0; i < n.ops.length; i++) {
+            const right = evaluate(n.rights[i], line);
+            const op = n.ops[i];
+            let ok;
+            if (op === "==") ok = eq(left, right);
+            else if (op === "!=") ok = !eq(left, right);
+            else if (op === "in") ok = contains(right, left, line);
+            else if (op === "not in") ok = !contains(right, left, line);
+            else ok = order(op, left, right, line);
+            if (!ok) return false;
+            left = right;
+          }
+          return true;
+        }
+        case "index": {
+          const obj = evaluate(n.obj, line);
+          const idx = evaluate(n.index, line);
+          const seq = obj instanceof PyRange ? { length: obj.length, at: (i) => obj.at(i) } : obj;
+          if (!(obj instanceof PyRange) && typeof seq !== "string" && !Array.isArray(seq)) throw fail("TypeError", `'${typeName(obj)}' object is not subscriptable`, line);
+          if (!isInt(idx)) throw fail("TypeError", `${typeName(obj)} indices must be integers, not ${typeName(idx)}`, line);
+          const i = +idx < 0 ? seq.length + +idx : +idx;
+          if (i < 0 || i >= seq.length) throw fail("IndexError", `${typeName(obj)} index out of range`, line);
+          return obj instanceof PyRange ? seq.at(i) : seq[i];
+        }
+        case "call": {
+          const fn = evaluate(n.fn, line);
+          if (!(fn instanceof PyBuiltin)) throw fail("TypeError", `'${typeName(fn)}' object is not callable`, line);
+          if (fn.name in SWITCHED_OFF) throw fail("NameError", SWITCHED_OFF[fn.name], line);
+          const args = n.args.map((a) => evaluate(a, line));
+          const kw = {};
+          for (const k in n.kwargs) kw[k] = evaluate(n.kwargs[k], line);
+          for (const k in kw) {
+            if (fn.name !== "print" || (k !== "sep" && k !== "end")) throw fail("TypeError", `${fn.name}() got an unexpected keyword argument '${k}'`, line);
+          }
+          return builtins[fn.name].call({ ...builtins, line }, args, kw);
+        }
+        case "method": {
+          const obj = evaluate(n.obj, line);
+          return callMethod(
+            obj,
+            n.name,
+            n.args.map((a) => evaluate(a, line)),
+            line,
+          );
+        }
+      }
+      throw fail("SyntaxError", "invalid syntax", line);
+    }
+
+    function loopBody(body) {
+      try {
+        execBlock(body);
+      } catch (e) {
+        if (e instanceof LoopSignal) return e.kind;
+        throw e;
+      }
+      return null;
+    }
+
+    function exec(s) {
+      switch (s.k) {
+        case "assign": {
+          let v = evaluate(s.value, s.line);
+          if (s.op !== "=") {
+            if (!env.has(s.target)) throw fail("NameError", `name '${s.target}' is not defined`, s.line);
+            v = binop(s.op.slice(0, -1), env.get(s.target), v, s.line);
+          }
+          env.set(s.target, v);
+          record(s.line);
+          return;
+        }
+        case "expr":
+          evaluate(s.e, s.line);
+          record(s.line);
+          return;
+        case "pass":
+          record(s.line);
+          return;
+        case "break":
+        case "continue":
+          record(s.line);
+          throw new LoopSignal(s.k, s.line);
+        case "for": {
+          hasFor = true;
+          for (const v of iterate(evaluate(s.iter, s.line), s.line)) {
+            env.set(s.target, v);
+            record(s.line);
+            if (loopBody(s.body) === "break") return;
+          }
+          record(s.line, { done: true });
+          return;
+        }
+        case "while":
+          for (;;) {
+            const go = truthy(evaluate(s.test, s.line));
+            record(s.line, go ? undefined : { done: true });
+            if (!go || loopBody(s.body) === "break") return;
+          }
+        case "if":
+          for (const b of s.branches) {
+            const go = truthy(evaluate(b.test, b.line));
+            record(b.line);
+            if (go) return execBlock(b.body);
+          }
+          if (s.orelse) execBlock(s.orelse);
+          return;
+      }
+    }
+
+    function execBlock(stmts) {
+      for (const s of stmts) exec(s);
+    }
+
+    try {
+      execBlock(parse(code));
+    } catch (e) {
+      if (e instanceof PyError) error = { type: e.type, message: e.message, line: e.line };
+      else if (e instanceof LoopSignal) error = { type: "SyntaxError", message: `'${e.kind}' outside loop`, line: e.line };
+      else if (e instanceof RangeError) error = { type: "RecursionError", message: "too deeply nested", line: 0 };
+      else throw e;
+    }
+    return { output, events, error, hasFor, env };
+  }
+
+  return { run, repr };
+})();
+
+// Lesson content.
+const PHASES = [
+  { id: "predict", title: "Predict" },
+  { id: "trace", title: "Trace" },
+  { id: "range", title: "range()" },
+  { id: "modify", title: "Modify" },
+  { id: "make", title: "Make" },
+];
+
+const PREDICT = [
+  { id: "p-range", code: "for i in range(4):\n    print(i)" },
+  { id: "p-names", code: 'for name in ["Ana", "Ben", "Cy"]:\n    print("Hi", name)' },
+  { id: "p-indent", code: 'for i in range(3):\n    print("in")\nprint("out")' },
+];
+
+const TRACE_CODE = "total = 0\nfor n in [4, 7, 2]:\n    total = total + n\nprint(total)";
+const TRACE_ASK = { line: 3, name: "total" };
+
+const RANGE_CHALLENGES = [
+  { id: "r-1-5", target: [1, 2, 3, 4, 5] },
+  { id: "r-even", target: [0, 2, 4, 6, 8] },
+  { id: "r-down", target: [10, 9, 8, 7, 6, 5, 4, 3, 2, 1] },
+];
+
+const BUGGY_TOTAL = "numbers = [4, 7, 2]\nfor n in numbers:\n    total = 0\n    total = total + n\nprint(total)";
+const lines = (xs) => xs.join("\n");
+
+const TASKS = [
+  {
+    id: "m-count",
+    phase: "modify",
+    prompt: "Print 1 to 10.",
+    starter: "for i in range(4):\n    print(i)",
+    expected: lines(Array.from({ length: 10 }, (_, i) => i + 1)),
+    solution: "for i in range(1, 11):\n    print(i)",
+  },
+  {
+    id: "m-bug",
+    phase: "modify",
+    prompt: "This should print 13. Fix it.",
+    starter: BUGGY_TOTAL,
+    expected: "13",
+    variant: { find: /numbers\s*=\s*\[[^\]]*\]/, replace: "numbers = [1, 2, 3, 4]", expected: "10", hint: "Only works for these numbers." },
+    solution: "numbers = [4, 7, 2]\ntotal = 0\nfor n in numbers:\n    total = total + n\nprint(total)",
+  },
+  {
+    id: "m-sevens",
+    phase: "modify",
+    prompt: "Print the first 10 multiples of 7.",
+    starter: "for i in range(1, 4):\n    print(i)",
+    expected: lines(Array.from({ length: 10 }, (_, i) => (i + 1) * 7)),
+    solution: "for i in range(1, 11):\n    print(i * 7)",
+  },
+  {
+    id: "k-average",
+    phase: "make",
+    prompt: "Print the average score.",
+    starter: "scores = [12, 18, 9, 15]\n",
+    expected: "13.5",
+    variant: { find: /scores\s*=\s*\[[^\]]*\]/, replace: "scores = [10, 20, 30, 5]", expected: "16.25", hint: "Only works for these scores." },
+    solution: "scores = [12, 18, 9, 15]\ntotal = 0\nfor s in scores:\n    total = total + s\nprint(total / len(scores))",
+  },
+  {
+    id: "k-count",
+    phase: "make",
+    prompt: 'Print how many times "a" appears in word.',
+    starter: 'word = "banana"\n',
+    expected: "3",
+    variant: { find: /word\s*=\s*("[^"]*"|'[^']*')/, replace: 'word = "avocado"', expected: "2", hint: "Only works for this word." },
+    solution: 'word = "banana"\ncount = 0\nfor letter in word:\n    if letter == "a":\n        count = count + 1\nprint(count)',
+  },
+  {
+    id: "k-triangle",
+    phase: "make",
+    prompt: "Print this triangle.",
+    starter: "",
+    expected: "*\n**\n***\n****",
+    solution: 'for i in range(1, 5):\n    print("*" * i)',
+  },
+];
+
+const CHATBOT_INSTRUCTIONS = `You are a patient Python tutor in a beginner lesson on for loops.
+The applet has five phases. Predict asks students to predict output before running code. Trace steps through an accumulator loop line by line. range() explores start, stop and step. Modify asks students to change working code. Make asks students to write loops from scratch.
+Code runs in a small Python subset: for, while, if, elif, else, break, continue, print, range, len, str, int, float, abs, round, min, max, list, append, upper, lower, strip and f-strings. sum() and str.count() are switched off so students practise loops.
+Never give a complete solution. Never write the corrected line for them.
+Ask one guiding question at a time. Prefer questions that make the student predict or trace, such as "What is i the first time through?" or "What does range(1, 5) give?"
+If the student is still stuck after a few exchanges, point to the line to look at.
+Name the misconception when you see one. Common ones: range stops before the stop value, range starts at 0 by default, a running total reset inside the loop, a line indented out of the loop, and thinking the loop variable must be called i.
+Keep replies under 80 words. Use plain language and short code snippets.
+If the student's applet state is included, use it to see their current phase, code and results.`;
+
+const PULSE_PROMPT = `Write a Pulse for the teacher of a beginner lesson on Python for loops. The input is each student's applet state.
+
+State fields:
+- phase: the phase the student is on. One of predict, trace, range, modify, make.
+- predict[id]: guess is the predicted output. ran is true once they ran it. correct says whether the prediction matched. tags lists detected misconceptions: starts-at-1, includes-stop, wrong-iteration-count, prints-variable-name, indentation. p-range is range(4), p-names loops over a list of names, p-indent has a print after the loop.
+- trace.step is how far they have stepped. trace.answers[eventIndex].attempts lists their guesses for total at each pass. revealed is true when three wrong guesses made the applet show the answer.
+- range.challenges[id]: attempts lists the range() arguments they tried. solved says whether they got it. r-1-5 targets 1 to 5, r-even targets 0 2 4 6 8, r-down targets 10 down to 1.
+- tasks[id]: code is their current code. runs counts runs. solved says whether it passes. outcomes lists recent results: solved, wrong, noloop (no for loop), hardcoded (only works for the given data), or error:<Type>. m-count, m-bug and m-sevens are Modify tasks. m-bug resets the total inside the loop. k-average, k-count and k-triangle are Make tasks.
+
+For the whole class, produce in this order:
+1. How many students are on each phase.
+2. The top misconceptions, each with a count and up to three student names. Rank by count.
+3. Students who look stuck. Stuck means five or more runs on a task without solving it, a revealed trace answer, or the same error type three times. Name the task and the likely cause.
+4. One next move for the teacher. Prepared Reveal states exist: range-stop shows range(1, 10) stopping at 9, bug-trace shows the reset bug mid-trace, solutions shows model solutions. A Spotlight on a named student's work is another option.
+
+For a single student, give their phase, what they have finished, their misconceptions, and one question the teacher could ask them.
+Be brief. Use counts, not percentages.`;
+
+// State.
+function defaultState() {
+  const map = (items, make) => Object.fromEntries(items.map((x) => [x.id, make(x)]));
+  return {
+    version: 1,
+    phase: "predict",
+    predict: map(PREDICT, () => ({ guess: "", ran: false, correct: false, tags: [], view: "edit", step: 0 })),
+    trace: { step: 0, answers: {} },
+    range: { start: "0", stop: "5", step: "1", challenges: map(RANGE_CHALLENGES, () => ({ input: "", attempts: [], solved: false })) },
+    tasks: map(TASKS, (t) => ({ code: t.starter, ranCode: null, runs: 0, solved: false, outcomes: [], view: "edit", step: 0 })),
+  };
+}
+
+function mergeMap(defaults, given) {
+  const out = {};
+  for (const k in defaults) out[k] = { ...defaults[k], ...(given && typeof given[k] === "object" ? given[k] : {}) };
+  return out;
+}
+
+// Realtime Database drops empty arrays and nulls, so every field is refilled from defaults.
+function normalize(s) {
+  const d = defaultState();
+  if (!s || typeof s !== "object") return d;
+  const arr = (v) => (Array.isArray(v) ? v : v && typeof v === "object" ? Object.values(v) : []);
+  const state = {
+    version: 1,
+    phase: PHASES.some((p) => p.id === s.phase) ? s.phase : d.phase,
+    predict: mergeMap(d.predict, s.predict),
+    trace: { ...d.trace, ...(s.trace || {}) },
+    range: { ...d.range, ...(s.range || {}), challenges: mergeMap(d.range.challenges, s.range?.challenges) },
+    tasks: mergeMap(d.tasks, s.tasks),
+  };
+  state.trace.answers = { ...(state.trace.answers || {}) };
+  for (const k in state.trace.answers) {
+    const a = state.trace.answers[k] || {};
+    state.trace.answers[k] = { correct: false, revealed: false, ...a, attempts: arr(a.attempts) };
+  }
+  for (const p of Object.values(state.predict)) p.tags = arr(p.tags);
+  for (const c of Object.values(state.range.challenges)) c.attempts = arr(c.attempts);
+  for (const t of Object.values(state.tasks)) {
+    t.outcomes = arr(t.outcomes);
+    if (t.ranCode === undefined) t.ranCode = null;
+  }
+  return state;
+}
+
+function preparedState(edit) {
+  const s = defaultState();
+  edit(s);
+  return s;
+}
+
+const PREPARED_STATES = [
+  {
+    id: "range-stop",
+    title: "range(1, 10) stops at 9",
+    state: preparedState((s) => {
+      s.phase = "range";
+      s.range.start = "1";
+      s.range.stop = "10";
+    }),
+  },
+  {
+    id: "bug-trace",
+    title: "Total reset inside the loop",
+    state: preparedState((s) => {
+      s.phase = "modify";
+      Object.assign(s.tasks["m-bug"], { ranCode: BUGGY_TOTAL, view: "trace", step: 6 });
+    }),
+  },
+  {
+    id: "solutions",
+    title: "Model solutions",
+    state: preparedState((s) => {
+      s.phase = "modify";
+      for (const t of TASKS) Object.assign(s.tasks[t.id], { code: t.solution, ranCode: t.solution, runs: 1, solved: true, outcomes: ["solved"] });
+    }),
+  },
+];
+
+let state = defaultState();
+let readOnly = false;
+let phaseLocked = false;
+const listeners = new Set();
+
+const cache = new Map();
+function runCached(code) {
+  let r = cache.get(code);
+  if (!r) {
+    r = Py.run(code);
+    if (cache.size > 200) cache.clear();
+    cache.set(code, r);
+  }
+  return r;
+}
+
+const snapshot = () => JSON.parse(JSON.stringify(state));
+
+function notify() {
+  const s = snapshot();
+  for (const fn of listeners) fn(s);
+  if (window.parent !== window) window.parent.postMessage({ type: "conductor:state", state: s }, "*");
+}
+
+function commit() {
+  render();
+  notify();
+}
+
+// Checking.
+const outLines = (text) => {
+  const ls = text.replace(/\r/g, "").split("\n").map((l) => l.trimEnd());
+  while (ls.length && ls[ls.length - 1] === "") ls.pop();
+  return ls;
+};
+const sameOutput = (a, b) => outLines(a).join("\n") === outLines(b).join("\n");
+const looseLine = (l) => l.replace(/["']/g, "").replace(/\s+/g, " ").trim();
+
+function checkTask(task, code) {
+  const r = runCached(code);
+  if (r.error) return `error:${r.error.type}`;
+  if (!sameOutput(r.output, task.expected)) return "wrong";
+  if (!r.hasFor) return "noloop";
+  const v = task.variant;
+  if (v?.find.test(code)) {
+    const alt = runCached(code.replace(v.find, v.replace));
+    if (alt.error || !sameOutput(alt.output, v.expected)) return "hardcoded";
+  }
+  return "solved";
+}
+
+function predictTags(id, guess) {
+  const tags = [];
+  const count = (pred) => guess.filter(pred).length;
+  if (id === "p-range") {
+    if (guess[0] === "1") tags.push("starts-at-1");
+    if (guess.includes("4")) tags.push("includes-stop");
+  } else if (id === "p-names") {
+    if (guess.some((l) => /\bname\b/.test(l))) tags.push("prints-variable-name");
+    if (guess.length !== 3) tags.push("wrong-iteration-count");
+  } else if (id === "p-indent") {
+    if (count((l) => l === "out") > 1) tags.push("indentation");
+    if (count((l) => l === "in") !== 3) tags.push("wrong-iteration-count");
+  }
+  return tags;
+}
+
+function isPhaseDone(id) {
+  if (id === "predict") return PREDICT.every((p) => state.predict[p.id].ran);
+  if (id === "trace") return state.trace.step >= runCached(TRACE_CODE).events.length;
+  if (id === "range") return RANGE_CHALLENGES.every((c) => state.range.challenges[c.id].solved);
+  return TASKS.filter((t) => t.phase === id).every((t) => state.tasks[t.id].solved);
+}
+
+// Rendering.
+const root = document.getElementById("app");
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+
+const HL = /(#.*)|([fF]?"(?:[^"\\]|\\.)*"?|[fF]?'(?:[^'\\]|\\.)*'?)|(\b\d+(?:\.\d+)?\b)|([A-Za-z_]\w*)|(\s+|.)/g;
+const HL_KW = new Set(["for", "in", "if", "elif", "else", "while", "and", "or", "not", "break", "continue", "pass", "True", "False", "None"]);
+const HL_FN = new Set(["print", "range", "len", "str", "int", "float", "abs", "round", "min", "max", "list"]);
+function highlight(line) {
+  const span = (cls, text) => `<span class="${cls}">${esc(text)}</span>`;
+  return line.replace(HL, (m, c, s, n, w) => {
+    if (c) return span("comment", m);
+    if (s) return span("str", m);
+    if (n) return span("num", m);
+    if (w) return HL_KW.has(w) ? span("kw", w) : HL_FN.has(w) ? span("fn", w) : esc(w);
+    return esc(m);
+  });
+}
+
+function codeBlock(code, marks = {}) {
+  const body = code
+    .split("\n")
+    .map((l, i) => {
+      const n = i + 1;
+      const cls = n === marks.error ? "err" : n === marks.current ? "cur" : n === marks.next ? "nxt" : "";
+      return `<span class="line ${cls}"><span class="ln">${n}</span>${highlight(l) || " "}</span>`;
+    })
+    .join("");
+  return `<pre class="code">${body}</pre>`;
+}
+
+const errorBox = (e) => `<div class="error"><b>${esc(e.type)}</b>${e.line ? `line ${e.line}: ` : ""}${esc(e.message)}</div>`;
+
+function markedOutput(actual, wanted) {
+  const want = outLines(wanted);
+  const html = outLines(actual)
+    .map((l, i) => `<span class="${looseLine(l) === looseLine(want[i] ?? "\u0000") ? "ok" : "bad"}">${esc(l)}</span>`)
+    .join("\n");
+  return `<pre class="out">${html}</pre>`;
+}
+
+const chips = (values, cls = "") => {
+  if (!values.length) return `<div class="chips empty ${cls}"></div>`;
+  const shown = values.slice(0, 40).map((v) => `<span class="chip">${esc(Py.repr(v))}</span>`);
+  if (values.length > 40) shown.push('<span class="chip">…</span>');
+  return `<div class="chips ${cls}">${shown.join("")}</div>`;
+};
+
+const traceAnswered = (a) => !!a && (a.correct || a.revealed);
+
+function stepper(target, code, rawStep, extra = "") {
+  const r = runCached(code);
+  const evs = r.events;
+  const step = Math.max(0, Math.min(rawStep, evs.length));
+  const ev = evs[step - 1];
+  const prev = new Map(evs[step - 2]?.vars ?? []);
+  const next = evs[step];
+  const atEnd = step === evs.length;
+  const pendingAsk = target === "trace" && next && next.line === TRACE_ASK.line && !next.done && !traceAnswered(state.trace.answers[step]);
+  const vars = (ev?.vars ?? []).map(([k, v]) => `<tr class="${prev.get(k) !== v ? "changed" : ""}"><td>${esc(k)}</td><td>${esc(v)}</td></tr>`).join("");
+  const misses = pendingAsk ? (state.trace.answers[step]?.attempts ?? []).map((a) => `<span class="miss">${esc(a)}</span>`).join("") : "";
+  const control = pendingAsk
+    ? `<span class="ask"><label for="ask">${TRACE_ASK.name} =</label><input id="ask" data-key="ask" autocomplete="off"><button class="primary" data-action="ask">Check</button>${misses}</span>`
+    : `<button class="primary" data-action="step" data-target="${target}" data-delta="1" ${atEnd ? "disabled" : ""}>Next</button>`;
+  return `<div class="grid2">
+      ${codeBlock(code, { current: ev?.line, next: atEnd ? 0 : next?.line, error: atEnd && r.error ? r.error.line : 0 })}
+      <div class="side">
+        <div><span class="label">Variables</span><table class="vars">${vars}</table></div>
+        <div><span class="label">Output</span><pre class="out">${esc(r.output.slice(0, ev ? ev.out : 0))}</pre></div>
+        ${atEnd && r.error ? errorBox(r.error) : ""}
+      </div>
+    </div>
+    <div class="progress"><span style="width:${evs.length ? (step / evs.length) * 100 : 100}%"></span></div>
+    <div class="actions">
+      <button data-action="step" data-target="${target}" data-delta="-1" ${step === 0 ? "disabled" : ""}>Back</button>
+      ${control}
+      ${extra}
+    </div>`;
+}
+
+function renderPredict() {
+  return PREDICT.map((item) => {
+    const s = state.predict[item.id];
+    if (s.ran && s.view === "trace") {
+      return `<section class="card ${s.correct ? "solved" : ""}">${stepper(item.id, item.code, s.step, `<button class="end" data-action="predict-view" data-id="${item.id}" data-view="edit">Back to prediction</button>`)}</section>`;
+    }
+    const result = s.ran ? `<div><span class="label">Output</span>${markedOutput(runCached(item.code).output, s.guess)}</div>` : "";
+    return `<section class="card ${s.ran && s.correct ? "solved" : ""}">
+      ${codeBlock(item.code)}
+      <div class="grid2">
+        <label><span class="label">Prediction</span><textarea rows="4" spellcheck="false" data-bind="predict.${item.id}.guess" data-key="pg-${item.id}" ${s.ran ? "readonly" : ""}>${esc(s.guess)}</textarea></label>
+        ${result}
+      </div>
+      <div class="actions">${s.ran ? `<button data-action="predict-view" data-id="${item.id}" data-view="trace">Step through</button>` : `<button class="primary" data-action="predict-run" data-id="${item.id}">Run</button>`}</div>
+    </section>`;
+  }).join("");
+}
+
+function renderTrace() {
+  return `<section class="card">${stepper("trace", TRACE_CODE, state.trace.step)}</section>`;
+}
+
+// Values of range(args), capped so a huge range cannot freeze the page.
+function rangeValues(args, cap = 41) {
+  if (args.some((a) => String(a).trim() === "")) return { values: [] };
+  const r = runCached(`r = range(${args.join(", ")})`);
+  if (r.error) return { values: [], error: r.error };
+  const range = r.env.get("r");
+  if (typeof range?.at !== "function") return { values: [] };
+  return { values: Array.from({ length: Math.min(range.length, cap) }, (_, i) => range.at(i)), length: range.length };
+}
+
+function renderRange() {
+  const r = state.range;
+  const arg = (key) => `<label class="arg"><input type="number" data-bind="range.${key}" data-render data-key="range-${key}" value="${esc(r[key])}"><span>${key}</span></label>`;
+  const explore = rangeValues([r.start, r.stop, r.step]);
+  const challenges = RANGE_CHALLENGES.map((c) => {
+    const s = state.range.challenges[c.id];
+    const last = s.attempts[s.attempts.length - 1];
+    const mine = !s.solved && last !== undefined ? rangeValues([last]) : null;
+    return `<div class="challenge ${s.solved ? "solved" : ""}">
+      ${chips(c.target)}
+      <div class="side">
+        <div class="try"><span class="fn">range</span>(<input data-bind="range.challenges.${c.id}.input" data-key="rc-${c.id}" data-enter="rc-check" data-id="${c.id}" value="${esc(s.input)}" autocomplete="off" spellcheck="false" ${s.solved ? "readonly" : ""}>)${s.solved ? "" : `<button data-action="rc-check" data-id="${c.id}">Check</button>`}</div>
+        ${mine ? (mine.error ? errorBox(mine.error) : chips(mine.values, "mine")) : ""}
+      </div>
+    </div>`;
+  }).join("");
+  return `<section class="card">
+      <div class="range-line"><span class="kw">for</span><span>i</span><span class="kw">in</span><span><span class="fn">range</span>(</span>${arg("start")}<span>,</span>${arg("stop")}<span>,</span>${arg("step")}<span>):</span></div>
+      ${explore.error ? errorBox(explore.error) : chips(explore.values)}
+    </section>
+    <section class="card">${challenges}</section>`;
+}
+
+const TASK_NOTES = { noloop: "Use a for loop." };
+
+function renderTask(task) {
+  const s = state.tasks[task.id];
+  if (s.view === "trace" && s.ranCode !== null) {
+    return `<section class="card ${s.solved ? "solved" : ""}">
+      <p class="prompt">${esc(task.prompt)}</p>
+      ${stepper(task.id, s.ranCode, s.step, `<button class="end" data-action="task-edit" data-id="${task.id}">Edit</button>`)}
+    </section>`;
+  }
+  let result = "";
+  if (s.ranCode !== null) {
+    const r = runCached(s.ranCode);
+    const outcome = checkTask(task, s.ranCode);
+    const note = outcome === "hardcoded" ? task.variant.hint : TASK_NOTES[outcome];
+    result = `${markedOutput(r.output, task.expected)}${r.error ? errorBox(r.error) : ""}${note ? `<div class="note">${esc(note)}</div>` : ""}`;
+  } else {
+    result = '<pre class="out"></pre>';
+  }
+  const rows = Math.max(6, s.code.split("\n").length + 1);
+  return `<section class="card ${s.solved ? "solved" : ""}">
+    <p class="prompt">${esc(task.prompt)}</p>
+    <div class="grid2">
+      <textarea rows="${rows}" spellcheck="false" autocapitalize="off" autocomplete="off" data-editor="${task.id}" data-bind="tasks.${task.id}.code" data-key="ed-${task.id}">${esc(s.code)}</textarea>
+      <div class="side">
+        <div><span class="label">Goal</span><pre class="out">${esc(task.expected)}</pre></div>
+        <div><span class="label">Output</span>${result}</div>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="primary" data-action="task-run" data-id="${task.id}">Run</button>
+      <button data-action="task-trace" data-id="${task.id}">Step through</button>
+      <button class="ghost end" data-action="task-reset" data-id="${task.id}">Reset</button>
+    </div>
+  </section>`;
+}
+
+function renderPhase() {
+  switch (state.phase) {
+    case "predict":
+      return renderPredict();
+    case "trace":
+      return renderTrace();
+    case "range":
+      return renderRange();
+    default:
+      return TASKS.filter((t) => t.phase === state.phase)
+        .map(renderTask)
+        .join("");
+  }
+}
+
+function captureFocus() {
+  const el = document.activeElement;
+  if (!el || !root.contains(el) || !el.dataset.key) return null;
+  return { key: el.dataset.key, start: el.selectionStart, end: el.selectionEnd, scroll: el.scrollTop };
+}
+
+function restoreFocus(f) {
+  if (!f) return;
+  const el = root.querySelector(`[data-key="${f.key}"]`);
+  if (!el) return;
+  el.focus();
+  try {
+    el.setSelectionRange(f.start, f.end);
+  } catch {
+    // Number inputs have no selection.
+  }
+  el.scrollTop = f.scroll;
+}
+
+function render() {
+  const focus = captureFocus();
+  const nav = PHASES.map(
+    (p, i) => `<button data-action="phase" data-id="${p.id}" class="${state.phase === p.id ? "on" : ""} ${isPhaseDone(p.id) ? "done" : ""}" ${phaseLocked ? "disabled" : ""}><span class="n">${i + 1}</span>${esc(p.title)}</button>`,
+  ).join("");
+  root.innerHTML = `<fieldset ${readOnly ? "disabled" : ""}><nav class="phases">${nav}</nav>${renderPhase()}</fieldset>`;
+  restoreFocus(focus);
+}
+
+// Interaction.
+function setPath(path, value) {
+  const keys = path.split(".");
+  let o = state;
+  for (const k of keys.slice(0, -1)) o = o[k];
+  o[keys[keys.length - 1]] = value;
+}
+
+const actions = {
+  phase({ id }) {
+    state.phase = id;
+    window.scrollTo(0, 0);
+  },
+  "predict-run"({ id }) {
+    const s = state.predict[id];
+    if (!s.guess.trim()) {
+      root.querySelector(`[data-key="pg-${id}"]`)?.focus();
+      return false;
+    }
+    const item = PREDICT.find((p) => p.id === id);
+    const guess = outLines(s.guess).map(looseLine);
+    const actual = outLines(runCached(item.code).output).map(looseLine);
+    s.ran = true;
+    s.correct = guess.join("\n") === actual.join("\n");
+    s.tags = s.correct ? [] : predictTags(id, guess);
+  },
+  "predict-view"({ id, view }) {
+    Object.assign(state.predict[id], { view, step: 0 });
+  },
+  step({ target, delta }) {
+    const item = PREDICT.find((p) => p.id === target);
+    const holder = target === "trace" ? state.trace : item ? state.predict[target] : state.tasks[target];
+    const code = target === "trace" ? TRACE_CODE : item ? item.code : holder.ranCode;
+    holder.step = Math.max(0, Math.min(holder.step + Number(delta), runCached(code).events.length));
+  },
+  ask() {
+    const input = root.querySelector('[data-key="ask"]')?.value.replace(/\s+/g, "") ?? "";
+    if (!input) return false;
+    const idx = state.trace.step;
+    const ev = runCached(TRACE_CODE).events[idx];
+    const expected = ev.vars.find(([k]) => k === TRACE_ASK.name)[1];
+    state.trace.answers[idx] ??= { attempts: [], correct: false, revealed: false };
+    const a = state.trace.answers[idx];
+    a.attempts.push(input);
+    if (input === expected) a.correct = true;
+    else if (a.attempts.length >= 3) a.revealed = true;
+    if (traceAnswered(a)) state.trace.step++;
+  },
+  "rc-check"({ id }) {
+    const s = state.range.challenges[id];
+    const input = s.input.trim();
+    if (!input || s.solved) return false;
+    s.attempts.push(input);
+    const target = RANGE_CHALLENGES.find((c) => c.id === id).target;
+    const { values, length } = rangeValues([input], target.length);
+    s.solved = length === target.length && values.every((v, i) => v === target[i]);
+  },
+  "task-run"({ id }) {
+    const s = state.tasks[id];
+    const outcome = checkTask(
+      TASKS.find((t) => t.id === id),
+      s.code,
+    );
+    s.ranCode = s.code;
+    s.runs++;
+    s.solved = s.solved || outcome === "solved";
+    s.outcomes = [...s.outcomes, outcome].slice(-20);
+  },
+  "task-trace"({ id }) {
+    const s = state.tasks[id];
+    s.ranCode = s.code;
+    s.view = "trace";
+    s.step = 0;
+  },
+  "task-edit"({ id }) {
+    state.tasks[id].view = "edit";
+  },
+  "task-reset"({ id }) {
+    Object.assign(state.tasks[id], { code: TASKS.find((t) => t.id === id).starter, ranCode: null, view: "edit", step: 0 });
+  },
+};
+
+function act(name, data) {
+  if (readOnly || !actions[name]) return;
+  if (actions[name](data) === false) return;
+  commit();
+}
+
+root.addEventListener("click", (e) => {
+  const btn = e.target.closest("[data-action]");
+  if (btn && !btn.disabled) act(btn.dataset.action, btn.dataset);
+});
+
+root.addEventListener("input", (e) => {
+  const el = e.target;
+  if (!el.dataset.bind) return;
+  setPath(el.dataset.bind, el.value);
+  if (el.dataset.render !== undefined) render();
+  notify();
+});
+
+function insertText(el, text) {
+  if (!document.execCommand("insertText", false, text)) {
+    el.setRangeText(text, el.selectionStart, el.selectionEnd, "end");
+    el.dispatchEvent(new Event("input", { bubbles: true }));
+  }
+}
+
+root.addEventListener("keydown", (e) => {
+  const el = e.target;
+  if (el.dataset.editor && !el.readOnly) {
+    const before = el.value.slice(0, el.selectionStart);
+    const current = before.slice(before.lastIndexOf("\n") + 1);
+    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      act("task-run", { id: el.dataset.editor });
+    } else if (e.key === "Tab" && !e.shiftKey) {
+      e.preventDefault();
+      insertText(el, "    ");
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      const indent = current.match(/^ */)[0] + (/:\s*$/.test(current) ? "    " : "");
+      insertText(el, `\n${indent}`);
+    } else if (e.key === "Backspace" && el.selectionStart === el.selectionEnd && current.length > 0 && /^ +$/.test(current) && current.length % 4 === 0) {
+      e.preventDefault();
+      el.setSelectionRange(el.selectionStart - 4, el.selectionStart);
+      insertText(el, "");
+    }
+  } else if (e.key === "Enter" && el.dataset.key === "ask") {
+    e.preventDefault();
+    act("ask", {});
+  } else if (e.key === "Enter" && el.dataset.enter) {
+    e.preventDefault();
+    act(el.dataset.enter, el.dataset);
+  }
+});
+
+// Contract.
+const applet = {
+  contractVersion: 1,
+  phases: PHASES,
+  chatbotInstructions: CHATBOT_INSTRUCTIONS,
+  pulsePrompt: PULSE_PROMPT,
+  preparedStates: PREPARED_STATES,
+  getState: snapshot,
+  setState(s) {
+    state = normalize(JSON.parse(JSON.stringify(s ?? null)));
+    render();
+  },
+  subscribe(fn) {
+    listeners.add(fn);
+    return () => listeners.delete(fn);
+  },
+  setPhase(id) {
+    if (!PHASES.some((p) => p.id === id)) return;
+    state.phase = id;
+    render();
+  },
+  setPhaseLocked(locked) {
+    phaseLocked = !!locked;
+    render();
+  },
+  setReadOnly(on) {
+    readOnly = !!on;
+    render();
+  },
+};
+window.conductorApplet = applet;
+
+const MANIFEST_KEYS = ["contractVersion", "phases", "chatbotInstructions", "pulsePrompt", "preparedStates"];
+if (window.parent !== window) {
+  window.addEventListener("message", (e) => {
+    const m = e.data;
+    if (e.source !== window.parent || !m || m.type !== "conductor:call") return;
+    const fn = applet[m.method];
+    if (typeof fn !== "function" || m.method === "subscribe") return;
+    const result = fn.apply(applet, Array.isArray(m.args) ? m.args : []);
+    window.parent.postMessage({ type: "conductor:result", id: m.id, result: result ?? null }, "*");
+  });
+  window.parent.postMessage({ type: "conductor:ready", manifest: Object.fromEntries(MANIFEST_KEYS.map((k) => [k, applet[k]])) }, "*");
+}
+
+render();
+</script>
+</body>
+</html>
