@@ -1,17 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
-import {
-  endSession,
-  handoff,
-  requestPulse,
-  setControl,
-} from "../firebase/client";
+import { endSession, handoff, setControl } from "../firebase/client";
 import {
   type Control,
   DEFAULT_CHAT_LIMIT,
   type Mode,
   type Session,
 } from "../firebase/types";
+import { PulseButton } from "../pulse/Pulse";
 import { routes } from "../routes";
 import { Groups } from "./Groups";
 import { ChatIcon, GridIcon, PersonIcon } from "./icons";
@@ -68,9 +64,6 @@ export function Controls({
   const control = data.control;
   const students = Object.keys(data.students ?? {});
   const online = students.filter((s) => data.presence?.[s]).length;
-  const classPulsePending = Object.values(data.pulses ?? {}).some(
-    (p) => !p.student && p.status === "pending",
-  );
   const chatLimit = control.chatLimit ?? DEFAULT_CHAT_LIMIT;
   const [thumbsOpen, setThumbsOpen] = useState(false);
   const [endArmed, setEndArmed] = useState(false);
@@ -161,14 +154,7 @@ export function Controls({
           >
             Handoff
           </button>
-          <button
-            type="button"
-            aria-busy={classPulsePending}
-            disabled={classPulsePending}
-            onClick={() => requestPulse(session)}
-          >
-            Pulse
-          </button>
+          <PulseButton session={session} />
         </div>
 
         <Stepper

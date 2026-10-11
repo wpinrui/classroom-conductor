@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { AppletFrame } from "../applet/AppletFrame";
 import { requestPulse, setControl } from "../firebase/client";
 import type { Session, StoredState } from "../firebase/types";
+import { showPulse } from "../pulse/store";
 import { CheckIcon, PulseIcon, SpotlightIcon } from "./icons";
 
 /** Applets render at this size, then scale down to fit the tile. */
@@ -22,9 +23,12 @@ export function Thumbnails({
   const pending = new Set(
     pulses.filter((p) => p.status === "pending").map((p) => p.student),
   );
-  const hasPulse = new Set(
-    pulses.filter((p) => p.status === "done").map((p) => p.student),
-  );
+  /** Each student's newest finished Pulse. Push ids sort by time. */
+  const latestPulse = new Map<string, string>();
+  for (const [pid, p] of Object.entries(data.pulses ?? {}).sort(([a], [b]) =>
+    a < b ? -1 : 1,
+  ))
+    if (p.student && p.status === "done") latestPulse.set(p.student, pid);
   const students = Object.entries(data.students ?? {}).sort(([, a], [, b]) =>
     a.name.localeCompare(b.name),
   );
@@ -37,6 +41,9 @@ export function Thumbnails({
       if (next[uid]) delete next[uid];
       else next[uid] = true;
       setControl(session, { gallery: next });
+    } else {
+      const pid = latestPulse.get(uid);
+      if (pid) showPulse(pid);
     }
   };
 
@@ -87,7 +94,7 @@ export function Thumbnails({
               />
             </button>
             <span className="thumb-name">{s.name}</span>
-            {hasPulse.has(uid) && <span className="dot accent thumb-dot" />}
+            {latestPulse.has(uid) && <span className="dot accent thumb-dot" />}
             {mode === "gallery" && gallery[uid] && (
               <span className="thumb-badge">
                 <CheckIcon />
@@ -111,7 +118,7 @@ export function Thumbnails({
                 aria-label="Pulse"
                 aria-busy={pending.has(uid)}
                 disabled={pending.has(uid)}
-                onClick={() => requestPulse(session, uid)}
+                onClick={() => requestPulse(session, uid).then(showPulse)}
               >
                 <PulseIcon />
               </button>
