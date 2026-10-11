@@ -58,6 +58,9 @@ export interface Control {
   chatLimit?: number;
 }
 
+/** Chat messages per student per minute when control.chatLimit is absent. */
+export const DEFAULT_CHAT_LIMIT = 5;
+
 export interface Student {
   name: string;
   /** nameKey(name); matches a namelist key when the applet has a namelist. */

@@ -1,0 +1,120 @@
+.pulse-sheet {
+  position: fixed;
+  top: var(--space-4);
+  bottom: var(--space-4);
+  left: var(--space-4);
+  z-index: var(--z-sheet);
+  width: min(48rem, 100vw - var(--width-controls) - 3rem);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-overlay);
+  animation: pulse-in var(--duration-base) var(--ease-out);
+}
+
+@keyframes pulse-in {
+  from {
+    opacity: 0;
+    transform: translateX(-1rem);
+  }
+}
+
+.pulse-close {
+  position: absolute;
+  top: var(--space-2);
+  right: var(--space-2);
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border-color: transparent;
+}
+
+.pulse-list {
+  display: flex;
+  gap: var(--space-2);
+  overflow-x: auto;
+  margin-right: 48px;
+  flex: none;
+}
+
+.pulse-chip {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-sm);
+}
+
+.pulse-chip-name {
+  font-weight: var(--font-weight-strong);
+}
+
+.pulse-name {
+  margin: 0;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-strong);
+}
+
+.pulse-body {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.pulse-body[aria-invalid="true"] {
+  box-shadow: inset 0 0 0 2px var(--color-danger);
+}
+
+.pulse-frame {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+  background: var(--color-surface);
+}
+
+.pulse-button,
+.pulse-chip {
+  position: relative;
+  overflow: hidden;
+}
+
+.pulse-button[aria-invalid="true"],
+.pulse-chip[aria-invalid="true"] {
+  border-color: var(--color-danger);
+  box-shadow: 0 0 0 1px var(--color-danger);
+}
+
+.pulse-button[data-pending="true"]::after,
+.pulse-chip[data-pending="true"]::after,
+.pulse-body[data-pending="true"]::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 40%;
+  height: 3px;
+  background: var(--color-accent);
+  animation: pulse-bar 1.2s infinite ease-in-out;
+}
+
+.pulse-body[data-pending="true"]::after {
+  top: 0;
+  bottom: auto;
+}
+
+@keyframes pulse-bar {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(250%);
+  }
+}

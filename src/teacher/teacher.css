@@ -1,0 +1,344 @@
+/* Teacher session layout. Colours and type come from tokens. See docs/design.md. */
+
+.stage .controls {
+  top: var(--space-4);
+  right: var(--space-4);
+  bottom: var(--space-4);
+  width: var(--width-controls);
+  max-height: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-overlay);
+  z-index: var(--z-controls);
+}
+
+.stage .controls button {
+  min-height: 40px;
+}
+
+.stage .join-code {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-display);
+  font-weight: var(--font-weight-display);
+  line-height: 1.1;
+}
+
+.presence {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.presence .stat {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-xl);
+  color: var(--color-text);
+}
+
+.dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: var(--radius-pill);
+  background: var(--color-accent);
+}
+
+.dot.success {
+  background: var(--color-success);
+}
+
+.icon {
+  display: block;
+  flex-shrink: 0;
+}
+
+.icon-button {
+  display: grid;
+  place-items: center;
+  padding: var(--space-2);
+}
+
+.stage .modes {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-3);
+}
+
+.mode-group {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+}
+
+button[data-mode="focus"][aria-pressed="true"] {
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+}
+
+.actions {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.handoff {
+  font-size: var(--font-size-lg);
+}
+
+/* Pending Pulse: an accent bar runs along the button's bottom edge. */
+button[aria-busy="true"] {
+  position: relative;
+  overflow: hidden;
+}
+
+button[aria-busy="true"]::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 2px;
+  width: 40%;
+  background: var(--color-accent);
+  animation: busy-bar 1.2s var(--ease-out) infinite;
+}
+
+@keyframes busy-bar {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(250%);
+  }
+}
+
+.stepper {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.stepper output {
+  flex: 1;
+  text-align: center;
+  font-weight: var(--font-weight-strong);
+}
+
+.stepper-label {
+  display: grid;
+  place-items: center;
+  color: var(--color-text-muted);
+}
+
+.choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.row .stepper {
+  flex: 1;
+}
+
+.end {
+  margin-top: auto;
+}
+
+.end.quiet:hover,
+.end.armed {
+  color: var(--color-danger);
+  border-color: var(--color-danger);
+}
+
+.end.armed {
+  background: var(--color-danger);
+  color: var(--color-on-accent);
+}
+
+/* Groups */
+
+.groups {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.group {
+  list-style: none;
+  margin: 0;
+  padding: var(--space-2);
+  min-height: 2.75rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.group.new,
+.group.loose {
+  border-style: dashed;
+}
+
+.group.new {
+  justify-content: center;
+  align-items: center;
+  color: var(--color-text-muted);
+}
+
+.group[data-over] {
+  border-color: var(--color-accent);
+  background: var(--color-accent-subtle);
+}
+
+.chip {
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-raised);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-strong);
+  cursor: grab;
+}
+
+/* Thumbnail drawer */
+
+.thumbs-drawer {
+  position: absolute;
+  left: var(--space-4);
+  right: calc(var(--width-controls) + 2 * var(--space-4));
+  bottom: var(--space-4);
+  height: 40vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-overlay);
+  z-index: var(--z-drawer);
+}
+
+.drawer-handle {
+  height: var(--space-3);
+  flex-shrink: 0;
+  cursor: ns-resize;
+}
+
+.thumbs {
+  list-style: none;
+  margin: 0;
+  padding: 0 var(--space-4) var(--space-4);
+  overflow: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+  align-content: start;
+  gap: var(--space-3);
+}
+
+.thumb {
+  position: relative;
+  min-width: 0;
+  display: grid;
+  gap: var(--space-1);
+}
+
+.thumb[data-offline] {
+  opacity: 0.4;
+}
+
+.thumb-name {
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-strong);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.thumb[data-offline] .thumb-name {
+  color: var(--color-text-muted);
+}
+
+.stage .thumb-view {
+  display: block;
+  width: 100%;
+  padding: 0;
+  min-height: 0;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+}
+
+.thumb:hover .thumb-view {
+  border-color: var(--color-text-muted);
+}
+
+.thumb[data-selected] .thumb-view {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 0;
+}
+
+.thumb-box {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.thumb-frame {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1280px;
+  height: 800px;
+  border: 0;
+  transform: scale(var(--thumb-scale));
+  transform-origin: 0 0;
+}
+
+.thumb-dot {
+  position: absolute;
+  top: var(--space-2);
+  left: var(--space-2);
+}
+
+.thumb-badge {
+  position: absolute;
+  top: var(--space-2);
+  right: var(--space-2);
+  display: grid;
+  place-items: center;
+  padding: var(--space-1);
+  border-radius: var(--radius-pill);
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+
+.thumb-actions {
+  position: absolute;
+  top: var(--space-1);
+  right: var(--space-1);
+  display: flex;
+  gap: var(--space-1);
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--ease-out);
+}
+
+.stage .thumb-actions button {
+  min-height: 0;
+  padding: var(--space-1);
+  display: grid;
+  place-items: center;
+}
+
+.thumb:hover .thumb-actions,
+.thumb-actions:focus-within {
+  opacity: 1;
+}
