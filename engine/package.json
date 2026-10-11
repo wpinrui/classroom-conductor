@@ -1,0 +1,17 @@
+{
+  "name": "classroom-conductor-engine",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "start": "node --env-file-if-exists=.env src/main.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "firebase --config ../firebase.test.json emulators:exec --only database \"vitest run\""
+  },
+  "dependencies": {
+    "firebase-admin": "^14.5.0"
+  }
+}
