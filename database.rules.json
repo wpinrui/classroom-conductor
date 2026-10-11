@@ -81,7 +81,7 @@
             },
             "count": {
               ".write": "auth != null && root.child('sessions').child($sid).child('students').child(auth.uid).exists() && newData.parent().child('members').child(auth.uid).exists() !== data.parent().child('members').child(auth.uid).exists()",
-              ".validate": "newData.isNumber() && newData.val() >= 0 && (!root.child('sessions').child($sid).child('control/groupSize').exists() || newData.val() <= root.child('sessions').child($sid).child('control/groupSize').val() || (data.exists() && newData.val() <= data.val()))"
+              ".validate": "newData.isNumber() && newData.val() >= 0 && (root.child('sessions').child($sid).child('teacher').val() === auth.uid || !root.child('sessions').child($sid).child('control/groupSize').exists() || newData.val() <= root.child('sessions').child($sid).child('control/groupSize').val() || (data.exists() && newData.val() <= data.val()))"
             },
             "state": {
               ".write": "auth != null && data.parent().child('members').child(auth.uid).exists() && root.child('sessions').child($sid).child('control/mode').val() !== 'freeze'",
@@ -100,6 +100,7 @@
           }
         },
         "requests": {
+          ".indexOn": ["status"],
           "$rid": {
             ".write": "auth != null && !data.exists() && root.child('sessions').child($sid).child('students').child(auth.uid).exists()",
             ".validate": "newData.child('at').isNumber() && newData.child('status').isString() && (root.child('sessions').child($sid).child('teacher').val() === auth.uid || (newData.child('kind').val() === 'chat' && newData.child('student').val() === auth.uid && newData.child('status').val() === 'pending'))"

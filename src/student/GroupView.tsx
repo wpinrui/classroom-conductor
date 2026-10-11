@@ -36,7 +36,9 @@ export function GroupView(props: StageProps) {
   if (missing || !gid || !group) return <Loading />;
   const members = Object.keys(group.members);
   if (members.length < 2)
-    return <GroupCard session={session} uid={uid} gid={gid} />;
+    return (
+      <GroupCard session={session} uid={uid} gid={gid} code={group.code} />
+    );
   return (
     <>
       <GroupApplet
@@ -95,10 +97,12 @@ function GroupCard({
   session,
   uid,
   gid,
+  code: own,
 }: {
   session: string;
   uid: string;
   gid: string;
+  code: string;
 }) {
   const [code, setCode] = useState("");
   const [bad, setBad] = useState(false);
@@ -119,7 +123,7 @@ function GroupCard({
   return (
     <div className="center">
       <form className="group-card" onSubmit={join}>
-        <div className="group-code">{gid}</div>
+        <div className="group-code">{own}</div>
         <input
           className="code-input"
           aria-label="Group code"

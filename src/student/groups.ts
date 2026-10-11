@@ -4,7 +4,7 @@ import { db } from "../firebase/config";
 import { paths } from "../firebase/paths";
 import type { Group } from "../firebase/types";
 
-// A group's id is its join code, so joining is a direct lookup.
+// A group a student makes is keyed by its join code.
 const GROUP_CODE_LENGTH = 4;
 
 const pointer = (session: string, uid: string) =>
@@ -36,11 +36,16 @@ export async function joinGroup(
   raw: string,
   from?: string,
 ) {
-  const gid = raw.trim().toUpperCase();
+  const code = raw.trim().toUpperCase();
+  if (!code) throw new GroupError();
+  const snap = await get(ref(db, paths.groups(session))).catch(() => null);
+  const groups = (snap?.val() ?? {}) as Record<string, Group>;
+  // Student groups are keyed by their code. Teacher-formed ones are not.
+  const gid = groups[code]
+    ? code
+    : Object.keys(groups).find((g) => groups[g].code === code);
   if (!gid) throw new GroupError();
-  const snap = await get(ref(db, paths.group(session, gid))).catch(() => null);
-  if (!snap?.exists()) throw new GroupError();
-  const group = snap.val() as Group;
+  const group = groups[gid];
   if (!group.members?.[uid]) {
     try {
       await update(ref(db, paths.group(session, gid)), {

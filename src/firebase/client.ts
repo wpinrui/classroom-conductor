@@ -7,6 +7,7 @@ import {
 } from "firebase/auth";
 import {
   get,
+  increment,
   onDisconnect,
   push,
   ref,
@@ -22,6 +23,7 @@ import type {
   ChatMessage,
   Control,
   EngineRequest,
+  Group,
   JoinCode,
   LibraryApplet,
   Pulse,
@@ -125,8 +127,11 @@ export async function endSession(session: string, code: string) {
   });
 }
 
-export const setControl = (session: string, patch: Partial<Control>) =>
-  update(ref(db, paths.control(session)), patch);
+/** Patches control. A null field is removed. */
+export const setControl = (
+  session: string,
+  patch: { [K in keyof Control]?: Control[K] | null },
+) => update(ref(db, paths.control(session)), patch);
 
 export const writeTeacherState = (session: string, state: StoredState) =>
   set(ref(db, paths.teacherState(session)), state);
@@ -254,4 +259,77 @@ export async function sendChat(session: string, text: string) {
     at: Date.now(),
     status: "pending",
   });
+}
+
+// Groups (teacher)
+
+function shuffle<T>(items: T[]): T[] {
+  const a = [...items];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+const GROUP_CODE_LENGTH = 4;
+
+/** Splits students into random groups of `size`, replacing every existing group. A lone leftover joins the last group. */
+export function formGroups(session: string, students: string[], size: number) {
+  const order = shuffle(students);
+  const chunks: string[][] = [];
+  for (let i = 0; i < order.length; i += size)
+    chunks.push(order.slice(i, i + size));
+  const last = chunks.at(-1);
+  if (chunks.length > 1 && last && last.length === 1)
+    chunks[chunks.length - 2].push(...(chunks.pop() as string[]));
+  const groups: Record<string, Group> = {};
+  const updates: Record<string, unknown> = {};
+  for (const members of chunks) {
+    const gid = push(ref(db, paths.groups(session))).key as string;
+    groups[gid] = {
+      code: randomCode(GROUP_CODE_LENGTH),
+      members: Object.fromEntries(members.map((m) => [m, true])),
+      count: members.length,
+    };
+    for (const m of members)
+      updates[`${paths.student(session, m)}/group`] = gid;
+  }
+  updates[paths.groups(session)] = groups;
+  return update(ref(db), updates);
+}
+
+/**
+ * Moves a student into group `to`, or out of every group when `to` is null.
+ * `to` "new" starts a fresh group. A group left empty is deleted.
+ */
+export function moveToGroup(
+  session: string,
+  student: string,
+  from: (Group & { id: string }) | null,
+  to: string | null,
+) {
+  const updates: Record<string, unknown> = {};
+  if (from) {
+    const left = Object.keys(from.members).filter((m) => m !== student);
+    if (left.length === 0) updates[paths.group(session, from.id)] = null;
+    else {
+      updates[`${paths.group(session, from.id)}/members/${student}`] = null;
+      updates[`${paths.group(session, from.id)}/count`] = left.length;
+    }
+  }
+  let target = to;
+  if (to === "new") {
+    target = push(ref(db, paths.groups(session))).key as string;
+    updates[paths.group(session, target)] = {
+      code: randomCode(GROUP_CODE_LENGTH),
+      members: { [student]: true },
+      count: 1,
+    };
+  } else if (to) {
+    updates[`${paths.group(session, to)}/members/${student}`] = true;
+    updates[`${paths.group(session, to)}/count`] = increment(1);
+  }
+  updates[`${paths.student(session, student)}/group`] = target;
+  return update(ref(db), updates);
 }

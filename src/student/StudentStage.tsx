@@ -1,4 +1,5 @@
 import { AppletFrame } from "../applet/AppletFrame";
+import { Chat } from "../chat/Chat";
 import type { Control, Mode } from "../firebase/types";
 import {
   useControl,
@@ -80,6 +81,7 @@ export function StudentStage({ session, uid, me }: Omit<StageProps, "html">) {
       </div>
       {mode === "freeze" && <Frozen />}
       {mode === "focus" && <div className="focus" />}
+      {mode !== "focus" && <Chat session={session} uid={uid} />}
     </main>
   );
 }

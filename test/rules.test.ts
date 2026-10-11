@@ -198,6 +198,50 @@ describe("student work", () => {
     await assertFails(set(ref(student(), `${S}/pulses/p2`), pulse));
   });
 
+  it("teachers form and rearrange groups", async () => {
+    await assertSucceeds(
+      update(ref(teacher(), S), {
+        groups: {
+          g1: { code: "AB23", members: { [STUDENT]: true }, count: 1 },
+        },
+        [`students/${STUDENT}/group`]: "g1",
+      }),
+    );
+    await join(OTHER);
+    await assertSucceeds(
+      update(ref(teacher(), S), {
+        [`groups/g1/members/${OTHER}`]: true,
+        "groups/g1/count": 2,
+        [`students/${OTHER}/group`]: "g1",
+      }),
+    );
+    await assertFails(
+      update(ref(teacher(), S), {
+        "groups/g2": { members: { [OTHER]: true } },
+      }),
+    );
+    await assertFails(
+      set(ref(student(OTHER), `${S}/students/${STUDENT}/group`), null),
+    );
+  });
+
+  it("teachers set control fields", async () => {
+    await assertSucceeds(
+      update(ref(teacher(), `${S}/control`), {
+        mode: "gallery",
+        gallery: { [STUDENT]: true },
+        spotlight: STUDENT,
+        pacedPhase: 1,
+        reveal: state,
+        groupSize: 3,
+        chatLimit: 0,
+      }),
+    );
+    await assertSucceeds(
+      update(ref(teacher(), `${S}/control`), { chatLimit: null }),
+    );
+  });
+
   it("only group members write group state", async () => {
     await assertSucceeds(
       set(ref(student(), `${S}/groups/g1`), {
@@ -301,6 +345,18 @@ describe("student work", () => {
         update(ref(student(OTHER), `${S}/groups/g1`), {
           [`members/${OTHER}`]: null,
           count: 1,
+        }),
+      );
+    });
+
+    it("the teacher may exceed the group size", async () => {
+      await env.withSecurityRulesDisabled((ctx) =>
+        set(ref(ctx.database(), `${S}/control/groupSize`), 1),
+      );
+      await assertSucceeds(
+        update(ref(teacher(), `${S}/groups/g1`), {
+          [`members/${OTHER}`]: true,
+          count: 2,
         }),
       );
     });
