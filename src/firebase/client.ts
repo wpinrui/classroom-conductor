@@ -21,8 +21,10 @@ import { paths } from "./paths";
 import type {
   ChatMessage,
   Control,
+  EngineRequest,
   JoinCode,
   LibraryApplet,
+  Pulse,
   Session,
   StoredState,
   Student,
@@ -152,6 +154,40 @@ export async function handoff(session: string, students: string[]) {
     for (const s of students) updates[paths.state(session, s)] = state;
   }
   return update(ref(db), updates);
+}
+
+/** Snapshots current states, of the class or one student, and queues a Pulse for the Engine. */
+export async function requestPulse(
+  session: string,
+  student?: string,
+): Promise<string> {
+  const path = student ? paths.state(session, student) : paths.states(session);
+  const snap = await get(ref(db, path));
+  const states: Record<string, StoredState> = student
+    ? snap.exists()
+      ? { [student]: snap.val() }
+      : {}
+    : (snap.val() ?? {});
+  const at = Date.now();
+  const pulse: Pulse = {
+    ...(student ? { student } : {}),
+    input: JSON.stringify(states),
+    at,
+    status: "pending",
+  };
+  const pid = push(ref(db, paths.pulses(session))).key as string;
+  const rid = push(ref(db, paths.requests(session))).key as string;
+  const request: EngineRequest = {
+    kind: "pulse",
+    pulse: pid,
+    at,
+    status: "pending",
+  };
+  await update(ref(db), {
+    [paths.pulse(session, pid)]: pulse,
+    [`${paths.requests(session)}/${rid}`]: request,
+  });
+  return pid;
 }
 
 // Students
