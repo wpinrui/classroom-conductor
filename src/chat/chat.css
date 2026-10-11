@@ -41,6 +41,14 @@
     visibility var(--duration-base);
 }
 
+.chat-over {
+  z-index: var(--z-sheet);
+}
+
+.chat-toggle {
+  position: relative;
+}
+
 .chat-drawer[data-open="false"] {
   transform: translateX(100%);
   opacity: 0;

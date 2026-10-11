@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
+import { ChatToggle } from "../chat/Chat";
 import {
   endSession,
   handoff,
@@ -129,6 +130,7 @@ export function Controls({
           >
             <GridIcon />
           </button>
+          <ChatToggle className="quiet icon-button" />
         </div>
 
         <div className="modes">

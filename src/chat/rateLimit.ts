@@ -1,5 +1,6 @@
-/** Chat messages per student per minute when the teacher has not set a limit. */
-export const DEFAULT_CHAT_LIMIT = 5;
+import { DEFAULT_CHAT_LIMIT } from "../firebase/types";
+
+export { DEFAULT_CHAT_LIMIT };
 export const CHAT_WINDOW_MS = 60_000;
 
 export interface Cooldown {
