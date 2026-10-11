@@ -1,6 +1,7 @@
 import {
   GoogleAuthProvider,
   signInAnonymously,
+  signInWithCredential,
   signInWithPopup,
   signOut,
 } from "firebase/auth";
@@ -15,7 +16,7 @@ import {
 } from "firebase/database";
 import type { Manifest } from "../applet/contract";
 import { nameKey, parseManifest } from "../applet/manifest";
-import { auth, db } from "./config";
+import { auth, db, useEmulator } from "./config";
 import { paths } from "./paths";
 import type {
   ChatMessage,
@@ -43,8 +44,16 @@ function uid(): string {
   return u;
 }
 
+/** Google sign-in. The emulator accepts an unsigned fake token, so dev needs no popup. */
 export const signInTeacher = () =>
-  signInWithPopup(auth, new GoogleAuthProvider());
+  useEmulator
+    ? signInWithCredential(
+        auth,
+        GoogleAuthProvider.credential(
+          JSON.stringify({ sub: "teacher", email: "teacher@example.com" }),
+        ),
+      )
+    : signInWithPopup(auth, new GoogleAuthProvider());
 export const signInStudent = () => signInAnonymously(auth);
 export const signOutUser = () => signOut(auth);
 

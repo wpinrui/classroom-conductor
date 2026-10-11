@@ -1,17 +1,19 @@
 // Script injected at the top of every applet page. It gives the applet
 // window.conductor and speaks the postMessage protocol in contract.ts.
+// Each update carries the seq of the last setState applied, so the host can
+// drop updates the applet sent before it saw the host's latest push.
 const BRIDGE = `<script>(function(){
-var handlers=null;
+var handlers=null,seq=0;
 function send(m){parent.postMessage(m,"*");}
 window.conductor={
 connect:function(h){handlers=h;send({cc:"connect"});},
-update:function(state,phase){send({cc:"update",state:JSON.parse(JSON.stringify(state===undefined?null:state)),phase:phase|0});}
+update:function(state,phase){send({cc:"update",state:JSON.parse(JSON.stringify(state===undefined?null:state)),phase:phase|0,seq:seq});}
 };
 window.addEventListener("message",function(e){
 if(e.source!==parent||!handlers)return;
 var m=e.data;
 if(!m)return;
-if(m.cc==="setState")handlers.setState(m.state,m.phase);
+if(m.cc==="setState"){seq=m.seq;handlers.setState(m.state,m.phase);}
 else if(m.cc==="phaseLimit"&&handlers.setPhaseLimit)handlers.setPhaseLimit(m.maxPhase);
 });
 window.addEventListener("keydown",function(e){

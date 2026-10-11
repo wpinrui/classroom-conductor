@@ -3,7 +3,7 @@ import { connectAuthEmulator, getAuth } from "firebase/auth";
 import { connectDatabaseEmulator, getDatabase } from "firebase/database";
 
 const env = import.meta.env;
-const useEmulator = env.VITE_FIREBASE_EMULATOR === "true";
+export const useEmulator = env.VITE_FIREBASE_EMULATOR === "true";
 const projectId = env.VITE_FIREBASE_PROJECT_ID || "demo-classroom-conductor";
 
 export const app = initializeApp({

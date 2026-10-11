@@ -33,6 +33,7 @@ export function AppletFrame({
   const frame = useRef<HTMLIFrameElement>(null);
   const known = useRef<Known | null>(null);
   const connected = useRef(false);
+  const seq = useRef(0);
   const latest = useRef({ state, onUpdate, maxPhase, onShortcut });
   latest.current = { state, onUpdate, maxPhase, onShortcut };
   const srcDoc = useMemo(() => withBridge(html), [html]);
@@ -42,13 +43,20 @@ export function AppletFrame({
 
   const push = (s: Known) => {
     known.current = s;
-    post({ cc: "setState", state: JSON.parse(s.json), phase: s.phase });
+    seq.current += 1;
+    post({
+      cc: "setState",
+      state: JSON.parse(s.json),
+      phase: s.phase,
+      seq: seq.current,
+    });
   };
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: re-run per page load only
   useEffect(() => {
     connected.current = false;
     known.current = null;
+    seq.current = 0;
     const onMessage = (e: MessageEvent) => {
       if (e.source !== frame.current?.contentWindow) return;
       const m = e.data as AppletMessage;
@@ -60,6 +68,7 @@ export function AppletFrame({
         post({ cc: "phaseLimit", maxPhase });
         if (state) push(state);
       } else if (m?.cc === "update") {
+        if (m.seq !== seq.current) return;
         const next = { json: JSON.stringify(m.state), phase: m.phase };
         if (maxPhase !== null && next.phase > maxPhase) {
           if (known.current) push(known.current);

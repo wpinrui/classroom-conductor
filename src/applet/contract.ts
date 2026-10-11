@@ -19,11 +19,11 @@ export interface Manifest {
 /** Applet to host. */
 export type AppletMessage =
   | { cc: "connect" }
-  | { cc: "update"; state: unknown; phase: number }
+  | { cc: "update"; state: unknown; phase: number; seq: number }
   /** The controls shortcut, pressed while the applet has focus. */
   | { cc: "shortcut" };
 
 /** Host to applet. maxPhase null lifts the limit. */
 export type HostMessage =
-  | { cc: "setState"; state: unknown; phase: number }
+  | { cc: "setState"; state: unknown; phase: number; seq: number }
   | { cc: "phaseLimit"; maxPhase: number | null };
