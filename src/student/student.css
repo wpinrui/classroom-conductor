@@ -1,0 +1,59 @@
+.screen {
+  position: relative;
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+.screen figcaption {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 8px;
+  background: var(--color-surface);
+  font-weight: 600;
+  pointer-events: none;
+}
+
+.gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(24rem, 1fr));
+  grid-auto-rows: minmax(18rem, 1fr);
+  gap: 0.5rem;
+  height: 100%;
+  padding: 0.5rem;
+  overflow: auto;
+}
+
+.gallery .screen {
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.focus {
+  width: 100%;
+  height: 100%;
+  background: var(--color-scrim);
+}
+
+.group-badge {
+  position: absolute;
+  bottom: 1rem;
+  left: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.25rem 0.25rem 0.75rem;
+  border-radius: 8px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+}
+
+.group-code {
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  color: var(--color-accent);
+}

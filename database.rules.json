@@ -71,13 +71,17 @@
           ".read": "auth != null && root.child('sessions').child($sid).child('students').child(auth.uid).exists()",
           "$gid": {
             ".write": "auth != null && !data.exists() && root.child('sessions').child($sid).child('students').child(auth.uid).exists() && newData.child('members').child(auth.uid).exists()",
-            ".validate": "newData.hasChildren(['code', 'members'])",
+            ".validate": "newData.hasChildren(['code', 'members', 'count'])",
             "code": { ".validate": "newData.isString()" },
             "members": {
               "$uid": {
-                ".write": "auth != null && auth.uid === $uid && root.child('sessions').child($sid).child('students').child(auth.uid).exists()",
+                ".write": "auth != null && auth.uid === $uid && root.child('sessions').child($sid).child('students').child(auth.uid).exists() && (newData.exists() ? !data.exists() && newData.parent().parent().child('count').val() === data.parent().parent().child('count').val() + 1 : data.exists() && newData.parent().parent().child('count').val() === data.parent().parent().child('count').val() - 1)",
                 ".validate": "newData.val() === true"
               }
+            },
+            "count": {
+              ".write": "auth != null && root.child('sessions').child($sid).child('students').child(auth.uid).exists() && newData.parent().child('members').child(auth.uid).exists() !== data.parent().child('members').child(auth.uid).exists()",
+              ".validate": "newData.isNumber() && newData.val() >= 0 && (!root.child('sessions').child($sid).child('control/groupSize').exists() || newData.val() <= root.child('sessions').child($sid).child('control/groupSize').val() || (data.exists() && newData.val() <= data.val()))"
             },
             "state": {
               ".write": "auth != null && data.parent().child('members').child(auth.uid).exists() && root.child('sessions').child($sid).child('control/mode').val() !== 'freeze'",

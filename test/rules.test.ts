@@ -190,6 +190,7 @@ describe("student work", () => {
       set(ref(student(), `${S}/groups/g1`), {
         code: "QW",
         members: { [STUDENT]: true },
+        count: 1,
       }),
     );
     await assertSucceeds(set(ref(student(), `${S}/groups/g1/state`), state));
@@ -199,10 +200,110 @@ describe("student work", () => {
     await join(OTHER);
     await assertFails(set(ref(student(OTHER), `${S}/groups/g1/state`), state));
     await assertSucceeds(
-      set(ref(student(OTHER), `${S}/groups/g1/members/${OTHER}`), true),
+      update(ref(student(OTHER), `${S}/groups/g1`), {
+        [`members/${OTHER}`]: true,
+        count: 2,
+      }),
     );
     await assertSucceeds(
       set(ref(student(OTHER), `${S}/groups/g1/state`), state),
     );
+  });
+
+  describe("group membership", () => {
+    const THIRD = "student3";
+    const joinG = (uid: string, count: number) =>
+      update(ref(student(uid), `${S}/groups/g1`), {
+        [`members/${uid}`]: true,
+        count,
+      });
+
+    beforeEach(async () => {
+      await assertSucceeds(
+        set(ref(student(), `${S}/groups/g1`), {
+          code: "QW",
+          members: { [STUDENT]: true },
+          count: 1,
+        }),
+      );
+      await join(OTHER);
+      await join(THIRD);
+    });
+
+    it("groups cannot be created without a count", async () => {
+      await assertFails(
+        set(ref(student(OTHER), `${S}/groups/g2`), {
+          code: "ZX",
+          members: { [OTHER]: true },
+        }),
+      );
+    });
+
+    it("existing groups cannot be overwritten", async () => {
+      await assertFails(
+        set(ref(student(OTHER), `${S}/groups/g1`), {
+          code: "QW",
+          members: { [OTHER]: true },
+          count: 1,
+        }),
+      );
+    });
+
+    it("joining must raise the count by one", async () => {
+      await assertFails(
+        set(ref(student(OTHER), `${S}/groups/g1/members/${OTHER}`), true),
+      );
+      await assertFails(joinG(OTHER, 1));
+      await assertFails(joinG(OTHER, 3));
+      await assertSucceeds(joinG(OTHER, 2));
+    });
+
+    it("the count moves only with your own membership", async () => {
+      await assertFails(set(ref(student(OTHER), `${S}/groups/g1/count`), 0));
+      await assertFails(
+        update(ref(student(OTHER), `${S}/groups/g1`), {
+          [`members/${THIRD}`]: true,
+          count: 2,
+        }),
+      );
+    });
+
+    it("caps groups at the group size", async () => {
+      await env.withSecurityRulesDisabled((ctx) =>
+        set(ref(ctx.database(), `${S}/control/groupSize`), 2),
+      );
+      await assertSucceeds(joinG(OTHER, 2));
+      await assertFails(joinG(THIRD, 3));
+    });
+
+    it("leaving lowers the count by one", async () => {
+      await assertSucceeds(joinG(OTHER, 2));
+      await assertFails(
+        update(ref(student(OTHER), `${S}/groups/g1`), {
+          [`members/${OTHER}`]: null,
+          count: 2,
+        }),
+      );
+      await assertSucceeds(
+        update(ref(student(OTHER), `${S}/groups/g1`), {
+          [`members/${OTHER}`]: null,
+          count: 1,
+        }),
+      );
+    });
+
+    it("members over a shrunken cap can still leave", async () => {
+      await assertSucceeds(joinG(OTHER, 2));
+      await assertSucceeds(joinG(THIRD, 3));
+      await env.withSecurityRulesDisabled((ctx) =>
+        set(ref(ctx.database(), `${S}/control/groupSize`), 1),
+      );
+      await assertSucceeds(
+        update(ref(student(THIRD), `${S}/groups/g1`), {
+          [`members/${THIRD}`]: null,
+          count: 2,
+        }),
+      );
+    });
   });
 });

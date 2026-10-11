@@ -66,6 +66,8 @@ export interface Student {
 export interface Group {
   code: string;
   members: Record<string, true>;
+  /** Number of members. Changes by one with every join or leave, so the rules can cap it at control.groupSize. */
+  count: number;
   state?: StoredState;
 }
 
