@@ -305,6 +305,21 @@ describe("student work", () => {
       );
     });
 
+    it("the last member can leave", async () => {
+      await assertSucceeds(
+        update(ref(student(), `${S}/groups/g1`), {
+          [`members/${STUDENT}`]: null,
+          count: 0,
+        }),
+      );
+    });
+
+    it("groups cannot be created empty", async () => {
+      await assertFails(
+        set(ref(student(OTHER), `${S}/groups/g2`), { code: "ZX", count: 0 }),
+      );
+    });
+
     it("members over a shrunken cap can still leave", async () => {
       await assertSucceeds(joinG(OTHER, 2));
       await assertSucceeds(joinG(THIRD, 3));

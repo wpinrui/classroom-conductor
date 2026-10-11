@@ -2,6 +2,7 @@ import { AppletFrame } from "../applet/AppletFrame";
 import { writeMyState } from "../firebase/client";
 import type { StoredState, Student } from "../firebase/types";
 import { useStudentState, useThrottledWriter } from "../hooks/session";
+import { Loading } from "./Cues";
 
 export interface StageProps {
   session: string;
@@ -27,7 +28,7 @@ export function OwnApplet({
   const write = useThrottledWriter((s: StoredState) =>
     writeMyState(session, s).catch(() => {}),
   );
-  if (mine === undefined) return null;
+  if (mine === undefined) return <Loading />;
   return (
     <AppletFrame
       html={html}

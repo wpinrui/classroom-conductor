@@ -1,98 +1,140 @@
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 import { AppletFrame } from "../applet/AppletFrame";
 import { writeGroupState } from "../firebase/client";
-import type { StoredState } from "../firebase/types";
+import { paths } from "../firebase/paths";
+import type { StoredState, Student } from "../firebase/types";
 import { useGroup, useThrottledWriter } from "../hooks/session";
-import { createGroup, joinGroup, leaveGroup } from "./groups";
+import { useValue } from "../hooks/useValue";
+import { Loading } from "./Cues";
+import { createGroup, joinGroup } from "./groups";
 import type { StageProps } from "./OwnApplet";
 
-/** Group: members share one applet state. Without a group, the student makes or joins one. */
-export function GroupView(props: StageProps) {
-  const gid = props.me.group;
-  const group = useGroup(props.session, gid);
-  if (gid && group === undefined) return null;
-  if (!gid || !group?.members?.[props.uid]) return <GroupPicker {...props} />;
-  return (
-    <GroupApplet {...props} gid={gid} code={group.code} state={group.state} />
-  );
-}
+// One create in flight per student, so a remount cannot make a second group.
+const creating = new Map<string, Promise<unknown>>();
 
-function GroupApplet({
-  session,
-  uid,
-  html,
-  gid,
-  code,
-  state,
-}: StageProps & { gid: string; code: string; state?: StoredState }) {
-  const write = useThrottledWriter((s: StoredState) =>
-    writeGroupState(session, gid, s).catch(() => {}),
-  );
+/**
+ * Group: members share one applet state. A student always holds a group. Until
+ * someone else joins it, they see its code and can join another group instead.
+ */
+export function GroupView(props: StageProps) {
+  const { session, uid } = props;
+  const gid = props.me.group;
+  const group = useGroup(session, gid);
+  const missing = !gid || group === null || (group && !group.members?.[uid]);
+
+  useEffect(() => {
+    const key = `${session}/${uid}`;
+    if (!missing || creating.has(key)) return;
+    creating.set(
+      key,
+      createGroup(session, uid)
+        .catch(() => {})
+        .finally(() => creating.delete(key)),
+    );
+  }, [missing, session, uid]);
+
+  if (missing || !gid || !group) return <Loading />;
+  const members = Object.keys(group.members);
+  if (members.length < 2)
+    return <GroupCard session={session} uid={uid} gid={gid} />;
   return (
     <>
-      <AppletFrame html={html} state={state ?? null} onUpdate={write} />
-      <div className="group-badge">
-        <span className="group-code">{code}</span>
-        <button
-          type="button"
-          className="quiet"
-          onClick={() => leaveGroup(session, uid, gid).catch(() => {})}
-        >
-          Leave
-        </button>
+      <GroupApplet
+        session={session}
+        html={props.html}
+        gid={gid}
+        state={group.state}
+      />
+      <div className="avatars">
+        {members.map((m) => (
+          <Avatar key={m} session={session} uid={m} />
+        ))}
       </div>
     </>
   );
 }
 
-function GroupPicker({ session, uid }: StageProps) {
+function GroupApplet({
+  session,
+  html,
+  gid,
+  state,
+}: {
+  session: string;
+  html: string;
+  gid: string;
+  state?: StoredState;
+}) {
+  const write = useThrottledWriter((s: StoredState) =>
+    writeGroupState(session, gid, s).catch(() => {}),
+  );
+  return <AppletFrame html={html} state={state ?? null} onUpdate={write} />;
+}
+
+function initials(name: string) {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0].toUpperCase())
+    .join("");
+}
+
+function Avatar({ session, uid }: { session: string; uid: string }) {
+  const name = useValue<Student>(paths.student(session, uid))?.name;
+  if (!name) return null;
+  return (
+    <span className="avatar" aria-label={name} role="img">
+      {initials(name)}
+    </span>
+  );
+}
+
+/** The student's own code on top, and a field to join someone else's group. */
+function GroupCard({
+  session,
+  uid,
+  gid,
+}: {
+  session: string;
+  uid: string;
+  gid: string;
+}) {
   const [code, setCode] = useState("");
   const [bad, setBad] = useState(false);
   const [busy, setBusy] = useState(false);
 
-  const run = async (action: () => Promise<unknown>) => {
+  const join = async (e: FormEvent) => {
+    e.preventDefault();
     setBusy(true);
     setBad(false);
     try {
-      await action();
+      await joinGroup(session, uid, code, gid);
     } catch {
       setBad(true);
-      setBusy(false);
     }
-  };
-
-  const join = (e: FormEvent) => {
-    e.preventDefault();
-    run(() => joinGroup(session, uid, code));
+    setBusy(false);
   };
 
   return (
     <div className="center">
-      <div className="join">
-        <form className="join" onSubmit={join}>
-          <input
-            className="code-input"
-            aria-label="Group code"
-            placeholder="Code"
-            aria-invalid={bad}
-            maxLength={8}
-            autoComplete="off"
-            value={code}
-            onChange={(e) => setCode(e.target.value.toUpperCase())}
-            required
-          />
-          <button type="submit" className="primary" disabled={busy}>
-            Join
-          </button>
-        </form>
-        <button
-          type="button"
-          disabled={busy}
-          onClick={() => run(() => createGroup(session, uid))}
-        >
-          New group
+      <form className="group-card" onSubmit={join}>
+        <div className="group-code">{gid}</div>
+        <input
+          className="code-input"
+          aria-label="Group code"
+          placeholder="Code"
+          aria-invalid={bad}
+          maxLength={8}
+          autoComplete="off"
+          value={code}
+          onChange={(e) => setCode(e.target.value.toUpperCase())}
+          required
+        />
+        <button type="submit" className="primary" disabled={busy}>
+          Join
         </button>
-      </div>
+      </form>
     </div>
   );
 }

@@ -29,8 +29,13 @@ export async function createGroup(session: string, uid: string) {
   }
 }
 
-/** Adds the student to the group with this code. The rules enforce the size cap. */
-export async function joinGroup(session: string, uid: string, raw: string) {
+/** Moves the student into the group with this code. The rules enforce the size cap. */
+export async function joinGroup(
+  session: string,
+  uid: string,
+  raw: string,
+  from?: string,
+) {
   const gid = raw.trim().toUpperCase();
   if (!gid) throw new GroupError();
   const snap = await get(ref(db, paths.group(session, gid))).catch(() => null);
@@ -47,15 +52,18 @@ export async function joinGroup(session: string, uid: string, raw: string) {
     }
   }
   await set(pointer(session, uid), gid);
+  // Leaving the old group is tidy-up. The move has already happened.
+  if (from && from !== gid)
+    await leaveGroup(session, uid, from).catch(() => {});
 }
 
-export async function leaveGroup(session: string, uid: string, gid: string) {
-  await set(pointer(session, uid), null);
+/** Removes the student from a group's members. */
+async function leaveGroup(session: string, uid: string, gid: string) {
   const snap = await get(ref(db, paths.group(session, gid)));
   const group = snap.val() as Group | null;
   if (!group?.members?.[uid]) return;
   await update(ref(db, paths.group(session, gid)), {
     [`members/${uid}`]: null,
-    count: Math.max(0, (group.count ?? 1) - 1),
+    count: (group.count ?? 1) - 1,
   });
 }
