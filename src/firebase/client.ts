@@ -21,8 +21,10 @@ import { paths } from "./paths";
 import type {
   ChatMessage,
   Control,
+  Group,
   JoinCode,
   LibraryApplet,
+  Pulse,
   Session,
   StoredState,
   Student,
@@ -123,8 +125,11 @@ export async function endSession(session: string, code: string) {
   });
 }
 
-export const setControl = (session: string, patch: Partial<Control>) =>
-  update(ref(db, paths.control(session)), patch);
+/** Patches control. A null field is removed. */
+export const setControl = (
+  session: string,
+  patch: { [K in keyof Control]?: Control[K] | null },
+) => update(ref(db, paths.control(session)), patch);
 
 export const writeTeacherState = (session: string, state: StoredState) =>
   set(ref(db, paths.teacherState(session)), state);
@@ -218,4 +223,116 @@ export async function sendChat(session: string, text: string) {
     at: Date.now(),
     status: "pending",
   });
+}
+
+// Groups (teacher)
+
+function shuffle<T>(items: T[]): T[] {
+  const a = [...items];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+const GROUP_CODE_LENGTH = 4;
+
+/** Splits students into random groups of `size`, replacing every existing group. A lone leftover joins the last group. */
+export function formGroups(session: string, students: string[], size: number) {
+  const order = shuffle(students);
+  const chunks: string[][] = [];
+  for (let i = 0; i < order.length; i += size)
+    chunks.push(order.slice(i, i + size));
+  const last = chunks.at(-1);
+  if (chunks.length > 1 && last && last.length === 1)
+    chunks[chunks.length - 2].push(...(chunks.pop() as string[]));
+  const groups: Record<string, Group> = {};
+  const updates: Record<string, unknown> = {};
+  for (const members of chunks) {
+    const gid = push(ref(db, paths.groups(session))).key as string;
+    groups[gid] = {
+      code: randomCode(GROUP_CODE_LENGTH),
+      members: Object.fromEntries(members.map((m) => [m, true])),
+    };
+    for (const m of members)
+      updates[`${paths.student(session, m)}/group`] = gid;
+  }
+  updates[paths.groups(session)] = groups;
+  return update(ref(db), updates);
+}
+
+/**
+ * Moves a student into group `to`, or out of every group when `to` is null.
+ * `to` "new" starts a fresh group. A group left empty is deleted.
+ */
+export function moveToGroup(
+  session: string,
+  student: string,
+  from: (Group & { id: string }) | null,
+  to: string | null,
+) {
+  const updates: Record<string, unknown> = {};
+  if (from) {
+    const left = Object.keys(from.members).filter((m) => m !== student);
+    if (left.length === 0) updates[paths.group(session, from.id)] = null;
+    else updates[`${paths.group(session, from.id)}/members/${student}`] = null;
+  }
+  let target = to;
+  if (to === "new") {
+    target = push(ref(db, paths.groups(session))).key as string;
+    updates[paths.group(session, target)] = {
+      code: randomCode(GROUP_CODE_LENGTH),
+      members: { [student]: true },
+    };
+  } else if (to) {
+    updates[`${paths.group(session, to)}/members/${student}`] = true;
+  }
+  updates[`${paths.student(session, student)}/group`] = target;
+  return update(ref(db), updates);
+}
+
+// Pulse
+
+/** Snapshots current states and asks the Engine for a Pulse on the class, or on one student. */
+export async function requestPulse(session: string, student?: string) {
+  const [statesSnap, studentsSnap] = await Promise.all([
+    get(ref(db, paths.states(session))),
+    get(ref(db, paths.students(session))),
+  ]);
+  const states = (statesSnap.val() ?? {}) as Record<string, StoredState>;
+  const students = (studentsSnap.val() ?? {}) as Record<string, Student>;
+  const ids = student ? [student] : Object.keys(students);
+  const input = Object.fromEntries(
+    ids.map((id) => {
+      const s = states[id];
+      return [
+        id,
+        {
+          name: students[id]?.name ?? null,
+          phase: s?.phase ?? null,
+          state: s ? JSON.parse(s.json) : null,
+        },
+      ];
+    }),
+  );
+  const at = Date.now();
+  const pid = push(ref(db, paths.pulses(session))).key as string;
+  const rid = push(ref(db, paths.requests(session))).key as string;
+  const pulse: Pulse = {
+    ...(student ? { student } : {}),
+    input: JSON.stringify(input),
+    at,
+    status: "pending",
+  };
+  await update(ref(db), {
+    [paths.pulse(session, pid)]: pulse,
+    [`${paths.requests(session)}/${rid}`]: {
+      kind: "pulse",
+      pulse: pid,
+      at,
+      status: "pending",
+    },
+  });
+  return pid;
 }
