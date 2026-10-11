@@ -7,6 +7,7 @@ import {
 } from "firebase/auth";
 import {
   get,
+  increment,
   onDisconnect,
   push,
   ref,
@@ -289,6 +290,7 @@ export function formGroups(session: string, students: string[], size: number) {
     groups[gid] = {
       code: randomCode(GROUP_CODE_LENGTH),
       members: Object.fromEntries(members.map((m) => [m, true])),
+      count: members.length,
     };
     for (const m of members)
       updates[`${paths.student(session, m)}/group`] = gid;
@@ -311,7 +313,10 @@ export function moveToGroup(
   if (from) {
     const left = Object.keys(from.members).filter((m) => m !== student);
     if (left.length === 0) updates[paths.group(session, from.id)] = null;
-    else updates[`${paths.group(session, from.id)}/members/${student}`] = null;
+    else {
+      updates[`${paths.group(session, from.id)}/members/${student}`] = null;
+      updates[`${paths.group(session, from.id)}/count`] = left.length;
+    }
   }
   let target = to;
   if (to === "new") {
@@ -319,9 +324,11 @@ export function moveToGroup(
     updates[paths.group(session, target)] = {
       code: randomCode(GROUP_CODE_LENGTH),
       members: { [student]: true },
+      count: 1,
     };
   } else if (to) {
     updates[`${paths.group(session, to)}/members/${student}`] = true;
+    updates[`${paths.group(session, to)}/count`] = increment(1);
   }
   updates[`${paths.student(session, student)}/group`] = target;
   return update(ref(db), updates);

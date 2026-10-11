@@ -1,54 +1,87 @@
 import { AppletFrame } from "../applet/AppletFrame";
 import { Chat } from "../chat/Chat";
-import { writeMyState } from "../firebase/client";
-import type { Mode, StoredState, Student } from "../firebase/types";
+import type { Control, Mode } from "../firebase/types";
 import {
   useControl,
   useSessionApplet,
-  useStudentState,
   useTeacherState,
-  useThrottledWriter,
 } from "../hooks/session";
-
-export interface StageProps {
-  session: string;
-  uid: string;
-  me: Student;
-  html: string;
-}
-
-/** Student's own applet, editable, synced to their stored state. */
-export function OwnApplet({ session, uid, html }: StageProps) {
-  const mine = useStudentState(session, uid);
-  const write = useThrottledWriter((s: StoredState) =>
-    writeMyState(session, s).catch(() => {}),
-  );
-  if (mine === undefined) return null;
-  return <AppletFrame html={html} state={mine} onUpdate={write} />;
-}
+import { Edge, Frozen, Loading } from "./Cues";
+import { GroupView } from "./GroupView";
+import { OwnApplet, type OwnProps, type StageProps } from "./OwnApplet";
+import "./student.css";
+import { AnonymousSpotlightView, GalleryView, SpotlightView } from "./Watch";
 
 /** Demo: the teacher's applet, live and view-only. */
 export function DemoView({ session, html }: StageProps) {
   const teacher = useTeacherState(session);
-  if (teacher === undefined) return null;
-  return <AppletFrame html={html} state={teacher} interactive={false} />;
+  if (teacher === undefined) return <Loading />;
+  return (
+    <>
+      <AppletFrame html={html} state={teacher} interactive={false} />
+      <Edge kind="watch" />
+    </>
+  );
 }
 
-/** One view per mode. Modes without a view yet fall back to the student's own applet. */
+/** Reveal: the teacher's chosen state, view-only. */
+function RevealView({ session, html }: StageProps) {
+  const control = useControl(session);
+  return (
+    <>
+      <AppletFrame html={html} state={control?.reveal} interactive={false} />
+      <Edge kind="watch" />
+    </>
+  );
+}
+
+/**
+ * Modes that show the student's own applet. They share one component so
+ * switching between them keeps the applet loaded.
+ */
+const own: Partial<Record<Mode, (c: Control) => OwnProps>> = {
+  independent: () => ({}),
+  // Paced: the student works freely up to the teacher's phase.
+  paced: (c) => ({ maxPhase: c.pacedPhase ?? null }),
+  freeze: () => ({ interactive: false }),
+};
+
 const views: Partial<Record<Mode, (p: StageProps) => React.ReactNode>> = {
   demo: DemoView,
-  independent: OwnApplet,
+  reveal: RevealView,
+  spotlight: SpotlightView,
+  anonymousSpotlight: AnonymousSpotlightView,
+  gallery: GalleryView,
+  group: GroupView,
 };
 
 export function StudentStage({ session, uid, me }: Omit<StageProps, "html">) {
   const control = useControl(session);
   const applet = useSessionApplet(session);
-  if (!control || !applet) return null;
-  const View = views[control.mode] ?? OwnApplet;
+  if (!control || !applet)
+    return (
+      <main className="stage">
+        <Loading />
+      </main>
+    );
+  const mode = control.mode;
+  const props = { session, uid, me, html: applet.html };
+  const ownProps = own[mode];
+  const View = views[mode];
+  // Focus keeps the student's applet loaded underneath the blackout.
+  const showOwn = Boolean(ownProps) || !View;
   return (
     <main className="stage">
-      <View session={session} uid={uid} me={me} html={applet.html} />
-      {control.mode !== "focus" && <Chat session={session} uid={uid} />}
+      <div className="view" key={showOwn ? "own" : mode}>
+        {showOwn ? (
+          <OwnApplet {...props} {...ownProps?.(control)} />
+        ) : (
+          View && <View {...props} />
+        )}
+      </div>
+      {mode === "freeze" && <Frozen />}
+      {mode === "focus" && <div className="focus" />}
+      {mode !== "focus" && <Chat session={session} uid={uid} />}
     </main>
   );
 }
