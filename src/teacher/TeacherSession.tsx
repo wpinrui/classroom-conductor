@@ -4,6 +4,7 @@ import { AppletFrame } from "../applet/AppletFrame";
 import { writeTeacherState } from "../firebase/client";
 import type { Session, StoredState } from "../firebase/types";
 import { useSession, useThrottledWriter } from "../hooks/session";
+import { PulsePanel } from "../pulse/Pulse";
 import { Controls } from "./Controls";
 
 /** The teacher's live view: their own applet with the controls overlaid. */
@@ -35,6 +36,7 @@ export function TeacherSession() {
         onShortcut={() => setControlsOpen((o) => !o)}
       />
       {controlsOpen && <Controls session={session} data={data} />}
+      <PulsePanel session={session} />
     </main>
   );
 }

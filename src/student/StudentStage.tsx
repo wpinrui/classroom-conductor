@@ -1,4 +1,5 @@
 import { AppletFrame } from "../applet/AppletFrame";
+import { Chat } from "../chat/Chat";
 import { writeMyState } from "../firebase/client";
 import type { Mode, StoredState, Student } from "../firebase/types";
 import {
@@ -47,6 +48,7 @@ export function StudentStage({ session, uid, me }: Omit<StageProps, "html">) {
   return (
     <main className="stage">
       <View session={session} uid={uid} me={me} html={applet.html} />
+      {control.mode !== "focus" && <Chat session={session} uid={uid} />}
     </main>
   );
 }
