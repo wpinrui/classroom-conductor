@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <script type="application/json" id="conductor-manifest">
+      {
+        "title": "Where is 3/8?",
+        "phases": ["Place", "Explain"],
+        "instructions": "Help the student place 3/8 on a number line from 0 to 1. Ask them to compare it with 1/2 and 1/4. Never give the position outright.",
+        "pulsePrompt": "Each state has x, the student's placement between 0 and 1, and note, their explanation. The answer is 0.375. Group students by how far off they are. Flag anyone near 0.38 or 0.83, since those read the fraction as digits.",
+        "namelist": ["Ann Lee", "Bo Tan", "Cy Ng"],
+        "preparedStates": [
+          { "name": "Read as digits", "state": { "x": 0.38, "note": "3/8 is like 0.38" }, "phase": 1 },
+          { "name": "Halfway between 1/4 and 1/2", "state": { "x": 0.375, "note": "1/4 is 2/8 and 1/2 is 4/8, so 3/8 is between them." }, "phase": 1 }
+        ]
+      }
+    </script>
+    <style>
+      body { font-family: system-ui, sans-serif; display: grid; place-items: center; min-height: 100vh; margin: 0; }
+      main { display: grid; gap: 1.5rem; justify-items: center; width: min(40rem, 90vw); }
+      h1 { font-size: 3rem; margin: 0; }
+      .line { position: relative; width: 100%; height: 4rem; cursor: pointer; }
+      .line::before { content: ""; position: absolute; left: 0; right: 0; top: 50%; border-top: 3px solid currentColor; }
+      .tick { position: absolute; top: 2.5rem; transform: translateX(-50%); }
+      .mark { position: absolute; top: 1.25rem; width: 1.5rem; height: 1.5rem; border-radius: 50%; background: tomato; transform: translateX(-50%); }
+      textarea { width: 100%; height: 6rem; font: inherit; }
+      button { font-size: 1.5rem; padding: 0.25rem 1.25rem; }
+      [hidden] { display: none; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>3/8</h1>
+      <div class="line" id="line">
+        <span class="tick" style="left: 0">0</span>
+        <span class="tick" style="left: 100%">1</span>
+        <span class="mark" id="mark" hidden></span>
+      </div>
+      <textarea id="note" aria-label="Why there?" hidden></textarea>
+      <button id="go" type="button"></button>
+    </main>
+    <script>
+      let state = { x: null, note: "" };
+      let phase = 0;
+      let maxPhase = null;
+      const $ = (id) => document.getElementById(id);
+      const host = window.conductor ?? { connect() {}, update() {} };
+
+      function render() {
+        // Realtime Database drops nulls, so a missing x means unplaced.
+        const placed = typeof state.x === "number";
+        $("mark").hidden = !placed;
+        if (placed) $("mark").style.left = `${state.x * 100}%`;
+        $("note").hidden = phase !== 1;
+        if ($("note").value !== (state.note ?? "")) $("note").value = state.note ?? "";
+        $("go").textContent = phase === 0 ? "→" : "←";
+        $("go").disabled = phase === 0 && (!placed || (maxPhase !== null && maxPhase < 1));
+      }
+      function change() {
+        render();
+        host.update(state, phase);
+      }
+
+      $("line").onclick = (e) => {
+        if (phase !== 0) return;
+        const r = $("line").getBoundingClientRect();
+        const x = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
+        state = { ...state, x: Math.round(x * 1000) / 1000 };
+        change();
+      };
+      $("go").onclick = () => { phase = 1 - phase; change(); };
+      $("note").oninput = (e) => { state = { ...state, note: e.target.value }; change(); };
+
+      host.connect({
+        setState(s, p) { state = { x: null, note: "", ...s }; phase = p; render(); },
+        setPhaseLimit(m) { maxPhase = m; render(); },
+      });
+      host.update(state, phase);
+      render();
+    </script>
+  </body>
+</html>
