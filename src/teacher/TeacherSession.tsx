@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router";
 import { AppletFrame } from "../applet/AppletFrame";
+import { Chat } from "../chat/Chat";
 import { writeTeacherState } from "../firebase/client";
 import type { Session, StoredState } from "../firebase/types";
 import { useSession, useThrottledWriter } from "../hooks/session";
@@ -37,6 +38,7 @@ export function TeacherSession() {
       />
       {controlsOpen && <Controls session={session} data={data} />}
       <PulsePanel session={session} />
+      <Chat session={session} uid={data.teacher} teacher />
     </main>
   );
 }
