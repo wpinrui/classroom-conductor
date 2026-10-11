@@ -40,6 +40,9 @@ export interface JoinCode {
   session: string;
 }
 
+/** Chat messages per student per minute when Control.chatLimit is absent. */
+export const DEFAULT_CHAT_LIMIT = 6;
+
 export interface Control {
   mode: Mode;
   /** Student uid shown in Spotlight and Anonymous Spotlight. */
