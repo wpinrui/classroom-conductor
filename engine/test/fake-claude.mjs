@@ -9,9 +9,11 @@ if (!args.includes("-p") || tools < 0 || args[tools + 1] !== "") {
 }
 const prompt = readFileSync(0, "utf8");
 if (prompt.includes("function pulse(input)")) {
-  console.log(
-    "```js\nreturn '<p>' + input.done + ' of ' + input.total + '</p>';\n```",
-  );
+  const body = [
+    "const done = Object.values(input).filter((s) => s.state.done);",
+    "return '<p>' + done.map((s) => s.name).join(' ') + ' done</p>';",
+  ];
+  console.log(["```js", ...body, "```"].join("\n"));
 } else {
   const last = prompt.split("Student: ").at(-1).split("\n")[0];
   console.log(`Echo: ${last}`);

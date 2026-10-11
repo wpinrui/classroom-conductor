@@ -89,11 +89,21 @@ it("refuses chat over the limit", async () => {
 });
 
 it("produces a Pulse and reuses its code", async () => {
+  await db.ref(paths.students(S)).set({
+    u1: { name: "Ann", key: "ann", joinedAt: 1 },
+    u2: { name: "Bo", key: "bo", joinedAt: 1 },
+  });
+  const state = (done: boolean) => ({
+    json: JSON.stringify({ done }),
+    phase: 0,
+    at: 1,
+  });
+  const inputs = {
+    p1: { u1: state(true), u2: state(false) },
+    p2: { u1: state(true), u2: state(true) },
+  };
   const before = calls;
-  for (const [id, input] of [
-    ["p1", { done: 2, total: 5 }],
-    ["p2", { done: 4, total: 5 }],
-  ] as const) {
+  for (const [id, input] of Object.entries(inputs)) {
     await db
       .ref(paths.pulse(S, id))
       .set({ input: JSON.stringify(input), at: Date.now(), status: "pending" });
@@ -103,8 +113,8 @@ it("produces a Pulse and reuses its code", async () => {
     await until(`${paths.pulse(S, id)}/status`, "done");
   }
   const pulses = (await db.ref(paths.pulses(S)).get()).val();
-  expect(pulses.p1.output).toBe("<p>2 of 5</p>");
-  expect(pulses.p2.output).toBe("<p>4 of 5</p>");
+  expect(pulses.p1.output).toBe("<p>Ann done</p>");
+  expect(pulses.p2.output).toBe("<p>Ann Bo done</p>");
   expect(pulses.p2.code).toBe(pulses.p1.code);
   expect(calls - before).toBe(1);
 });
