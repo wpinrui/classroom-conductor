@@ -107,7 +107,11 @@ export function Controls({
         </output>
 
         <div className="presence">
-          <output aria-label="Students online" className="stat">
+          <output
+            aria-label="Students online"
+            data-tip="Students online"
+            className="stat"
+          >
             <PersonIcon />
             {online}/{students.length}
             {students.length > 0 && online === students.length && (
@@ -118,6 +122,7 @@ export function Controls({
             type="button"
             className="quiet icon-button"
             aria-label="Student screens"
+            data-tip="Student screens"
             aria-pressed={thumbsOpen}
             onClick={() => setThumbsOpen((o) => !o)}
           >
@@ -165,6 +170,7 @@ export function Controls({
               className="stepper-label"
               role="img"
               aria-label="Chats per minute"
+              data-tip="Chats per minute"
             >
               <ChatIcon />
             </span>

@@ -311,7 +311,7 @@ export function moveToGroup(
 ) {
   const updates: Record<string, unknown> = {};
   if (from) {
-    const left = Object.keys(from.members).filter((m) => m !== student);
+    const left = Object.keys(from.members ?? {}).filter((m) => m !== student);
     if (left.length === 0) updates[paths.group(session, from.id)] = null;
     else {
       updates[`${paths.group(session, from.id)}/members/${student}`] = null;

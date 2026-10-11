@@ -12,7 +12,10 @@ export function Groups({ session, data }: { session: string; data: Session }) {
   const size = data.control.groupSize ?? DEFAULT_GROUP_SIZE;
   const students = data.students ?? {};
   const uids = Object.keys(students);
-  const groups = Object.entries(data.groups ?? {});
+  // A group its last student left stays behind with no members. Hide it.
+  const groups = Object.entries(data.groups ?? {}).filter(
+    ([, g]) => g.members && Object.keys(g.members).some((uid) => students[uid]),
+  );
   const groupOf = (uid: string) => {
     const g = students[uid].group;
     return g && data.groups?.[g] ? g : null;
@@ -58,7 +61,12 @@ export function Groups({ session, data }: { session: string; data: Session }) {
       <div className="row">
         <Stepper
           label={
-            <span className="stepper-label" role="img" aria-label="Group size">
+            <span
+              className="stepper-label"
+              role="img"
+              aria-label="Group size"
+              data-tip="Group size"
+            >
               <GroupIcon />
             </span>
           }
@@ -77,7 +85,7 @@ export function Groups({ session, data }: { session: string; data: Session }) {
       </div>
       {groups.map(([gid, g]) => (
         <ul key={gid} className="group" {...zone(gid, gid)}>
-          {Object.keys(g.members)
+          {Object.keys(g.members ?? {})
             .filter((uid) => students[uid])
             .map(chip)}
         </ul>

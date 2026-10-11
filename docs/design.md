@@ -9,7 +9,7 @@ This is the UI spec for every screen. Tokens live in `src/styles/tokens.css`. Sh
 3. Never output an em-dash or a middle dot, in UI, comments or docs. They stand in for decisions.
 4. In meta lines, nav and labels, distinguish items by weight, size, colour or spacing, never by a separator glyph. If two items would get identical treatment, they are one item, so merge or cut.
 5. In prose, one idea per sentence.
-6. Never use the native `title` attribute. Icon-only buttons carry `aria-label` now. The design thread adds a real tooltip component in the restyle pass.
+6. Never use the native `title` attribute. An icon-only control whose meaning is not obvious carries `aria-label` and the same text in `data-tip`, which `base.css` renders as a tooltip after a 400ms hover or on keyboard focus. Obvious icons, such as ✕ to close, get `aria-label` only.
 7. Errors are shown on the thing that failed: a red border and a shake on a field, a red ring on a button. A sentence appears only when the cause cannot be shown, such as an applet upload that fails validation.
 8. No raw colour outside `tokens.css`. The test in `src/styles/no-raw-color.test.ts` enforces it.
 
@@ -128,7 +128,7 @@ The applet fills the viewport in every mode. The student sees no chrome except t
 | Independent | Their own applet, editable. No cue. |
 | Paced | Their own applet, held to the teacher's phase. No cue. |
 | Group | Their group's shared applet. Member initials sit top right as overlapping pill avatars. |
-| Freeze | Their own applet, view-only, under a 30% scrim. A lock icon sits top centre. |
+| Freeze | Their own applet, view-only, under a 30% scrim. A lock icon sits bottom left in a 48px round surface chip, mirroring the chat launcher. |
 | Focus | Solid `--color-scrim` over everything, chat included. Nothing else. |
 
 Group with no group yet: a centred card on `--color-surface`. The student's own group code sits on top at display size, mono. A code input sits below it with a primary Join. No explanatory copy.

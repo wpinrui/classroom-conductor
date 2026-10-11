@@ -104,6 +104,7 @@ export function Thumbnails({
               <button
                 type="button"
                 aria-label="Spotlight"
+                data-tip="Spotlight"
                 onClick={() =>
                   setControl(session, {
                     spotlight: uid,
@@ -116,6 +117,7 @@ export function Thumbnails({
               <button
                 type="button"
                 aria-label="Pulse"
+                data-tip="Pulse"
                 aria-busy={pending.has(uid)}
                 disabled={pending.has(uid)}
                 onClick={() => requestPulse(session, uid).then(showPulse)}

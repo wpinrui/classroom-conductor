@@ -203,6 +203,7 @@ export function ChatToggle({ className }: { className?: string }) {
       type="button"
       className={`chat-toggle ${className ?? ""}`}
       aria-label="Chat"
+      data-tip="Chat"
       aria-pressed={open}
       onClick={() => setChat({ open: !open })}
     >
