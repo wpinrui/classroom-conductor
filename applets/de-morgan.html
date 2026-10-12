@@ -50,7 +50,9 @@ body { background: var(--bg); color: var(--ink); font: 22px/1.4 system-ui, "Sego
 button, input, select, textarea { font: inherit; color: inherit; }
 button { cursor: pointer; border: 0; background: none; }
 button:disabled { cursor: default; opacity: .4; }
-#app { min-height: 100vh; padding: 56px 40px 110px; display: flex; flex-direction: column; align-items: center; }
+/* The page is laid out at 1280 wide and scaled to fit the window, so nothing is cut off on any screen. */
+#app { height: 100vh; padding-top: 56px; display: flex; justify-content: center; align-items: flex-start; overflow-x: hidden; overflow-y: auto; }
+#fit { flex: none; width: 1280px; padding: 0 40px 24px; display: flex; flex-direction: column; align-items: center; transform-origin: top center; }
 .stage { width: 100%; max-width: 1200px; display: flex; flex-direction: column; align-items: center; gap: 28px; }
 .row { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; justify-content: center; }
 .col { display: flex; flex-direction: column; gap: 16px; }
@@ -2519,7 +2521,7 @@ function render(force) {
     const sel = key && "selectionStart" in a ? [a.selectionStart, a.selectionEnd] : null;
     const scroll = {};
     $app.querySelectorAll("textarea[data-key]").forEach((t) => (scroll[t.dataset.key] = t.scrollTop));
-    $app.innerHTML = html;
+    $app.innerHTML = `<div id="fit">${html}</div>`;
     lastHtml = html;
     if (key) {
       const el = $app.querySelector(`[data-key="${CSS.escape(key)}"]`);
@@ -2533,7 +2535,21 @@ function render(force) {
   }
   syncValues();
   renderNav();
+  fit();
 }
+// Scale the 1280 wide layout to the window. Leaves room for the status bar above and the phase arrows below.
+const TOP = 56, BOTTOM = 80, MIN_SCALE = 0.5, MAX_SCALE = 1.6;
+function fit() {
+  const el = document.getElementById("fit");
+  if (!el) return;
+  const w = el.offsetWidth, h = el.offsetHeight;
+  if (!w || !h) return;
+  const s = Math.max(MIN_SCALE, Math.min(MAX_SCALE, (window.innerWidth - 32) / w, (window.innerHeight - TOP - BOTTOM) / h));
+  el.style.transform = `scale(${s})`;
+  // A transform does not change layout, so set the space the scaled page takes.
+  el.style.marginBottom = `${h * (s - 1)}px`;
+}
+window.addEventListener("resize", fit);
 function syncValues() {
   $app.querySelectorAll("[data-bind]").forEach((el) => {
     const v = getPath(state, el.dataset.bind) ?? "";

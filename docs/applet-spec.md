@@ -48,6 +48,7 @@ Consequences for the applet:
 **Recommended**
 
 - Design for a 1280 pixel wide viewport. Thumbnails render the applet at 1280 pixels and scale it down.
+- Fit the window, not just the width. Screens and projectors are often shorter than the layout, so scale the page down until it fits rather than letting the bottom fall off.
 - Make the screen readable from the back of a room. It is projected in Demo, Spotlight and Reveal.
 - Keep the top 48 pixels clear of anything important. The Conductor shows a small status bar at the top middle, such as whose screen is shown and the countdown.
 
