@@ -24,7 +24,54 @@
     ["independent"],
     ["independent"]
   ],
-  "handoff": false
+  "handoff": false,
+  "slides": [
+    {"label": "Warm-up", "phase": 0, "mode": "independent"},
+    {"label": "Round A decals", "cue": "deal A"},
+    {"label": "Who has a heart?", "cue": "question 1"},
+    {"label": "Pick someone", "wheel": {"filter": "", "spin": true}},
+    {"label": "Who does not have a heart?", "mode": "independent", "cue": "question 2"},
+    {"label": "Pick someone", "wheel": {"filter": "", "spin": true}},
+    {"label": "Round B decals", "mode": "independent", "cue": "deal B"},
+    {"label": "Yellow or green?", "cue": "question 1"},
+    {"label": "Pick someone", "wheel": {"filter": "", "spin": true}},
+    {"label": "Yellow and green?", "mode": "independent", "cue": "question 2"},
+    {"label": "Pick someone", "wheel": {"filter": "", "spin": true}},
+    {"label": "Round C decals", "mode": "independent", "cue": "deal C"},
+    {"label": "Mango or pear?", "cue": "question 1"},
+    {"label": "Pick someone", "wheel": {"filter": "", "spin": true}},
+    {"label": "Not mango or pear?", "mode": "independent", "cue": "question 2"},
+    {"label": "Pick someone", "wheel": {"filter": "", "spin": true}},
+    {"label": "Predict example 1", "phase": 1, "mode": "independent", "cue": "example 1"},
+    {"label": "Show results", "cue": "results"},
+    {"label": "Example 2", "cue": "example 2"},
+    {"label": "Show results", "cue": "results"},
+    {"label": "Example 3", "cue": "example 3"},
+    {"label": "Show results", "cue": "results"},
+    {"label": "Example 4", "cue": "example 4"},
+    {"label": "Show results", "cue": "results"},
+    {"label": "Pick a True voter", "wheel": {"filter": "True", "spin": true}},
+    {"label": "Pick a False voter", "wheel": {"filter": "False", "spin": true}},
+    {"label": "Truth table, 1 minute", "phase": 2, "mode": "independent", "timer": 60},
+    {"label": "Pick a table", "wheel": {"filter": "", "spin": true}},
+    {"label": "Reveal NOR", "mode": "independent", "cue": "nor"},
+    {"label": "NOR half", "phase": 3, "mode": "independent"},
+    {"label": "Fill NOR column", "cue": "fill NOR"},
+    {"label": "Fill column 1", "cue": "fill 1"},
+    {"label": "Fill column 2", "cue": "fill 2"},
+    {"label": "NAND: students type", "phase": 4, "mode": "independent", "cue": "type"},
+    {"label": "Show answers", "cue": "answers"},
+    {"label": "Passwords", "phase": 5, "mode": "independent"},
+    {"label": "Demo my code", "mode": "demo"},
+    {"label": "Challenge, 8 minutes", "phase": 6, "mode": "independent", "timer": 480},
+    {"label": "Show solved count", "cue": "count"},
+    {"label": "Show model circuit", "reveal": "AND circuit"},
+    {"label": "Practice, 8 minutes", "phase": 7, "mode": "independent", "timer": 480},
+    {"label": "Takeaways", "phase": 8, "mode": "independent", "cue": "takeaways"},
+    {"label": "Pick someone", "wheel": {"filter": "", "spin": true}},
+    {"label": "Exit question", "mode": "independent", "cue": "exit"},
+    {"label": "Show exit answers", "cue": "exit answers"}
+  ]
 }
 </script>
 <style>
@@ -2860,6 +2907,60 @@ function setPhase(p) {
   publishFilters();
 }
 
+// ---------- Slideshow cues ----------
+// The Conductor replays every cue from the start of the phase up to the current step, so each cue is a setter.
+// fresh is false on a replay: no new randomness.
+function resetPresentation(p) {
+  if (p === 0) Object.assign(state.warm, { round: -1, q: -1, shown: false });
+  if (p === 1) Object.assign(state.predict, { ex: 0, shown: {}, hide: false });
+  if (p === 2) state.tt.reveal = false;
+  if (p === 3) Object.assign(state.nor, { t: "----", o1: "----", o2: "----" });
+  if (p === 4) Object.assign(state.nand, { mode: "type", shown: false, table: false });
+  if (p === 6) state.circ.showCount = false;
+  if (p === 8) Object.assign(state.conc, { view: "cards", exitOpen: false, shown: false });
+}
+const evalCol = (e) => ROWS.map(([a, b]) => Bool.evalAt(P(e), { A: a, B: b })).join("");
+function applyCue(name, fresh) {
+  const [cmd, arg] = [name.split(" ")[0], name.split(" ").slice(1).join(" ")];
+  const w = state.warm;
+  switch (cmd) {
+    case "deal":
+      w.round = "ABC".indexOf(arg); w.q = -1; w.shown = true;
+      if (fresh) w.deal = (w.deal | 0) + 1;
+      break;
+    case "question": w.q = +arg - 1; break;
+    case "example": state.predict.ex = +arg - 1; break;
+    case "results": {
+      const e = "e" + (state.predict.ex | 0);
+      state.predict.shown[e] = true;
+      if (live()) { const v = votesFor(e); state.predict.counts[e] = { t: v.t.length, f: v.f.length }; }
+      break;
+    }
+    case "nor": state.tt.reveal = true; break;
+    case "fill": {
+      const o = NOR_OUTS.find((x) => x.tag === arg);
+      if (o) state.nor[o.k] = evalCol(o.e);
+      break;
+    }
+    case "type": state.nand.mode = "type"; break;
+    case "choices": state.nand.mode = "pick"; break;
+    case "answers": state.nand.shown = true; break;
+    case "count": state.circ.showCount = true; break;
+    case "takeaways": state.conc.view = "cards"; break;
+    case "exit": state.conc.view = "exit"; state.conc.exitOpen = true; break;
+  }
+  if (name === "exit answers") state.conc.shown = true;
+}
+// Runs one slideshow step in the teacher's frame: move to the phase, rebuild its presentation, apply the cues.
+function runSlide({ phase: p, cues }) {
+  if (!isTeacher()) return;
+  setPhase(p | 0);
+  resetPresentation(phase);
+  for (const c of cues || []) applyCue(String(c.name || ""), !!c.fresh);
+  commit();
+  publishFilters();
+}
+
 // ---------- Class tools ----------
 function publishFilters() {
   if (!live()) return;
@@ -3070,6 +3171,7 @@ host.connect({
     render();
     ownSeed();
   },
+  slide(step) { runSlide(step || {}); },
   wheelPicked(id) {
     if (phase === 0 || phase === 2) host.spotlight?.(id);
   },
