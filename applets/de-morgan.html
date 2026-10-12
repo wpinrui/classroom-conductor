@@ -46,7 +46,8 @@
     {"label": "Show results", "cue": "results"},
     {"label": "Pick a True voter", "wheel": {"filter": "True", "spin": true}},
     {"label": "Pick a False voter", "wheel": {"filter": "False", "spin": true}},
-    {"label": "Truth table, 1 minute", "phase": 2, "mode": "independent", "timer": 60},
+    {"label": "Truth Table", "phase": 2, "mode": "independent"},
+    {"label": "Start 1 minute timer", "timer": 60},
     {"label": "Pick a table", "wheel": {"filter": "", "spin": true}},
     {"label": "Reveal NOR", "mode": "independent", "cue": "nor"},
     {"label": "NOR half", "phase": 3, "mode": "independent"},
@@ -2839,13 +2840,21 @@ function flash(texts) {
     }, i * 1500));
   });
 }
+// Phases that open with a title card for students.
+const PHASE_TITLES = { 1: "Rapid Fire T/F", 2: "Truth Table" };
+let titledPhase = null;
 function questionTitle() {
-  const ex = !isTeacher() && phase === 1 ? T().predict.ex | 0 : null;
-  if (ex === titledEx) return;
-  const entering = titledEx === null;
+  const p = isTeacher() ? null : phase;
+  const ex = p === 1 ? T().predict.ex | 0 : null;
+  const entering = p !== titledPhase;
+  if (!entering && ex === titledEx) return;
+  titledPhase = p;
   titledEx = ex;
-  if (ex === null) return;
-  flash(entering ? ["Rapid Fire T/F", "Question " + (ex + 1)] : ["Question " + (ex + 1)]);
+  if (p === null) return;
+  const cards = [];
+  if (entering && PHASE_TITLES[p]) cards.push(PHASE_TITLES[p]);
+  if (ex !== null) cards.push("Question " + (ex + 1));
+  if (cards.length) flash(cards);
 }
 
 // ---------- Task lines ----------
