@@ -14,7 +14,7 @@ The teacher uploads the HTML file and starts a session. Students join with a cod
 | --- | --- |
 | Independent | Each student works in their own applet. |
 | Demo | Students watch the teacher's applet live. |
-| Handoff | Every student's state is replaced by the teacher's current state, then the class goes Independent. |
+| Handoff | Offered only during Demo. Every student's state is replaced by the teacher's current state, then the class goes Independent. |
 | Spotlight | Everyone watches one student's applet, with their name. Anonymous Spotlight hides the name. |
 | Gallery | Several students' applets are shown side by side on everyone's screen. |
 | Group | Several students edit one shared state together. |
@@ -96,7 +96,7 @@ Declare the manifest in a JSON script tag, anywhere in the file:
 - The first mode in each list is that phase's default.
 - When the teacher's phase changes to one that does not allow the current mode, the class switches to the new phase's default. The same happens when a session starts.
 - A scripted spotlight in a phase that does not allow Spotlight is undone straight away.
-- Handoff is always offered, because it is an action rather than a mode.
+- Handoff is offered only during Demo, so a phase that does not allow Demo never shows it.
 - Leave `modes` out to offer every mode in every phase.
 
 ## 4. The runtime
