@@ -125,18 +125,19 @@ export function Wheel({
   const filter = filters.find((f) => f.name === chosen);
   const pool = chosen === EVERYONE || !filter ? EVERYONE : chosen;
   const spinning = !!spin && !spin.done;
-  // The student just drawn stays on the wheel until it moves on, even when drawing them took them out.
-  const shownWinner = spin?.done ? spin.members[spin.winner]?.uid : undefined;
   const drawable = (uids: string[] | null) =>
     poolMembers(data, uids).filter((m) => replacement || !drawn[m.uid]);
+  const everyone = poolMembers(data, filter ? filter.students : null);
   const candidates = drawable(filter ? filter.students : null);
-  const live = poolMembers(data, filter ? filter.students : null).filter(
-    (m) => replacement || !drawn[m.uid] || m.uid === shownWinner,
-  );
+  // With No repeats, a drawn student leaves the wheel as soon as the spin lands.
+  const live = replacement ? everyone : candidates;
   // A finished spin stays on screen until the pool it was drawn from changes.
-  const held = spin && (spinning || keyOf(spin.members) === keyOf(live));
+  const held =
+    spin && (spinning || (replacement && keyOf(spin.members) === keyOf(live)));
   const members = held ? spin.members : live;
   const winner = held && spin.done ? spin.winner : null;
+  /** The student the last spin landed on, shown under the wheel even once they leave it. */
+  const picked = spin?.done ? spin.members[spin.winner] : undefined;
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -147,16 +148,19 @@ export function Wheel({
   }, [onClose]);
 
   const go = () => {
-    if (spinning || candidates.length === 0) return;
-    const prev = held && spin?.done ? spin.members[spin.winner]?.uid : null;
+    if (spinning) return;
+    // Everyone has had a turn: start a fresh round instead of refusing to spin.
+    const refill = candidates.length === 0 && !replacement;
+    const pool = refill ? everyone : candidates;
+    if (pool.length === 0) return;
+    const prev = picked?.uid ?? null;
     // Never call the same student twice running when anyone else is left.
-    const last =
-      candidates.length > 1 ? candidates.findIndex((m) => m.uid === prev) : -1;
-    let pick = randomIndex(candidates.length - (last >= 0 ? 1 : 0));
+    const last = pool.length > 1 ? pool.findIndex((m) => m.uid === prev) : -1;
+    let pick = randomIndex(pool.length - (last >= 0 ? 1 : 0));
     if (last >= 0 && pick >= last) pick += 1;
     const jitter = randomIndex(1000) / 1000 - 0.5;
-    const turn = landingTurn(spin?.turn ?? 0, pick, candidates.length, jitter);
-    setSpin({ members: candidates, winner: pick, turn, done: false });
+    const turn = landingTurn(spin?.turn ?? 0, pick, pool.length, jitter);
+    setSpin({ members: pool, winner: pick, turn, done: false });
     // Backstop for when transitionend never fires, such as a spin started before the wheel was painted.
     const ms = durationMs(disc.current) + 300;
     setTimeout(
@@ -164,7 +168,12 @@ export function Wheel({
       ms,
     );
     if (!replacement)
-      setWheel(session, { [`drawn/${candidates[pick].uid}`]: true });
+      setWheel(session, {
+        ...(refill
+          ? Object.fromEntries(pool.map((m) => [`drawn/${m.uid}`, null]))
+          : {}),
+        [`drawn/${pool[pick].uid}`]: true,
+      });
     // Reduced motion zeroes the transition, so transitionend never fires.
     requestAnimationFrame(() => {
       const el = disc.current;
@@ -334,7 +343,7 @@ export function Wheel({
         <button
           type="button"
           className="primary wheel-hub"
-          disabled={candidates.length === 0}
+          disabled={everyone.length === 0}
           onClick={go}
         >
           Spin
@@ -342,15 +351,15 @@ export function Wheel({
       </div>
       <div className="wheel-result">
         <output className="wheel-winner" aria-live="polite">
-          {winner !== null ? members[winner].name : ""}
+          {picked?.name ?? ""}
         </output>
-        {winner !== null && (
+        {picked && (
           <button
             type="button"
             className="quiet icon-button"
             aria-label="Spotlight"
             data-tip="Spotlight"
-            onClick={() => onSpotlight(members[winner].uid)}
+            onClick={() => onSpotlight(picked.uid)}
           >
             <SpotlightIcon />
           </button>
