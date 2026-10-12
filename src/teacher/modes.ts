@@ -29,3 +29,10 @@ export function allowedModes(data: Session): Mode[] | null {
   const modes = data.applet.manifest.modes;
   return modes?.[teacherPhase(data)] ?? null;
 }
+
+/** Whether the applet offers Handoff in the teacher's current phase. */
+export function handoffAllowed(data: Session): boolean {
+  const h = data.applet.manifest.handoff;
+  if (Array.isArray(h)) return h.includes(teacherPhase(data));
+  return h !== false;
+}

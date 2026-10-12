@@ -136,8 +136,17 @@ export function parseManifest(html: string): Manifest {
     throw new ManifestError(
       "a prepared state names a phase that is not declared",
     );
-  if (m.handoff !== undefined && typeof m.handoff !== "boolean")
-    throw new ManifestError("handoff must be true or false");
+  if (
+    m.handoff !== undefined &&
+    typeof m.handoff !== "boolean" &&
+    !(
+      Array.isArray(m.handoff) &&
+      m.handoff.every((p) => Number.isInteger(p) && p >= 0 && p < phaseCount)
+    )
+  )
+    throw new ManifestError(
+      "handoff must be true, false or a list of phase indexes",
+    );
   let modes: Mode[][] | undefined;
   if (m.modes !== undefined) {
     if (!Array.isArray(m.modes) || !m.modes.every(isStringArray))
@@ -182,7 +191,9 @@ export function parseManifest(html: string): Manifest {
         }
       : {}),
     ...(modes ? { modes } : {}),
-    ...(m.handoff === false ? { handoff: false } : {}),
+    ...(m.handoff === false || Array.isArray(m.handoff)
+      ? { handoff: m.handoff as false | number[] }
+      : {}),
     ...(slides && slides.length > 0 ? { slides } : {}),
   };
 }

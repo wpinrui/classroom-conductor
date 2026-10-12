@@ -7,7 +7,7 @@ import { PulseButton } from "../pulse/Pulse";
 import { routes } from "../routes";
 import { TimerControls } from "../timer/TimerControls";
 import { Groups } from "./Groups";
-import { allowedModes, defaultsFor } from "./modes";
+import { allowedModes, defaultsFor, handoffAllowed } from "./modes";
 import { BlankIcon, ChatIcon, GridIcon, PersonIcon, WheelIcon } from "./icons";
 import { Reveal } from "./Reveal";
 import { Stepper } from "./Stepper";
@@ -199,7 +199,7 @@ export function Controls({
         {control.mode === "group" && <Groups session={session} data={data} />}
 
         <div className="actions">
-          {control.mode === "demo" && manifest.handoff !== false && (
+          {control.mode === "demo" && handoffAllowed(data) && (
             <button
               type="button"
               className="primary handoff"

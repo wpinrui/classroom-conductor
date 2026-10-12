@@ -17,14 +17,14 @@
     ["independent", "spotlight"],
     ["independent"],
     ["independent", "spotlight", "reveal"],
-    ["independent", "reveal"],
+    ["independent", "demo", "reveal"],
     ["independent"],
     ["independent", "demo", "spotlight"],
     ["independent", "demo", "spotlight", "reveal"],
     ["independent"],
     ["independent"]
   ],
-  "handoff": false,
+  "handoff": [3],
   "slides": [
     {"label": "Warm-up", "phase": 0, "mode": "independent"},
     {"label": "Round A decals", "cue": "deal A"},
@@ -2360,8 +2360,9 @@ function viewNor() {
   const cand = (type) => twoIn({ gates: { n1: { type: "NOT", x: 110, y: 25 }, n2: { type: "NOT", x: 110, y: 115 }, g: { type, x: 250, y: 70 } }, wires: { "n1:0": "A", "n2:0": "B", "g:0": "n1", "g:1": "n2", Q: "g" } });
   const svg = (L) => circuitSVG(L, false).replace(/width="400" height="200"/, 'width="340" height="170"');
   const card = (L, o) => `<div class="ccard ${o.goal ? "goal" : ""}"><span class="ctag ${o.goal ? "goal" : ""}">${o.tag}</span>${svg(L)}</div>`;
-  const ed = isTeacher();
-  const n = ed || norHas(state.nor) ? state.nor : T().nor;
+  // Students watch the teacher's table until a Handoff gives them their own copy, which they then work on.
+  const ed = isTeacher() || norHas(state.nor);
+  const n = ed ? state.nor : T().nor;
   const full = NOR_OUTS.every((o) => !pad4(n[o.k]).includes("-"));
   const goalOk = pad4(n.t) === "1000";
   const match = (k) => full && goalOk && k !== "t" && pad4(n[k]) === pad4(n.t);
