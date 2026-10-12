@@ -250,7 +250,32 @@ export async function joinSession(
       throw new JoinError("name");
     }
   }
+  try {
+    localStorage.setItem(LAST_JOIN, JSON.stringify({ code, session }));
+  } catch {}
   return session;
+}
+
+const LAST_JOIN = "lastJoin";
+
+/** The session this browser last joined, if it is still running and this student is still in it. */
+export async function resumeSession(): Promise<string | null> {
+  let last: { code?: unknown; session?: unknown };
+  try {
+    last = JSON.parse(localStorage.getItem(LAST_JOIN) ?? "null") ?? {};
+  } catch {
+    return null;
+  }
+  const { code, session } = last;
+  if (typeof code !== "string" || typeof session !== "string") return null;
+  await auth.authStateReady();
+  if (!auth.currentUser) return null;
+  const codeSnap = await get(ref(db, paths.code(code))).catch(() => null);
+  if ((codeSnap?.val() as JoinCode | null)?.session !== session) return null;
+  const me = await get(ref(db, paths.student(session, uid()))).catch(
+    () => null,
+  );
+  return me?.exists() ? session : null;
 }
 
 /** Marks the current user present until they disconnect. */
