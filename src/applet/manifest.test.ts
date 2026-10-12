@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
 import { withBridge } from "./bridge";
+import { preparedJson } from "./contract";
 import { nameKey, parseManifest } from "./manifest";
 
 const page = (manifest: unknown) =>
@@ -18,13 +19,28 @@ describe("parseManifest", () => {
     expect(parseManifest(page(valid))).toEqual(valid);
   });
 
-  it("keeps the optional namelist and prepared states", () => {
+  it("keeps the namelist and stores prepared states as JSON text", () => {
+    const state = { circ: { wires: { "g1.0": [], n: null, 0: "a" } } };
     const m = {
       ...valid,
       namelist: ["Ann"],
-      preparedStates: [{ name: "Answer", state: { x: 1 }, phase: 1 }],
+      preparedStates: [{ name: "Answer", state, phase: 1 }],
     };
-    expect(parseManifest(page(m))).toEqual(m);
+    expect(parseManifest(page(m))).toEqual({
+      ...m,
+      preparedStates: [
+        { name: "Answer", json: JSON.stringify(state), phase: 1 },
+      ],
+    });
+  });
+
+  it("reads prepared states stored either way", () => {
+    expect(preparedJson({ name: "a", json: '{"x":1}', phase: 0 })).toBe(
+      '{"x":1}',
+    );
+    expect(preparedJson({ name: "a", state: { x: 1 }, phase: 0 })).toBe(
+      '{"x":1}',
+    );
   });
 
   it("leaves out the chatbot and Pulse when they are absent", () => {
