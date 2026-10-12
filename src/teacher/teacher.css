@@ -19,6 +19,11 @@
   z-index: var(--z-controls);
 }
 
+/* The panel scrolls when its contents outgrow it, rather than squeezing them. */
+.stage .controls > * {
+  flex-shrink: 0;
+}
+
 .stage .controls button {
   min-height: 40px;
 }

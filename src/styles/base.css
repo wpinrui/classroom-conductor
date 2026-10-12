@@ -194,6 +194,12 @@ input[aria-invalid="true"] {
   width: min(20rem, 90vw);
 }
 
+/* Inputs size to the form, not to their default character width. */
+.join input {
+  min-width: 0;
+  width: 100%;
+}
+
 .code-input {
   font-family: var(--font-mono);
   font-size: var(--font-size-2xl);
