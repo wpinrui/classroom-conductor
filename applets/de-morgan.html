@@ -166,6 +166,12 @@ table.tt { border-collapse: separate; border-spacing: 0; background: var(--card)
 .tt th .x svg, button[data-act="exdel"] svg { width: 20px; height: 20px; }
 .tt th .fill { display: block; margin: 6px auto 0; color: var(--accent); padding: 4px; border-radius: 6px; line-height: 0; }
 .tt th .fill:hover { background: var(--accent-soft); }
+/* Column buttons sit in a strip along the top of the heading, so every heading's text lines up along the bottom. */
+.tt th { position: relative; }
+.tt th .hacts { position: absolute; top: 6px; left: 0; right: 0; display: flex; justify-content: center; gap: 2px; }
+.tt th .hacts:empty { display: none; }
+.tt th .hacts .x, .tt th .hacts .fill { display: inline-flex; margin: 0; }
+.tt tr:has(.hacts:not(:empty)) > th { padding-top: 42px; }
 .tt th .fill svg { width: 20px; height: 20px; }
 .tt th .x:hover { color: var(--bad); background: var(--bad-soft); }
 .tt th .ex-done { font-size: 28px; }
@@ -2269,9 +2275,9 @@ function viewTT() {
   let head = `${BASKET_HEAD}<th>${alg("M")}</th><th>${alg("P")}</th>`;
   tt.cols.forEach((c, ci) => {
     const path = `tt.cols.${ci}`;
-    head += `<th>${exInput(path, c, ["M", "P"], { cls: "" })}<button class="x" data-act="ttdel" data-i="${ci}" aria-label="Remove column">${I.trash}</button>${c.done ? fillBtn(`${path}.vals`, c.text, ["M", "P"]) : ""}</th>`;
+    head += `<th>${exInput(path, c, ["M", "P"], { cls: "" })}<span class="hacts"><button class="x" data-act="ttdel" data-i="${ci}" aria-label="Remove column">${I.trash}</button>${c.done ? fillBtn(`${path}.vals`, c.text, ["M", "P"]) : ""}</span></th>`;
   });
-  head += `<th class="target">${alg("NOT (M OR P)")}${fillBtn("tt.target", "NOT (M OR P)", ["M", "P"])}</th>`;
+  head += `<th class="target">${alg("NOT (M OR P)")}<span class="hacts">${fillBtn("tt.target", "NOT (M OR P)", ["M", "P"])}</span></th>`;
   let body = "";
   ROWS.forEach(([m, p], ri) => {
     body += `<tr>${basketCell(m, p)}<td class="in">${m}</td><td class="in">${p}</td>`;
@@ -2295,7 +2301,7 @@ function combinedTable(path, cells, defs, editable) {
   const matches = (d) => full && d.k !== ref.k && pad4(cells[d.k]) === pad4(cells[ref.k]) && pad4(cells[ref.k]) === correct(ref);
   const anyMatch = defs.slice(3).some(matches);
   const cls = (d) => (matches(d) || (anyMatch && d.k === ref.k) ? "match" : "");
-  let html = `<table class="tt"><tr>${defs.map((d, ci) => `<th class="${cls(d)}">${alg(d.e)}${editable && ci >= 2 ? fillBtn(`${path}.${d.k}`, d.e, ["A", "B"]) : ""}</th>`).join("")}</tr>`;
+  let html = `<table class="tt"><tr>${defs.map((d, ci) => `<th class="${cls(d)}">${alg(d.e)}<span class="hacts">${editable && ci >= 2 ? fillBtn(`${path}.${d.k}`, d.e, ["A", "B"]) : ""}</span></th>`).join("")}</tr>`;
   ROWS.forEach(([a, b], ri) => {
     html += "<tr>" + defs.map((d, ci) => {
       if (ci < 2) return `<td class="in">${ci === 0 ? a : b}</td>`;
@@ -2329,10 +2335,10 @@ function viewNor() {
   let head = `<th>${alg("A")}</th><th>${alg("B")}</th>`;
   n.cols.forEach((c, ci) => {
     head += ed
-      ? `<th>${exInput(`nor.cols.${ci}`, c, ["A", "B"])}<button class="x" data-act="nordel" data-i="${ci}" aria-label="Remove column">${I.trash}</button>${c.done ? fillBtn(`nor.cols.${ci}.vals`, c.text, ["A", "B"]) : ""}</th>`
+      ? `<th>${exInput(`nor.cols.${ci}`, c, ["A", "B"])}<span class="hacts"><button class="x" data-act="nordel" data-i="${ci}" aria-label="Remove column">${I.trash}</button>${c.done ? fillBtn(`nor.cols.${ci}.vals`, c.text, ["A", "B"]) : ""}</span></th>`
       : `<th>${c.done ? alg(c.text) : ""}</th>`;
   });
-  head += NOR_OUTS.map((o) => `<th class="${cls(o)}"><span class="ctag ${o.goal ? "goal" : ""}">${o.tag}</span>${fillBtn(`nor.${o.k}`, o.e, ["A", "B"])}</th>`).join("");
+  head += NOR_OUTS.map((o) => `<th class="${cls(o)}"><span class="ctag ${o.goal ? "goal" : ""}">${o.tag}</span><span class="hacts">${fillBtn(`nor.${o.k}`, o.e, ["A", "B"])}</span></th>`).join("");
   let body = "";
   ROWS.forEach(([a, b], ri) => {
     body += `<tr><td class="in">${a}</td><td class="in">${b}</td>`;
