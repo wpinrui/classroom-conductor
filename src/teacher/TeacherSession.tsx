@@ -130,6 +130,8 @@ export function TeacherSession() {
     const k = Math.min(cursorRef.current, slides.length - 1) + dir;
     if (k < 0 || k >= slides.length) return;
     setCursor(k);
+    // The wheel belongs to the step that spun it. Any other step puts it away.
+    if (!slides[k].wheel) setWheelOpen(false);
     const forward = dir === 1;
     const effect = slideEffect(slides, k);
     const target = effect.phase ?? teacherPhase(data);
