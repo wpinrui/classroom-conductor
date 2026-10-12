@@ -52,6 +52,7 @@
     {"label": "NOR half", "phase": 3, "mode": "independent"},
     {"label": "Fill column 1", "cue": "fill 1"},
     {"label": "Fill column 2", "cue": "fill 2"},
+    {"label": "De Morgan's theorem", "cue": "theorem"},
     {"label": "NAND: students type", "phase": 4, "mode": "independent", "cue": "type"},
     {"label": "Show answers", "cue": "answers"},
     {"label": "Passwords", "phase": 5, "mode": "independent"},
@@ -326,6 +327,9 @@ button.tcard { cursor: pointer; }
 /* Title cards a student sees entering Predict and at each of its questions: each fades in and out over 1.5s. */
 .flash { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; background: var(--bg); font-size: 96px; font-weight: 700; pointer-events: none; animation: flash 1.5s ease-in-out forwards; }
 @keyframes flash { 0% { opacity: 0; } 25% { opacity: 1; } 70% { opacity: 1; } 100% { opacity: 0; } }
+
+/* De Morgan's theorem, shown under the NOR table once the class has found it. */
+.theorem { font-size: 52px; padding: 8px 24px; }
 
 /* Task line */
 .task { max-width: 1000px; text-align: center; margin-bottom: 20px; }
@@ -1779,7 +1783,7 @@ const DEFAULTS = {
   predict: { ex: 0, shown: {}, counts: {}, votes: {}, hide: false },
   tt: { cols: [], target: "----", reveal: false, dimT: false },
   // The NOR column was found in the truth table phase, so it arrives filled in.
-  nor: { cols: [], t: "1000", o1: "----", o2: "----", dimOut: {} },
+  nor: { cols: [], t: "1000", o1: "----", o2: "----", dimOut: {}, theorem: false },
   nand: { mode: "type", shown: false, table: false, cells: { ...BLANK_TABLE }, text: "", done: false, bad: false, pick: "" },
   pw: { code: DEFAULT_CODE, password: "", confirm: "", result: "", err: "", passes: false },
   circ: { gates: {}, wires: {}, showCount: false },
@@ -2366,6 +2370,8 @@ function viewNor() {
       <table class="tt">${"<tr>" + head + "</tr>" + body}</table>
       ${ed ? `<button class="btn icon" data-act="noradd" aria-label="Add column">${I.plus}</button>` : ""}
     </div>
+    ${T().nor.theorem ? `<div class="theorem">${typeset("\overline{A + B} = \overline{A} \cdot \overline{B}")}</div>` : ""}
+    ${ed ? `<div class="row"><button class="btn ${state.nor.theorem ? "on" : ""}" data-act="northeorem">${I.eye}Theorem</button></div>` : ""}
   </div>`;
 }
 
@@ -2990,7 +2996,7 @@ function resetPresentation(p) {
   if (p === 0) Object.assign(state.warm, { round: -1, q: -1, shown: false });
   if (p === 1) Object.assign(state.predict, { ex: 0, shown: {}, hide: false });
   if (p === 2) state.tt.reveal = false;
-  if (p === 3) Object.assign(state.nor, { t: "1000", o1: "----", o2: "----" });
+  if (p === 3) Object.assign(state.nor, { t: "1000", o1: "----", o2: "----", theorem: false });
   if (p === 4) Object.assign(state.nand, { mode: "type", shown: false, table: false });
   if (p === 6) state.circ.showCount = false;
   if (p === 8) Object.assign(state.conc, { view: "cards", exitOpen: false, shown: false });
@@ -3013,6 +3019,7 @@ function applyCue(name, fresh) {
       break;
     }
     case "nor": state.tt.reveal = true; break;
+    case "theorem": state.nor.theorem = true; break;
     case "fill": {
       const o = NOR_OUTS.find((x) => x.tag === arg);
       if (o) state.nor[o.k] = evalCol(o.e);
@@ -3092,6 +3099,7 @@ const ACT = {
     commit();
   },
   ttreveal() { state.tt.reveal = !state.tt.reveal; commit(); },
+  northeorem() { state.nor.theorem = !state.nor.theorem; commit(); },
   dimcol(el) { setPath(state, el.dataset.path, !getPath(state, el.dataset.path)); commit(); },
   fillcol(el) {
     const vars = el.dataset.v.split("");
