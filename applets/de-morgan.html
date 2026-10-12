@@ -2022,16 +2022,19 @@ function viewTT() {
     const path = `tt.cols.${ci}`;
     head += `<th>${exInput(path, c, ["M", "P"], { cls: "" })}<button class="x" data-act="ttdel" data-i="${ci}" aria-label="Remove column">✕</button></th>`;
   });
-  head += `<th class="add"><button data-act="ttadd" aria-label="Add column">+</button></th><th class="target">${alg("NOT (M OR P)")}</th>`;
+  head += `<th class="target">${alg("NOT (M OR P)")}</th>`;
   let body = "";
   ROWS.forEach(([m, p], ri) => {
     body += `<tr><td class="in">${m}</td><td class="in">${p}</td>`;
     tt.cols.forEach((c, ci) => { body += `<td class="cell" data-act="ttcell" data-c="${ci}" data-r="${ri}">${showCell(pad4(c.vals)[ri])}</td>`; });
-    body += `<td class="add"></td><td class="cell target" data-act="ttcell" data-c="t" data-r="${ri}">${showCell(pad4(tt.target)[ri])}</td></tr>`;
+    body += `<td class="cell target" data-act="ttcell" data-c="t" data-r="${ri}">${showCell(pad4(tt.target)[ri])}</td></tr>`;
   });
   return `<div class="stage" style="margin-top:40px">
-    <table class="tt">${"<tr>" + head + "</tr>" + body}</table>
-    ${isTeacher() ? `<div class="row"><button class="btn primary" data-act="pick">${I.wheel}Pick</button><button class="btn" data-act="ttreveal">NOR${I.right}</button></div>` : ""}
+    <div class="row" style="flex-wrap:nowrap;align-items:center">
+      <table class="tt">${"<tr>" + head + "</tr>" + body}</table>
+      <button class="btn icon" data-act="ttadd" aria-label="Add column">${I.plus}</button>
+    </div>
+    ${isTeacher() ? `<div class="row"><button class="btn primary" data-act="pick">${I.wheel}Pick</button><button class="btn" data-act="ttreveal">${I.eye}Reveal</button></div>` : ""}
   </div>`;
 }
 
