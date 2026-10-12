@@ -1,8 +1,8 @@
 # Classroom Conductor
 
 A reusable classroom orchestration website. See `design-document.md` for the plan
-and `docs/applet-contract.md` for how to write an applet.
-`docs/applet-authoring.md` is the full guide for agents that write applets.
+and `docs/applet-spec.md` for how to write an applet.
+The spec is self-contained, so it can be handed to an applet builder on its own.
 
 ## Develop
 

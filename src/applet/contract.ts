@@ -1,4 +1,4 @@
-// The applet contract. See docs/applet-contract.md for the author-facing version.
+// The applet contract. See docs/applet-spec.md for the author-facing version.
 
 export interface PreparedState {
   name: string;
