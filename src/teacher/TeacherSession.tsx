@@ -11,7 +11,11 @@ import {
 import { Chat } from "../chat/Chat";
 import { setControl, setWheel, writeTeacherState } from "../firebase/client";
 import type { Session, StoredState } from "../firebase/types";
-import { useSession, useThrottledWriter } from "../hooks/session";
+import {
+  useAppletHtml,
+  useSession,
+  useThrottledWriter,
+} from "../hooks/session";
 import { PulsePanel } from "../pulse/Pulse";
 import { Countdown } from "../timer/Countdown";
 import { scriptTimer } from "../timer/timer";
@@ -337,7 +341,8 @@ export function TeacherSession() {
   // biome-ignore lint/correctness/useExhaustiveDependencies: clears the wait on unmount only
   useEffect(() => clearPendingMode, []);
 
-  if (!data) return null;
+  const html = useAppletHtml(session, data?.applet.html);
+  if (!data || !html) return null;
   const { manifest } = data.applet;
   const target =
     data.control.mode === "spotlight" ||
@@ -349,6 +354,7 @@ export function TeacherSession() {
       <TeacherStateContext.Provider value={data.teacherState ?? null}>
         <TeacherApplet
           data={data}
+          html={html}
           onUpdate={write}
           onShortcut={() => setControlsOpen((o) => !o)}
           onFilters={setFilters}
@@ -366,7 +372,7 @@ export function TeacherSession() {
           <div className="teacher-spotlight">
             <AppletFrame
               key={target}
-              html={data.applet.html}
+              html={html}
               state={data.states?.[target] ?? null}
               interactive={false}
             />
@@ -423,7 +429,9 @@ export function TeacherSession() {
           />
         )}
         {/* Inside the provider: student screens draw from the teacher's state. */}
-        {thumbsOpen && <Thumbnails session={session} data={data} />}
+        {thumbsOpen && html && (
+          <Thumbnails session={session} data={data} html={html} />
+        )}
       </TeacherStateContext.Provider>
       {wheelOpen && (
         <Wheel
@@ -479,6 +487,7 @@ function useClass(data: Session): Record<string, ClassMember> {
 /** Mounts once per session so later teacherState echoes do not reset the applet. */
 function TeacherApplet({
   data,
+  html,
   onUpdate,
   onShortcut,
   onFilters,
@@ -493,6 +502,7 @@ function TeacherApplet({
   onHotkey,
 }: {
   data: Session;
+  html: string;
   onUpdate: (s: StoredState) => void;
   onShortcut: () => void;
   onFilters: (f: WheelFilter[]) => void;
@@ -510,7 +520,7 @@ function TeacherApplet({
   const students = useClass(data);
   return (
     <AppletFrame
-      html={data.applet.html}
+      html={html}
       state={initial}
       onUpdate={onUpdate}
       onShortcut={onShortcut}

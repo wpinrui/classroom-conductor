@@ -78,21 +78,62 @@ export const signOutUser = () => signOut(auth);
 
 // Library
 
+/** Stored applet pages are gzip-compressed and base64-encoded behind this prefix. Older ones are plain HTML. */
+const PACKED = "gz:";
+
+export async function packHtml(html: string): Promise<string> {
+  const stream = new Blob([html])
+    .stream()
+    .pipeThrough(new CompressionStream("gzip"));
+  const bytes = new Uint8Array(await new Response(stream).arrayBuffer());
+  let bin = "";
+  for (let i = 0; i < bytes.length; i += 0x8000)
+    bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  return PACKED + btoa(bin);
+}
+
+export async function unpackHtml(stored: string): Promise<string> {
+  if (!stored.startsWith(PACKED)) return stored;
+  const bytes = Uint8Array.from(atob(stored.slice(PACKED.length)), (c) =>
+    c.charCodeAt(0),
+  );
+  const stream = new Blob([bytes])
+    .stream()
+    .pipeThrough(new DecompressionStream("gzip"));
+  return new Response(stream).text();
+}
+
+/** A short fingerprint of a page, so the Engine can key Pulse code without the page itself. */
+async function fingerprint(html: string): Promise<string> {
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(html),
+  );
+  return [...new Uint8Array(digest)]
+    .slice(0, 12)
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
 export async function uploadApplet(html: string): Promise<string> {
   const manifest = parseManifest(html);
   const applet: LibraryApplet = {
     name: manifest.title,
-    html,
     manifest,
     createdAt: Date.now(),
   };
   const r = push(ref(db, paths.applets(uid())));
+  const id = r.key as string;
+  await set(ref(db, paths.libraryHtml(uid(), id)), await packHtml(html));
   await set(r, applet);
-  return r.key as string;
+  return id;
 }
 
 export const deleteApplet = (id: string) =>
-  remove(ref(db, paths.applet(uid(), id)));
+  update(ref(db), {
+    [paths.applet(uid(), id)]: null,
+    [paths.libraryHtml(uid(), id)]: null,
+  });
 
 // Sessions
 
@@ -109,15 +150,27 @@ export async function startSession(
   const snap = await get(ref(db, paths.applet(teacher, appletId)));
   if (!snap.exists()) throw new Error("Applet not found");
   const stored = snap.val() as LibraryApplet;
+  const html =
+    stored.html ??
+    (await unpackHtml(
+      ((await get(ref(db, paths.libraryHtml(teacher, appletId)))).val() as
+        | string
+        | null) ?? "",
+    ));
+  if (!html) throw new Error("Applet page not found");
   // Re-read the manifest, so an applet saved by an older version of this app gains newer fields.
-  const applet = { ...stored, manifest: parseManifest(stored.html) };
+  const applet = { name: stored.name, manifest: parseManifest(html) };
   const session = push(ref(db, "sessions")).key as string;
   const namelist = namelistOf(applet.manifest);
   const data: Session = {
     teacher,
     code: "",
     createdAt: Date.now(),
-    applet: { name: applet.name, html: applet.html, manifest: applet.manifest },
+    applet: {
+      name: applet.name,
+      manifest: applet.manifest,
+      hash: await fingerprint(html),
+    },
     ...(namelist ? { namelist } : {}),
     control: { mode: applet.manifest.modes?.[0]?.[0] ?? "demo" },
   };
@@ -131,6 +184,7 @@ export async function startSession(
       throw e;
     }
     await set(ref(db, paths.session(session)), { ...data, code });
+    await set(ref(db, paths.sessionHtml(session)), await packHtml(html));
     await set(ref(db, paths.live(session)), true);
     return { session, code };
   }
