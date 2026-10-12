@@ -7,8 +7,15 @@ import { PulseButton } from "../pulse/Pulse";
 import { routes } from "../routes";
 import { TimerControls } from "../timer/TimerControls";
 import { Groups } from "./Groups";
+import {
+  BlankIcon,
+  ChatIcon,
+  CopyIcon,
+  GridIcon,
+  PersonIcon,
+  WheelIcon,
+} from "./icons";
 import { allowedModes, defaultsFor, handoffAllowed } from "./modes";
-import { BlankIcon, ChatIcon, GridIcon, PersonIcon, WheelIcon } from "./icons";
 import { Reveal } from "./Reveal";
 import { Stepper } from "./Stepper";
 import "./teacher.css";
@@ -33,6 +40,7 @@ const MODE_GROUPS: [Mode, string][][] = [
   ],
 ];
 const END_CONFIRM_MS = 3000;
+const COPIED_MS = 1500;
 const SPOTLIGHTS: Mode[] = ["spotlight", "anonymousSpotlight"];
 
 const isTyping = (t: EventTarget | null) =>
@@ -75,6 +83,12 @@ export function Controls({
   const online = students.filter((s) => data.presence?.[s]).length;
   const chatLimit = control.chatLimit ?? DEFAULT_CHAT_LIMIT;
   const [endArmed, setEndArmed] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const copyCode = () =>
+    navigator.clipboard.writeText(data.code).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), COPIED_MS);
+    });
   const allowed = allowedModes(data);
   const groups = MODE_GROUPS.map((g) =>
     g.filter(([m]) => !allowed || allowed.includes(m)),
@@ -124,15 +138,26 @@ export function Controls({
   return (
     <>
       <aside className="controls">
-        <button
-          type="button"
-          className="quiet join-code"
-          aria-label="Show join screen"
-          data-tip="Show join screen"
-          onClick={onJoin}
-        >
-          {data.code}
-        </button>
+        <div className="join-row">
+          <button
+            type="button"
+            className="quiet join-code"
+            aria-label="Show join screen"
+            data-tip="Show join screen"
+            onClick={onJoin}
+          >
+            {data.code}
+          </button>
+          <button
+            type="button"
+            className="quiet icon-button"
+            aria-label="Copy code"
+            data-tip={copied ? "Copied" : "Copy code"}
+            onClick={copyCode}
+          >
+            <CopyIcon />
+          </button>
+        </div>
 
         <div className="presence">
           <output

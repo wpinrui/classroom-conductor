@@ -485,3 +485,11 @@ button[aria-busy="true"]::after {
   line-height: 1;
   color: var(--color-accent);
 }
+
+.join-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+}
+
