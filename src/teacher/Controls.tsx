@@ -15,7 +15,7 @@ import { Thumbnails } from "./Thumbnails";
 import "./teacher.css";
 
 /** Watch, Work and Stop groups, in switcher and number-key order. */
-export const MODE_GROUPS: [Mode, string][][] = [
+const MODE_GROUPS: [Mode, string][][] = [
   [
     ["demo", "Demo"],
     ["reveal", "Reveal"],
