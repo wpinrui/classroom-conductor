@@ -330,7 +330,7 @@ export function TeacherSession() {
       ? data.control.spotlight
       : undefined;
   return (
-    <main className="stage">
+    <main className="stage" data-bare={!controlsOpen || undefined}>
       <TeacherStateContext.Provider value={data.teacherState ?? null}>
         <TeacherApplet
           data={data}
