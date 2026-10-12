@@ -81,5 +81,21 @@ conductor.timer(null);
 
 A new timer replaces the running one.
 
+### Name wheel
+
+```js
+conductor.wheel({ filter: "Said yes", spin: true });
+conductor.wheel({ replacement: false });
+```
+
+Every option is optional and changes only what it names.
+
+| Option | Effect |
+| --- | --- |
+| `open` | `true` opens the wheel and `false` closes it. |
+| `filter` | Selects a filter by name. `""` selects the whole class. |
+| `spin` | `true` opens the wheel and spins it. |
+| `replacement` | `false` takes each drawn student out of the pool for the rest of the session. `true` puts drawing back to normal. The teacher's "No repeats" toggle sets the same value. |
+
 See `examples/counter.html` for a complete applet.
 `docs/applet-authoring.md` explains every rule and adds pedagogy.

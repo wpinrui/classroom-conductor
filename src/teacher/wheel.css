@@ -35,12 +35,24 @@
   padding: 0;
 }
 
-.wheel-pools {
+/* Pools on the left, session settings on the right, set apart by space alone. */
+.wheel-bar {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: var(--space-2);
+  align-items: center;
+  column-gap: var(--space-6);
+  row-gap: var(--space-2);
   margin: 0 48px;
+}
+
+.wheel-pools,
+.wheel-settings {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: var(--space-2);
 }
 
 .wheel-pool {

@@ -11,7 +11,7 @@ Every rule is marked as one of two kinds.
 
 Read `examples/number-line.html` first. It is the smallest applet that does everything right.
 `applets/python-for-loops.html` is a full lesson built the same way.
-`applets/mango-or-pear.html` shows the context and the name wheel filters.
+`applets/mango-or-pear.html` shows the context, the name wheel filters and a scripted wheel.
 
 ## 1. The file
 
@@ -142,6 +142,20 @@ host.connect({
 - Publish nothing that would leak a hidden result. The wheel shows how many students each filter holds. `applets/mango-or-pear.html` publishes its True and False filters only after the teacher reveals the counts.
 - Keep per question data keyed by a stable id that the teacher's state assigns. A student's answer then stays attached to its question when the teacher moves on.
 
+### Scripting the wheel
+
+`conductor.wheel(options)` drives the name wheel from the teacher's frame. `docs/applet-contract.md` lists the options.
+
+**Required**
+
+- Send only what you mean to change. Every option is optional, and a missing one leaves the wheel as it is.
+- Call on a teacher action or once on load. Never call on every class update, because the teacher's own changes would keep being undone.
+
+**Recommended**
+
+- Put the call on the thing it acts on. The mango or pear applet puts a wheel button on each revealed bar, which spins over the students who gave that answer.
+- Set session settings once, when the teacher's frame first gets its context. The mango or pear applet turns replacement off there, so each student is called on at most once a lesson.
+
 ## 5. The interface
 
 **Required**
@@ -221,5 +235,5 @@ Before handing over an applet, check every required item:
 - The phase never passes the limit.
 - `instructions` assume the bot cannot see the state.
 - `pulsePrompt` describes every state field and phase index.
-- The screen renders without a context, and filters go out from the teacher's frame only.
+- The screen renders without a context, and filters and tool calls go out from the teacher's frame only.
 - No needless text, no em-dashes and no middle dots.

@@ -83,6 +83,13 @@
       .bar[data-v="true"] .bar-fill { background: var(--true); }
       .bar[data-v="false"] .bar-fill { background: var(--false); }
       .bar-n { text-align: right; font-variant-numeric: tabular-nums; }
+      .call { display: none; width: 3rem; height: 3rem; padding: 0; place-items: center; color: inherit; }
+      .call svg { width: 1.5rem; height: 1.5rem; }
+      [data-tip] { position: relative; }
+      [data-tip]::before { content: attr(data-tip); position: absolute; top: calc(100% + 0.5rem); left: 50%; translate: -50% 0; padding: 0.25rem 0.5rem; border-radius: 6px; background: var(--text); color: var(--bg); font-size: 0.875rem; font-weight: 600; white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity 120ms; }
+      [data-tip]:hover::before, [data-tip]:focus-visible::before { opacity: 1; transition-delay: 400ms; }
+      .app[data-role="teacher"].live .bar { grid-template-columns: 5rem 1fr 3rem 3rem; }
+      .app[data-role="teacher"].live .call { display: grid; }
       .bar[data-mine] .bar-label { text-decoration: underline; text-underline-offset: 0.3em; text-decoration-thickness: 3px; }
 
       .teach { display: flex; align-items: center; gap: 1.5rem; }
@@ -116,8 +123,8 @@
           <button type="button" class="answer" data-v="false">False</button>
         </div>
         <div class="tally" id="tally" hidden>
-          <div class="bar" data-v="true"><span class="bar-label">True</span><div class="bar-track"><div class="bar-fill"></div></div><span class="bar-n"></span></div>
-          <div class="bar" data-v="false"><span class="bar-label">False</span><div class="bar-track"><div class="bar-fill"></div></div><span class="bar-n"></span></div>
+          <div class="bar" data-v="true"><span class="bar-label">True</span><div class="bar-track"><div class="bar-fill"></div></div><span class="bar-n"></span><button type="button" class="call" data-filter="True" aria-label="Call on one" data-tip="Call on one"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="13" r="8" /><path d="M12 13V5M12 13l6.9 4M12 13l-6.9 4M10 2h4l-2 3z" /></svg></button></div>
+          <div class="bar" data-v="false"><span class="bar-label">False</span><div class="bar-track"><div class="bar-fill"></div></div><span class="bar-n"></span><button type="button" class="call" data-filter="False" aria-label="Call on one" data-tip="Call on one"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="13" r="8" /><path d="M12 13V5M12 13l6.9 4M12 13l-6.9 4M10 2h4l-2 3z" /></svg></button></div>
         </div>
         <div class="teach" id="teach" hidden>
           <span class="count" id="count" role="img" aria-label="Answered">
@@ -138,7 +145,7 @@
         { id: "d6", text: "I have an apple and a pear.", fruit: "🍎🍐" },
       ];
 
-      const host = window.conductor ?? { connect() {}, update() {}, filters() {} };
+      const host = window.conductor ?? { connect() {}, update() {}, filters() {}, wheel() {} };
       const $ = (id) => document.getElementById(id);
       const obj = (v) => (v && typeof v === "object" && !Array.isArray(v) ? v : {});
 
@@ -295,6 +302,7 @@
 
         // Answered count and Reveal need the live class, so only the teacher's own frame shows them.
         const live = teacher && !!context.students;
+        $("app").classList.toggle("live", live);
         $("teach").hidden = !live || !ex;
         if (live && ex) {
           const online = Object.values(context.students).filter((s) => s.online);
@@ -312,6 +320,11 @@
           state = { answers: { ...state.answers, [ex.id]: { text: ex.text, value: b.dataset.v === "true" } } };
           change();
         };
+      }
+
+      // Spins the class name wheel over the students who gave that answer.
+      for (const b of document.querySelectorAll(".call")) {
+        b.onclick = () => host.wheel?.({ filter: b.dataset.filter, spin: true });
       }
 
       $("reveal").onclick = () => {
@@ -349,8 +362,12 @@
           context = c;
           if (roleChanged) {
             adopt(state);
-            // A new lesson starts with the default examples, so save them.
-            if (isTeacher()) host.update(state, phase);
+            if (isTeacher()) {
+              // A new lesson starts with the default examples, so save them.
+              host.update(state, phase);
+              // Each student is called on at most once a lesson. The teacher can switch this off on the wheel.
+              host.wheel?.({ replacement: false });
+            }
           }
           syncClass();
           render();

@@ -55,6 +55,15 @@ export interface Control {
   chatLimit?: number;
   /** Countdown every student sees. */
   timer?: Timer;
+  wheel?: WheelSettings;
+}
+
+/** Name wheel settings that last the whole session. */
+export interface WheelSettings {
+  /** False takes each drawn student out of the pool. Absent means true. */
+  replacement?: boolean;
+  /** Students drawn while replacement was off. */
+  drawn?: Record<string, true>;
 }
 
 /**

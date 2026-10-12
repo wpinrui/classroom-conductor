@@ -6,6 +6,7 @@ export const paths = {
   live: (session: string) => `live/${session}`,
   session: (s: string) => `sessions/${s}`,
   control: (s: string) => `sessions/${s}/control`,
+  wheel: (s: string) => `sessions/${s}/control/wheel`,
   timer: (s: string) => `sessions/${s}/control/timer`,
   teacherTimer: (s: string) => `sessions/${s}/teacherTimer`,
   teacherState: (s: string) => `sessions/${s}/teacherState`,

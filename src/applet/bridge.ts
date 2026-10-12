@@ -9,7 +9,8 @@ window.conductor={
 connect:function(h){handlers=h;send({cc:"connect"});},
 update:function(state,phase){send({cc:"update",state:JSON.parse(JSON.stringify(state===undefined?null:state)),phase:phase|0,seq:seq});},
 filters:function(list){send({cc:"filters",filters:JSON.parse(JSON.stringify(list||[]))});},
-timer:function(seconds,opts){send({cc:"timer",seconds:seconds==null?null:Number(seconds),shared:!(opts&&opts.shared===false)});}
+timer:function(seconds,opts){send({cc:"timer",seconds:seconds==null?null:Number(seconds),shared:!(opts&&opts.shared===false)});},
+wheel:function(options){send({cc:"wheel",options:JSON.parse(JSON.stringify(options===undefined?{}:options))});}
 };
 window.addEventListener("message",function(e){
 if(e.source!==parent||!handlers)return;

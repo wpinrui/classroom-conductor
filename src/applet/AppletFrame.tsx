@@ -41,6 +41,8 @@ interface Props {
   students?: Record<string, ClassMember>;
   /** Called with the name wheel filters the applet publishes. */
   onFilters?: (filters: WheelFilter[]) => void;
+  /** Called when the applet drives the name wheel. Only the teacher's frame passes it. */
+  onWheel?: (options: unknown) => void;
   /** Called when the applet scripts a countdown. Only the teacher's frame passes it. */
   onTimer?: (seconds: unknown, shared: unknown) => void;
 }
@@ -59,6 +61,7 @@ export function AppletFrame({
   owner = "student",
   students,
   onFilters,
+  onWheel,
   onTimer,
 }: Props) {
   const teacherState = useContext(TeacherStateContext);
@@ -87,6 +90,7 @@ export function AppletFrame({
     maxPhase,
     onShortcut,
     onFilters,
+    onWheel,
     onTimer,
     contextJson,
   });
@@ -96,6 +100,7 @@ export function AppletFrame({
     maxPhase,
     onShortcut,
     onFilters,
+    onWheel,
     onTimer,
     contextJson,
   };
@@ -133,6 +138,8 @@ export function AppletFrame({
           latest.current.onFilters?.(m.filters.filter(isFilter));
       } else if (m?.cc === "timer") {
         latest.current.onTimer?.(m.seconds, m.shared);
+      } else if (m?.cc === "wheel") {
+        latest.current.onWheel?.(m.options);
       } else if (m?.cc === "connect") {
         connected.current = true;
         post({ cc: "phaseLimit", maxPhase });

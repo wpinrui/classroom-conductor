@@ -133,6 +133,12 @@ export const setControl = (
   patch: { [K in keyof Control]?: Control[K] | null },
 ) => update(ref(db, paths.control(session)), patch);
 
+/** Patches the name wheel settings. A path key such as `drawn/uid` touches one student. */
+export const setWheel = (
+  session: string,
+  patch: Record<string, boolean | true | null>,
+) => update(ref(db, paths.wheel(session)), patch);
+
 export const writeTeacherState = (session: string, state: StoredState) =>
   set(ref(db, paths.teacherState(session)), state);
 
