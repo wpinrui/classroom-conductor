@@ -34,7 +34,7 @@ Consequences for the applet:
 
 **Required**
 
-- One HTML file. Every script, style, image and font is inline.
+- One HTML file. Every script, style, image and font is inline, except large libraries loaded from a CDN as described under Outside network.
 - It runs in an iframe with `sandbox="allow-scripts allow-forms allow-modals"`. The origin is opaque, so `localStorage`, `sessionStorage`, cookies and IndexedDB throw or fail. Popups, downloads and navigating the top page are blocked.
 - Nothing survives a reload except the state (section 4).
 - Ctrl+., Cmd+. and the middle mouse button are taken by the Conductor before the applet's handlers see them. Do not bind them.
@@ -46,6 +46,8 @@ Consequences for the applet:
 - Images load from any site.
 - `fetch` reaches a site only if it answers with `Access-Control-Allow-Origin: *`, because the frame's origin is `null`. A site that lists specific allowed origins rejects it. pokeapi.co is an example that works.
 - A fetched site can be down or blocked by the school network. Inline anything the lesson cannot run without. Show a usable screen while a fetch is pending and after it fails.
+- A large library, such as Skulpt or KaTeX, may load from jsDelivr (`cdn.jsdelivr.net/npm/<package>@<version>/...`) with a `<script src>` or `<link>` instead of being inlined. It keeps the page small, which matters because every page load reads the applet from the database. Pin the exact version. Check the school network can reach jsDelivr before the lesson, and degrade visibly when the library is missing.
+- raw.githubusercontent.com cannot serve scripts. It sends them as plain text with `nosniff`, so browsers refuse to run them. Images from it work.
 
 **Recommended**
 
@@ -344,7 +346,7 @@ The input is an object keyed by student id. Each entry is `{ name, phase, state 
 
 - Labels are not needless text. A number, stat or control whose meaning is not obvious at a glance gets a short label.
 - Never use the native `title` attribute for tooltips. Build a real tooltip if one is needed.
-- Typeset maths with an inlined library such as KaTeX, fonts included. Native MathML relies on the machine's maths font, and a font without stretch data shrinks a long bar to a dash.
+- Typeset maths with a library such as KaTeX, inlined with its fonts or loaded from jsDelivr. Native MathML relies on the machine's maths font, and a font without stretch data shrinks a long bar to a dash.
 - Use the phases as the navigation. One control forward and one back is usually enough.
 
 ## 9. Pedagogy
