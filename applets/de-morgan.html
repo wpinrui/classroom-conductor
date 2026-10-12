@@ -275,13 +275,13 @@ svg.circ .gate:active { cursor: grabbing; }
 .code { resize: none; background: transparent; color: transparent; caret-color: #e8e6df; outline: none; }
 .code::selection { background: rgba(97, 175, 239, .35); }
 .hl { color: #e8e6df; pointer-events: none; overflow: hidden; }
-.hl .k { color: #c678dd; }
-.hl .s { color: #98c379; }
-.hl .c { color: #7f848e; font-style: italic; }
-.hl .c b { color: #e5c07b; font-style: normal; }
-.hl .n { color: #d19a66; }
-.hl .b { color: #61afef; }
-.hl .f { color: #61afef; }
+:is(.hl, .hlx) .k { color: #c678dd; }
+:is(.hl, .hlx) .s { color: #98c379; }
+:is(.hl, .hlx) .c { color: #7f848e; font-style: italic; }
+:is(.hl, .hlx) .c b { color: #e5c07b; font-style: normal; }
+:is(.hl, .hlx) .n { color: #d19a66; }
+:is(.hl, .hlx) .b { color: #61afef; }
+:is(.hl, .hlx) .f { color: #61afef; }
 .pyerr { background: var(--bad-soft); color: var(--bad); padding: 12px 16px; border-radius: 12px; font: 17px/1.4 var(--mono); white-space: pre-wrap; }
 
 /* Practice */
@@ -334,6 +334,18 @@ button.tcard { cursor: pointer; }
 
 /* De Morgan's theorem, shown under the NOR table once the class has found it. */
 .theorem { font-size: 52px; padding: 8px 24px; }
+
+/* The student's lesson recap in the conclusion. */
+.recap { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; width: 100%; align-items: start; }
+.rcard { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.rcard h3 { margin: 0; font-size: 18px; color: var(--soft); font-weight: 700; }
+.rrow { display: flex; align-items: center; gap: 12px; font-size: 22px; }
+.rrow .mark { font-size: 22px; }
+.rbasket { min-width: 72px; font-size: 28px; }
+.rmath { font-size: 28px; }
+.rcode { margin: 0; padding: 12px 14px; border-radius: 12px; background: #1e2129; color: #e8e6df; font: 15px/1.5 var(--mono); white-space: pre; overflow: hidden; }
+table.tt.mini th, table.tt.mini td { padding: 4px 14px; font-size: 20px; height: auto; min-width: 0; }
+.tt td.wrong { color: var(--bad); }
 
 /* Task line */
 .task { max-width: 1000px; text-align: center; margin-bottom: 20px; }
@@ -2791,6 +2803,52 @@ function practiceCheck() {
 }
 
 // ---------- Phase 8: Conclusion ----------
+// While the teacher draws out the takeaways, each student sees their own lesson at a glance: the finished state of each activity.
+const MARK = { y: '<span class="mark y">✓</span>', n: '<span class="mark n">✗</span>', e: '<span class="mark e">=</span>', "": "" };
+function viewRecap() {
+  const st = state;
+  const card = (title, body) => `<div class="rcard"><h3>${title}</h3>${body}</div>`;
+  // Rapid Fire: the statement is true only for the empty basket.
+  const votes = EXAMPLES.map((E, i) => {
+    const v = st.predict.votes["e" + i] || "";
+    const right = !E.m && !E.p ? "t" : "f";
+    const basket = E.m || E.p ? `${E.m ? MANGO : ""}${E.p ? PEAR : ""}` : `<span class="muted">—</span>`;
+    return `<div class="rrow"><span class="rbasket">${basket}</span><span>${v === "t" ? "True" : v === "f" ? "False" : '<span class="muted">No vote</span>'}</span>${v ? MARK[v === right ? "y" : "n"] : ""}</div>`;
+  }).join("");
+  // Truth table: their NOR column against the right one.
+  const mine = pad4(st.tt.target);
+  const tt = `<table class="tt mini"><tr><th>${alg("M")}</th><th>${alg("P")}</th><th>${alg("NOT (M OR P)")}</th></tr>${ROWS.map(([m, q], i) => `<tr><td class="in">${m}</td><td class="in">${q}</td><td class="${mine[i] === "1000"[i] ? "match" : mine[i] === "-" ? "" : "wrong"}">${showCell(mine[i])}</td></tr>`).join("")}</table>`;
+  // NAND: their answer, marked as in class.
+  const n = st.nand;
+  let nand = '<span class="muted">No answer</span>';
+  if (n.mode === "pick" && n.pick && OPTS[n.pick]) nand = `${alg(OPTS[n.pick])}${MARK[n.pick === "o1" ? "y" : "n"]}`;
+  else if (n.done && Bool.parse(n.text, ["A", "B"]).ast) nand = `${alg(n.text)}${MARK[nandGrade(n.text)]}`;
+  const theorem = `<div class="rmath">${typeset(String.raw`\overline{A + B} = \overline{A} \cdot \overline{B}`)}</div><div class="rrow">${alg(NAND_Q)}<span>=</span>${nand}</div>`;
+  // Sign-up code: what they wrote after the TODO.
+  const lines = st.pw.code.split("\n");
+  const at = lines.findIndex((l) => /TODO/.test(l));
+  const wrote = (at >= 0 ? lines.slice(at + 1) : []).join("\n").trim();
+  const code = wrote
+    ? `<pre class="hlx rcode">${highlightPy(wrote).trimEnd()}</pre>${st.pw.passes ? `<div class="rrow">${MARK.y}<span>Passes every sign-up</span></div>` : ""}`
+    : '<span class="muted">Nothing written</span>';
+  // Challenge: their circuit, small.
+  const solved = circSolved(st.circ);
+  const circ = `${circuitSVG({ ...BOARD, gates: st.circ.gates, wires: st.circ.wires }, false).replace(/width="720" height="440"/, 'width="360" height="220"')}<div class="rrow">${solved ? `${MARK.y}<span>Solved</span>` : '<span class="muted">Not solved yet</span>'}</div>`;
+  // Practice: start and final line of each finished question.
+  const done = QS.filter((q) => qDone(q, work(st, q.id)));
+  const prac = done.length
+    ? done.map((q) => `<div class="rrow">${alg(q.s)}<span>→</span>${algAst(lastAst(q, work(st, q.id)))}</div>`).join("")
+    : '<span class="muted">None finished</span>';
+  return `<div class="stage" style="margin-top:10px"><div class="recap">
+    ${card("Rapid Fire T/F", votes)}
+    ${card("Truth Table", tt)}
+    ${card("De Morgan's Theorem", theorem)}
+    ${card("Sign-up code", code)}
+    ${card("Challenge", circ)}
+    ${card(`Practice <span class="of">${done.filter((q) => !q.extra).length}/${QS.filter((q) => !q.extra).length}</span>`, prac)}
+  </div></div>`;
+}
+
 const EXIT_Q = "NOT ((A OR B) AND NOT C)";
 function exitGrade(text) {
   const r = Bool.parse(text, ["A", "B", "C"]);
@@ -2837,7 +2895,7 @@ function viewConc() {
       <div class="row">${live() ? `<span class="stat"><b>${outOf(answered)}</b><span>submitted</span></span>` : ""}<button class="btn ${state.conc.shown ? "on" : ""}" data-act="cshow">${I.eye}Answers</button></div>
       ${summary}</div>`;
   }
-  if (!tc.exitOpen) return `<div class="stage" style="margin-top:40px">${cardsHTML(tc.flipped, false)}</div>`;
+  if (!tc.exitOpen) return viewRecap();
   const ex = state.exit;
   const lines = (ex.lines || []).map((l, i) => `<div class="pline" style="grid-template-columns:1fr 44px">${exInput(`exit.lines.${i}`, merge({ text: "", done: false, bad: false }, l), ["A", "B", "C"], { consts: true })}<button data-act="exdel" data-i="${i}" aria-label="Remove line" style="color:var(--soft)">${I.trash}</button></div>`).join("");
   const showFb = ex.sub && ex.sub === ex.answer;
