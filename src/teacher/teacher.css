@@ -402,3 +402,10 @@ button[aria-busy="true"]::after {
   background: var(--color-scrim);
   cursor: none;
 }
+
+/* A spotlight mode waiting for the teacher to pick a student. */
+.mode-group button[data-armed] {
+  border-style: dashed;
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}

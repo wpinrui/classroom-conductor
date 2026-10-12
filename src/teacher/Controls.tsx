@@ -34,6 +34,7 @@ const MODE_GROUPS: [Mode, string][][] = [
   ],
 ];
 const END_CONFIRM_MS = 3000;
+const SPOTLIGHTS: Mode[] = ["spotlight", "anonymousSpotlight"];
 
 const isTyping = (t: EventTarget | null) =>
   t instanceof HTMLElement &&
@@ -71,8 +72,16 @@ export function Controls({
 
   const latest = useRef(data);
   latest.current = data;
-  const pick = (mode: Mode) =>
+  // Spotlight waits for a student: choosing it only opens the picker, so screens change once, with someone on them.
+  const [pending, setPending] = useState<Mode | null>(null);
+  useEffect(() => setPending(null), [control.mode]);
+  const pick = (mode: Mode) => {
+    const current = latest.current.control.mode;
+    if (SPOTLIGHTS.includes(mode) && !SPOTLIGHTS.includes(current))
+      return setPending((p) => (p === mode ? null : mode));
+    setPending(null);
     setControl(session, { mode, ...defaultsFor(mode, latest.current) });
+  };
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: pick and keys read the latest values through refs
   useEffect(() => {
@@ -161,6 +170,7 @@ export function Controls({
                   type="button"
                   data-mode={mode}
                   aria-pressed={control.mode === mode}
+                  data-armed={pending === mode || undefined}
                   onClick={() => pick(mode)}
                 >
                   {label}
@@ -172,9 +182,8 @@ export function Controls({
 
         {control.mode === "paced" && <Paced session={session} data={data} />}
         {control.mode === "reveal" && <Reveal session={session} data={data} />}
-        {(control.mode === "spotlight" ||
-          control.mode === "anonymousSpotlight") && (
-          <SpotlightPicker session={session} data={data} />
+        {(pending || SPOTLIGHTS.includes(control.mode)) && (
+          <SpotlightPicker session={session} data={data} pending={pending} />
         )}
         {control.mode === "group" && <Groups session={session} data={data} />}
 
@@ -240,13 +249,18 @@ function Paced({ session, data }: { session: string; data: Session }) {
   );
 }
 
-/** Every student by name. Tapping one spotlights them, tapping them again ends the spotlight. */
+/**
+ * Every student by name. Tapping one spotlights them, tapping them again ends the spotlight.
+ * With a spotlight mode pending, the first tap switches the class into it with that student.
+ */
 function SpotlightPicker({
   session,
   data,
+  pending,
 }: {
   session: string;
   data: Session;
+  pending: Mode | null;
 }) {
   const current = data.control.spotlight;
   const students = Object.entries(data.students ?? {}).sort(([, a], [, b]) =>
@@ -258,10 +272,15 @@ function SpotlightPicker({
         <button
           key={uid}
           type="button"
-          aria-pressed={current === uid}
+          aria-pressed={!pending && current === uid}
           data-offline={!data.presence?.[uid] || undefined}
           onClick={() =>
-            setControl(session, { spotlight: current === uid ? null : uid })
+            setControl(
+              session,
+              pending
+                ? { mode: pending, spotlight: uid }
+                : { spotlight: current === uid ? null : uid },
+            )
           }
         >
           {s.name}
