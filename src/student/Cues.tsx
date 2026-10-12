@@ -12,15 +12,14 @@ export function Loading() {
   );
 }
 
-/** Freeze: a dim scrim over the student's own applet. The mode pill carries the lock. */
+/** Freeze: a dim scrim over the student's own applet. */
 export function Frozen() {
   return <div className="freeze-scrim" />;
 }
 
-function LockIcon() {
+export function LockIcon() {
   return (
     <svg
-      className="pill-icon"
       viewBox="0 0 24 24"
       aria-hidden="true"
       fill="none"
@@ -35,24 +34,17 @@ function LockIcon() {
   );
 }
 
-/**
- * The class mode, and whose screen this is when it is not the student's own.
- * Live marks the student whose screen the class is watching.
- */
-export function ModePill({
-  mode,
-  who,
-  live,
+/** A chip in the top-middle status bar. Watch means view-only, live means the class is watching this student. */
+export function Status({
+  tone,
+  children,
 }: {
-  mode: string;
-  who?: string;
-  live?: boolean;
+  tone?: "watch" | "live";
+  children: React.ReactNode;
 }) {
   return (
-    <div className="name-pill" data-live={live || undefined}>
-      {mode === "Freeze" && <LockIcon />}
-      <span className="pill-mode">{mode}</span>
-      {who && <span className="pill-who">{who}</span>}
+    <div className="status" data-tone={tone}>
+      {children}
     </div>
   );
 }

@@ -1,11 +1,64 @@
 /* Countdown pill and its controls. Colours and type come from tokens. See docs/design.md. */
 
-.countdown {
+/* Top-middle bar shared by the teacher and student stages: status chips and the countdown. */
+.status-bar {
   position: absolute;
-  top: var(--space-4);
+  top: var(--space-2);
   left: 50%;
   transform: translateX(-50%);
   z-index: var(--z-chrome);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  pointer-events: none;
+}
+
+.status-bar:empty {
+  display: none;
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  max-width: 32rem;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-overlay);
+  font-size: var(--font-size-base);
+  white-space: nowrap;
+}
+
+.status > * {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.status b {
+  font-weight: var(--font-weight-strong);
+}
+
+.status[data-tone="watch"] {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+
+.status[data-tone="live"] {
+  border-color: var(--color-success);
+  background: var(--color-success);
+  color: var(--color-on-accent);
+}
+
+.status svg {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+}
+
+.countdown {
   display: flex;
   align-items: center;
   gap: var(--space-2);
@@ -14,10 +67,9 @@
   border: 1px solid var(--color-border);
   background: var(--color-surface);
   box-shadow: var(--shadow-overlay);
-  font-size: var(--font-size-lg);
+  font-size: var(--font-size-base);
   font-weight: var(--font-weight-strong);
   font-variant-numeric: tabular-nums;
-  pointer-events: none;
 }
 
 /* The teacher's private timer: small, muted and flat so it stays out of the way. */

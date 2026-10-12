@@ -25,28 +25,6 @@
   box-shadow: inset 0 0 0 3px var(--color-success);
 }
 
-/* Sits above the applet iframe, which is unpositioned inside .view. Sized to read from the back of a room. */
-.name-pill {
-  position: absolute;
-  left: var(--space-4);
-  bottom: var(--space-4);
-  z-index: var(--z-chrome);
-  max-width: calc(100% - 6rem);
-  padding: var(--space-2) var(--space-6);
-  border-radius: var(--radius-pill);
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
-  box-shadow: var(--shadow-overlay);
-  font-size: var(--font-size-xl);
-  font-weight: var(--font-weight-strong);
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  white-space: nowrap;
-  overflow: hidden;
-  pointer-events: none;
-}
-
 .gallery {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(24rem, 1fr));
@@ -123,31 +101,6 @@
   z-index: var(--z-chrome);
   background: var(--color-scrim);
   opacity: 0.3;
-}
-
-.pill-mode {
-  font-weight: var(--font-weight-regular);
-  color: var(--color-text-muted);
-}
-
-.pill-who {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.name-pill[data-live] {
-  border-color: var(--color-success);
-}
-
-.name-pill[data-live] .pill-who {
-  color: var(--color-success);
-}
-
-.pill-icon {
-  width: 1.5rem;
-  height: 1.5rem;
-  flex-shrink: 0;
 }
 
 .focus {
