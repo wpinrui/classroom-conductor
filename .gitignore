@@ -43,3 +43,6 @@ temp/
 
 # Firebase emulator logs
 *-debug.log
+
+# Firebase deploy cache
+.firebase/
