@@ -1,1 +1,6 @@
-{ "projects": { "default": "demo-classroom-conductor" } }
+{
+  "projects": {
+    "default": "demo-classroom-conductor",
+    "prod": "classroom-conductor-7ff04"
+  }
+}

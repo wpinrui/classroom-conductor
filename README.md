@@ -30,4 +30,4 @@ yarn build
 1. Create a Firebase project with Realtime Database and Authentication.
 2. Enable the Google and Anonymous sign-in providers.
 3. Fill `.env.local` from the web app config and set `VITE_FIREBASE_EMULATOR=false`.
-4. `npx firebase deploy --only database` to publish `database.rules.json`.
+4. `yarn build && npx firebase deploy -P prod` to publish `database.rules.json` and the site.
