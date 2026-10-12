@@ -1,3 +1,4 @@
+import { preparedJson } from "../applet/contract";
 import { setControl } from "../firebase/client";
 import type { Session, StoredState } from "../firebase/types";
 
@@ -9,7 +10,7 @@ export function Reveal({ session, data }: { session: string; data: Session }) {
   const shown = data.control.reveal;
   const prepared = (data.applet.manifest.preparedStates ?? []).map((p) => ({
     name: p.name,
-    json: JSON.stringify(p.state),
+    json: preparedJson(p),
     phase: p.phase,
   }));
   const isPrepared = prepared.some((p) => same(shown, p));

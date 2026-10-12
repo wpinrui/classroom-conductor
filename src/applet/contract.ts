@@ -1,10 +1,19 @@
 // The applet contract. See docs/applet-spec.md for the author-facing version.
 
+/**
+ * A prepared state as stored. json holds the state as JSON text, so any key and value survive the database.
+ * Applets uploaded before that carry state as an object instead.
+ */
 export interface PreparedState {
   name: string;
-  state: unknown;
+  json?: string;
+  state?: unknown;
   phase: number;
 }
+
+/** The prepared state's JSON text, from either stored shape. */
+export const preparedJson = (p: PreparedState) =>
+  p.json ?? JSON.stringify(p.state ?? null);
 
 /** Declared by the applet in <script type="application/json" id="conductor-manifest">. */
 export interface Manifest {

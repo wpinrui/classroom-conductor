@@ -89,7 +89,7 @@ Declare the manifest in a JSON script tag, anywhere in the file:
 - An empty string keeps a feature on with no guidance. Leave the field out instead.
 - `namelist` locks the session to those names. A student must type one to join. Matching ignores case, surrounding spaces and repeated spaces. Leave it out to let any name join.
 - `preparedStates` become buttons in the teacher's Reveal picker, labelled by `name`. Keep names short and unique.
-- Prepared states are stored in Firebase Realtime Database, which drops `null` values and empty arrays, and turns objects with numeric keys into arrays. A prepared state can therefore reach the applet with fields missing. Student and teacher states are stored as JSON text and arrive intact.
+- Prepared states arrive exactly as written.
 
 ## 4. The runtime
 

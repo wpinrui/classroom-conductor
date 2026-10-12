@@ -9,7 +9,9 @@ function isStringArray(v: unknown): v is string[] {
   return Array.isArray(v) && v.every((x) => typeof x === "string");
 }
 
-function isPrepared(v: unknown): v is PreparedState {
+function isPrepared(
+  v: unknown,
+): v is { name: string; state: unknown; phase: number } {
   if (typeof v !== "object" || v === null) return false;
   const p = v as Record<string, unknown>;
   return (
@@ -48,7 +50,9 @@ export function parseManifest(html: string): Manifest {
       "preparedStates must be a list of { name, state, phase }",
     );
   const phaseCount = m.phases.length;
-  const prepared = m.preparedStates as PreparedState[] | undefined;
+  const prepared = m.preparedStates as
+    | { name: string; state: unknown; phase: number }[]
+    | undefined;
   if (prepared?.some((p) => p.phase < 0 || p.phase >= phaseCount))
     throw new ManifestError(
       "a prepared state names a phase that is not declared",
@@ -63,7 +67,17 @@ export function parseManifest(html: string): Manifest {
       ? { pulsePrompt: m.pulsePrompt }
       : {}),
     ...(m.namelist ? { namelist: m.namelist as string[] } : {}),
-    ...(prepared ? { preparedStates: prepared } : {}),
+    ...(prepared
+      ? {
+          preparedStates: prepared.map(
+            (p): PreparedState => ({
+              name: p.name,
+              json: JSON.stringify(p.state),
+              phase: p.phase,
+            }),
+          ),
+        }
+      : {}),
   };
 }
 
