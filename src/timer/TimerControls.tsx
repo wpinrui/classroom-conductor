@@ -7,6 +7,7 @@ import {
   pause,
   remaining,
   resume,
+  serverNow,
   setTimer,
   start,
   useServerNow,
@@ -33,7 +34,7 @@ export function TimerControls({
 
   const begin = (ms: number) => {
     setCustom("");
-    write(start(ms, now));
+    write(start(ms, serverNow()));
   };
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,11 +81,18 @@ export function TimerControls({
           className="icon-button"
           aria-label={paused ? "Resume" : "Pause"}
           disabled={done}
-          onClick={() => write(paused ? resume(timer, now) : pause(timer, now))}
+          onClick={() =>
+            write(
+              paused ? resume(timer, serverNow()) : pause(timer, serverNow()),
+            )
+          }
         >
           {paused ? <PlayIcon /> : <PauseIcon />}
         </button>
-        <button type="button" onClick={() => write(addMinute(timer, now))}>
+        <button
+          type="button"
+          onClick={() => write(addMinute(timer, serverNow()))}
+        >
           +1m
         </button>
         {visibility}
