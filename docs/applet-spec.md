@@ -90,7 +90,7 @@ Declare the manifest in a JSON script tag, anywhere in the file:
 | `pulsePrompt` | Optional string. |
 | `namelist` | Optional list of strings. |
 | `preparedStates` | Optional list of `{ name, state, phase }`. `name` is a string. `state` must be present. `phase` is an integer from 0 to the number of phases minus 1. |
-| `handoff` | Optional boolean. |
+| `handoff` | Optional boolean, or a list of phase indexes. |
 | `modes` | Optional list with exactly one entry per phase. Each entry is a non-empty list of mode ids: `independent`, `demo`, `spotlight`, `anonymousSpotlight`, `gallery`, `group`, `paced`, `freeze`, `focus`, `reveal`. |
 | `slides` | Optional list of step objects. Each step needs `label`, a non-empty string. Every other field is optional. `phase` is an integer from 0 to the number of phases minus 1. `mode` is one of the mode ids above. `cue` is a non-empty string. `wheel` is an object with an optional string `filter` and an optional boolean `spin`. `timer` is a number of seconds above 0 and at most 86,400. `timerShared` is a boolean. `reveal` is the `name` of a prepared state, and a step with `reveal` may set `mode` only to `reveal`. |
 
@@ -110,7 +110,7 @@ Declare the manifest in a JSON script tag, anywhere in the file:
 - A scripted spotlight in a phase that does not allow Spotlight is undone straight away.
 - Handoff is offered only during Demo, so a phase that does not allow Demo never shows it.
 - Leave `modes` out to offer every mode in every phase.
-- `handoff: false` hides the Handoff button. Leave it out to offer Handoff during Demo.
+- `handoff: false` hides the Handoff button. A list of phase indexes offers it only in those phases. Leave it out to offer Handoff during Demo in every phase.
 - `slides` scripts the lesson for the teacher's slideshow (section 6, Slideshow). Leave it out and the teacher gets no slideshow.
 - A step's `label` is what the teacher sees as the next step. Students never see it.
 - `phase` holds from its step until a later step names another. Steps before the first `phase` leave the phase as it is.
