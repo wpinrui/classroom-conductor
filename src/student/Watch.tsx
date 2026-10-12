@@ -3,7 +3,7 @@ import { paths } from "../firebase/paths";
 import type { Student } from "../firebase/types";
 import { useControl, useStudentState } from "../hooks/session";
 import { useValue } from "../hooks/useValue";
-import { Edge, Loading, NamePill } from "./Cues";
+import { Edge, Loading, ModePill } from "./Cues";
 import { OwnApplet, type StageProps } from "./OwnApplet";
 
 /** Another student's applet, view-only. */
@@ -30,14 +30,20 @@ function spotlight(named: boolean) {
     const control = useControl(props.session);
     const target = control?.spotlight ?? null;
     const name = useName(props.session, named ? target : null);
-    if (!target) return <OwnApplet {...props} />;
+    if (!target)
+      return (
+        <>
+          <OwnApplet {...props} />
+          <ModePill mode="Spotlight" />
+        </>
+      );
     // The spotlighted student keeps working on their own applet.
     if (target === props.uid)
       return (
         <>
           <OwnApplet {...props} />
           <Edge kind="live" />
-          <NamePill>You</NamePill>
+          <ModePill mode="Spotlight" who="You" live />
         </>
       );
     const label = named ? name : "Classmate";
@@ -45,7 +51,7 @@ function spotlight(named: boolean) {
       <>
         <Screen session={props.session} html={props.html} student={target} />
         <Edge kind="watch" />
-        {label && <NamePill>{label}</NamePill>}
+        <ModePill mode="Spotlight" who={label ?? undefined} />
       </>
     );
   };
