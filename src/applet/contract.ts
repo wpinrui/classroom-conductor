@@ -1,5 +1,7 @@
 // The applet contract. See docs/applet-spec.md for the author-facing version.
 
+import type { Mode } from "../firebase/types";
+
 /**
  * A prepared state as stored. json holds the state as JSON text, so any key and value survive the database.
  * Applets uploaded before that carry state as an object instead.
@@ -25,6 +27,8 @@ export interface Manifest {
   pulsePrompt?: string;
   namelist?: string[];
   preparedStates?: PreparedState[];
+  /** One list per phase of the modes that phase allows. The first is the phase's default. Absent allows every mode. */
+  modes?: Mode[][];
 }
 
 /** One student as the teacher's applet sees them. */

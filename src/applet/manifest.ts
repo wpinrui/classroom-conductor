@@ -1,3 +1,4 @@
+import { MODES, type Mode } from "../firebase/types";
 import type { Manifest, PreparedState } from "./contract";
 
 const MANIFEST_RE =
@@ -57,6 +58,21 @@ export function parseManifest(html: string): Manifest {
     throw new ManifestError(
       "a prepared state names a phase that is not declared",
     );
+  let modes: Mode[][] | undefined;
+  if (m.modes !== undefined) {
+    if (!Array.isArray(m.modes) || !m.modes.every(isStringArray))
+      throw new ManifestError("modes must be a list of mode lists");
+    if (m.modes.length !== phaseCount)
+      throw new ManifestError("modes must have exactly one list per phase");
+    if (m.modes.some((list) => list.length === 0))
+      throw new ManifestError("each phase in modes must allow at least one mode");
+    const unknown = m.modes
+      .flat()
+      .find((id) => !(MODES as readonly string[]).includes(id));
+    if (unknown !== undefined)
+      throw new ManifestError(`modes names an unknown mode: ${unknown}`);
+    modes = m.modes as Mode[][];
+  }
   return {
     title: m.title,
     phases: m.phases,
@@ -78,6 +94,7 @@ export function parseManifest(html: string): Manifest {
           ),
         }
       : {}),
+    ...(modes ? { modes } : {}),
   };
 }
 

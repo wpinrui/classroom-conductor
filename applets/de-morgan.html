@@ -12,6 +12,17 @@
     { "name": "Truth table", "phase": 2, "state": { "tt": { "cols": [{ "text": "M OR P", "done": true, "vals": "0111" }], "target": "1000" } } },
     { "name": "NOR table", "phase": 3, "state": { "nor": { "c2": "1000", "c3": "1100", "c4": "1010", "c5": "1110", "c6": "1000" } } },
     { "name": "AND circuit", "phase": 6, "state": { "circ": { "gates": { "g1": { "type": "NOT", "x": 190, "y": 110 }, "g2": { "type": "NOT", "x": 190, "y": 290 }, "g3": { "type": "OR", "x": 340, "y": 200 }, "g4": { "type": "NOT", "x": 470, "y": 200 } }, "wires": { "g1:0": "A", "g2:0": "B", "g3:0": "g1", "g3:1": "g2", "g4:0": "g3", "Q": "g4" } } } }
+  ],
+  "modes": [
+    ["independent", "spotlight"],
+    ["independent"],
+    ["independent", "spotlight", "reveal"],
+    ["independent", "reveal"],
+    ["independent"],
+    ["independent"],
+    ["independent", "spotlight", "reveal"],
+    ["independent"],
+    ["independent"]
   ]
 }
 </script>

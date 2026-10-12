@@ -14,6 +14,7 @@ import { PulsePanel } from "../pulse/Pulse";
 import { Countdown } from "../timer/Countdown";
 import { scriptTimer } from "../timer/timer";
 import { Controls } from "./Controls";
+import { allowedModes, defaultsFor, teacherPhase } from "./modes";
 import { Wheel, type WheelCommand } from "./Wheel";
 
 /** The teacher's live view: their own applet with the controls overlaid. */
@@ -101,6 +102,25 @@ export function TeacherSession() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
+
+  // When the applet narrows the modes per phase, leave a mode the current phase does not allow.
+  const allowed = data ? allowedModes(data) : null;
+  const mode = data?.control.mode;
+  const phase = data ? teacherPhase(data) : 0;
+  const requested = useRef("");
+  // biome-ignore lint/correctness/useExhaustiveDependencies: allowed and data are derived from mode and phase
+  useEffect(() => {
+    if (!data || !allowed || !mode) return;
+    if (allowed.includes(mode)) {
+      requested.current = "";
+      return;
+    }
+    const next = allowed[0];
+    const key = `${phase}:${mode}:${next}`;
+    if (requested.current === key) return;
+    requested.current = key;
+    setControl(session, { mode: next, ...defaultsFor(next, data) });
+  }, [session, mode, phase, allowed?.join()]);
 
   if (!data) return null;
   const { manifest } = data.applet;
