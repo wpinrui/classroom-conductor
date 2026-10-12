@@ -58,6 +58,8 @@ export function parseManifest(html: string): Manifest {
     throw new ManifestError(
       "a prepared state names a phase that is not declared",
     );
+  if (m.handoff !== undefined && typeof m.handoff !== "boolean")
+    throw new ManifestError("handoff must be true or false");
   let modes: Mode[][] | undefined;
   if (m.modes !== undefined) {
     if (!Array.isArray(m.modes) || !m.modes.every(isStringArray))
@@ -65,7 +67,9 @@ export function parseManifest(html: string): Manifest {
     if (m.modes.length !== phaseCount)
       throw new ManifestError("modes must have exactly one list per phase");
     if (m.modes.some((list) => list.length === 0))
-      throw new ManifestError("each phase in modes must allow at least one mode");
+      throw new ManifestError(
+        "each phase in modes must allow at least one mode",
+      );
     const unknown = m.modes
       .flat()
       .find((id) => !(MODES as readonly string[]).includes(id));
@@ -95,6 +99,7 @@ export function parseManifest(html: string): Manifest {
         }
       : {}),
     ...(modes ? { modes } : {}),
+    ...(m.handoff === false ? { handoff: false } : {}),
   };
 }
 

@@ -188,7 +188,7 @@ export function Controls({
         {control.mode === "group" && <Groups session={session} data={data} />}
 
         <div className="actions">
-          {control.mode === "demo" && (
+          {control.mode === "demo" && manifest.handoff !== false && (
             <button
               type="button"
               className="primary handoff"
