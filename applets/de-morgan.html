@@ -1267,7 +1267,7 @@ function viewTT() {
       <table class="tt">${"<tr>" + head + "</tr>" + body}</table>
       <button class="btn icon" data-act="ttadd" aria-label="Add column" data-tip="Add column for intermediate working">${I.plus}</button>
     </div>
-    ${isTeacher() ? `<div class="row"><button class="btn ${state.tt.answer ? "on" : ""}" data-act="ttanswer">${I.eye}Answer</button><button class="btn ${rv ? "on" : ""}" data-act="ttreveal">${I.eye}NOR gate</button></div>` : ""}
+    ${isTeacher() ? `<div class="row"><button class="btn ${state.tt.answer ? "on" : ""}" data-act="ttanswer">${I.eye}Answer</button><button class="btn ${rv ? "on" : ""}" data-act="ttreveal">${I.eye}Gate</button></div>` : ""}
   </div>`;
 }
 
