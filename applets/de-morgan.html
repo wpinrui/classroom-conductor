@@ -3249,6 +3249,8 @@ host.connect({
     lastHtml = "";
     render();
     setTimeout(ownSeed);
+    // A replayed state carries the phase it was saved at, which can be behind the teacher, for example after a Demo.
+    if (booted) setTimeout(followTeacher);
   },
   setPhaseLimit(m) {
     maxPhase = m === null || m === undefined ? null : m | 0;
