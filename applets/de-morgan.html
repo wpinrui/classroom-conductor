@@ -187,7 +187,11 @@ table.tt { border-collapse: separate; border-spacing: 0; background: var(--card)
 /* Predict */
 .basket { display: flex; gap: 28px; min-width: 360px; min-height: 180px; padding: 20px 36px; border-radius: 28px; border: 3px dashed var(--line); justify-content: center; align-items: center; font-size: 120px; }
 .legend { display: flex; gap: 40px; font-size: 32px; }
-.legend span { display: inline-flex; align-items: center; gap: 12px; }
+.legend > span { display: inline-flex; align-items: center; gap: 12px; }
+.lfruit, .bfruit { display: inline-flex; flex-direction: column; align-items: center; gap: 6px; line-height: 1; }
+.lfruit .name { font-size: 16px; font-weight: 700; }
+.bfruit { gap: 12px; }
+.bfruit .name { font-size: 28px; font-weight: 700; }
 .tf { display: flex; gap: 24px; }
 .tf button { min-width: 220px; padding: 22px 32px; font-size: 34px; font-weight: 700; border-radius: 20px; background: var(--card); border: 2px solid var(--line); }
 .tf button.pick { border-color: var(--ink); background: var(--ink); color: #fff; opacity: 1; }
@@ -2196,9 +2200,10 @@ function votesFor(e) {
 }
 function predictTop(ex, hide) {
   const E = hide ? {} : EXAMPLES[ex] || EXAMPLES[0];
-  return `<div class="legend"><span>${alg("M")} = ${MANGO}</span><span>${alg("P")} = ${PEAR}</span></div>
+  const fruit = (e, cls) => `<span class="${cls}"><span>${e}</span><span class="name">${FRUIT_NAMES[e]}</span></span>`;
+  return `<div class="legend"><span>${alg("M")} = ${fruit(MANGO, "lfruit")}</span><span>${alg("P")} = ${fruit(PEAR, "lfruit")}</span></div>
     <div class="huge">${alg("NOT (M OR P)")}</div>
-    <div class="basket">${E.m ? MANGO : ""}${E.p ? PEAR : ""}</div>`;
+    <div class="basket">${E.m ? fruit(MANGO, "bfruit") : ""}${E.p ? fruit(PEAR, "bfruit") : ""}</div>`;
 }
 function viewPredict() {
   const tp = T().predict;
