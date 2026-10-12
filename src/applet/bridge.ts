@@ -29,6 +29,7 @@ else if(m.cc==="context"&&handlers.setContext)handlers.setContext(m.context);
 else if(m.cc==="wheelPicked"&&handlers.wheelPicked)handlers.wheelPicked(m.student);
 else if(m.cc==="slide"&&handlers.slide)handlers.slide({phase:m.phase,cues:m.cues});
 });
+window.addEventListener("mousedown",function(e){if(e.button===1){e.preventDefault();send({cc:"shortcut"});}},true);
 window.addEventListener("keydown",function(e){
 if((e.ctrlKey||e.metaKey)&&e.key==="."){e.preventDefault();send({cc:"shortcut"});return;}
 if(slideshow===null||e.ctrlKey||e.metaKey||e.altKey||typing(e.composedPath?e.composedPath()[0]:e.target))return;
