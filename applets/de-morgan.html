@@ -1646,7 +1646,7 @@ if not (is_strong_password and passwords_match):
 const BLANK_TABLE = { c2: "----", c3: "----", c4: "----", c5: "----", c6: "----" };
 const DEFAULTS = {
   me: "",
-  warm: { round: -1, q: 0, deal: 1 },
+  warm: { round: -1, q: -1, deal: 1 },
   predict: { ex: 0, shown: {}, counts: {}, votes: {} },
   tt: { cols: [], target: "----", reveal: false },
   nor: { ...BLANK_TABLE },
@@ -1919,8 +1919,7 @@ const WARM_QS = [
   ["Who has a yellow Pokemon or a green Pokemon?", "Who has a yellow Pokemon AND a green Pokemon?"],
   ["Who has a mango or a pear?", "Who does NOT have a mango or a pear?"],
 ];
-const warmQ = (t) => (t.round >= 0 && WARM_QS[t.round] ? WARM_QS[t.round][t.q ? 1 : 0] : "");
-const warmLast = (t) => t.round === WARM_QS.length - 1 && t.q === 1;
+const warmQ = (t) => (WARM_QS[t.round] && t.q >= 0 ? WARM_QS[t.round][t.q] || "" : "");
 function viewWarm() {
   const t = T().warm;
   const q = warmQ(t);
@@ -1928,17 +1927,18 @@ function viewWarm() {
     const roundBtn = (i) => `<button class="btn ${t.round === i ? "on" : ""}" style="width:96px;height:80px;justify-content:center;border-radius:22px;font-size:34px" data-act="round" data-i="${i}">${"ABC"[i]}</button>`;
     return `<div class="stage" style="margin-top:60px">
       <div class="row">${[0, 1, 2].map(roundBtn).join("")}</div>
-      ${q ? `<div style="font-size:52px;font-weight:600;text-align:center;max-width:1100px">${esc(q)}</div>
+      ${t.round >= 0 ? `<div style="font-size:52px;font-weight:600;text-align:center;max-width:1100px;min-height:73px">${esc(q)}</div>
       <div class="row">
         <button class="btn" data-act="deal">${I.shuffle}Shuffle</button>
-        <button class="btn" data-act="wnext" ${warmLast(t) ? "disabled" : ""}>Next${I.right}</button>
+        <button class="btn icon" data-act="wq" data-d="-1" aria-label="Previous question" ${t.q < 0 ? "disabled" : ""}>${I.left}</button>
+        <button class="btn" data-act="wq" data-d="1" ${t.q >= 1 ? "disabled" : ""}>${t.q < 0 ? "Question" : "Next"}${I.right}</button>
         <button class="btn primary" data-act="pick">${I.wheel}Pick</button>
       </div>` : ""}
     </div>`;
   }
-  if (!q) return `<div class="stage"></div>`;
+  if (t.round < 0) return `<div class="stage"></div>`;
   return `<div class="stage" style="margin-top:60px">
-    <div style="font-size:44px;font-weight:600;text-align:center;max-width:1100px">${esc(q)}</div>
+    <div style="font-size:44px;font-weight:600;text-align:center;max-width:1100px;min-height:62px">${esc(q)}</div>
     <div class="decals">${decals(t.round, t.deal, state.me).map(decalHTML).join("")}</div>
   </div>`;
 }
@@ -2561,14 +2561,8 @@ function syncCounts() {
 
 // ---------- Actions ----------
 const ACT = {
-  round(el) { state.warm.round = +el.dataset.i; state.warm.q = 0; state.warm.deal = (state.warm.deal | 0) + 1; commit(); },
-  wnext() {
-    const w = state.warm;
-    if (w.round < 0 || warmLast(w)) return;
-    if (!w.q) w.q = 1;
-    else { w.round += 1; w.q = 0; w.deal = (w.deal | 0) + 1; }
-    commit();
-  },
+  round(el) { state.warm.round = +el.dataset.i; state.warm.q = -1; state.warm.deal = (state.warm.deal | 0) + 1; commit(); },
+  wq(el) { const w = state.warm; w.q = Math.max(-1, Math.min(1, w.q + +el.dataset.d)); commit(); },
   deal() { state.warm.deal = (state.warm.deal | 0) + 1; commit(); },
   pick() { host.wheel?.({ filter: "", spin: true }); },
   spin(el) { host.wheel?.({ filter: el.dataset.f, spin: true }); },
