@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "react-router";
 import { AppletFrame, TeacherStateContext } from "../applet/AppletFrame";
-import type {
-  ClassMember,
-  WheelFilter,
-  WheelOptions,
+import {
+  type ClassMember,
+  preparedJson,
+  type SlideCue,
+  type WheelFilter,
+  type WheelOptions,
 } from "../applet/contract";
 import { Chat } from "../chat/Chat";
 import { setControl, setWheel, writeTeacherState } from "../firebase/client";
@@ -15,7 +17,23 @@ import { Countdown } from "../timer/Countdown";
 import { scriptTimer } from "../timer/timer";
 import { Controls } from "./Controls";
 import { allowedModes, defaultsFor, teacherPhase } from "./modes";
+import {
+  isTextTarget,
+  loadCursor,
+  NEXT_KEYS,
+  PREV_KEYS,
+  type SlideEffect,
+  saveCursor,
+  slideCues,
+  slideEffect,
+  wheelGesture,
+} from "./slides";
 import { Wheel, type WheelCommand } from "./Wheel";
+
+/** How long a slideshow step waits for the applet to reach its phase before setting the mode anyway. */
+const SLIDE_MODE_WAIT_MS = 3000;
+
+type SlideMessage = { phase: number; cues: SlideCue[]; n: number };
 
 /** The teacher's live view: their own applet with the controls overlaid. */
 export function TeacherSession() {
@@ -64,6 +82,123 @@ export function TeacherSession() {
     if (filter !== undefined || o.spin)
       setWheelCommand({ filter, spin: !!o.spin, n: ++commands.current });
   };
+  // Slideshow: the teacher steps through manifest.slides. Going back re-applies a step, it never undoes one.
+  const slides = data?.applet.manifest.slides ?? [];
+  const [slideshowOn, setSlideshowOn] = useState(false);
+  const [cursor, setCursorState] = useState(() => loadCursor(session));
+  const cursorRef = useRef(cursor);
+  const [slide, setSlide] = useState<SlideMessage | null>(null);
+  const latestData = useRef(data);
+  latestData.current = data;
+  const pendingMode = useRef<{
+    phase: number;
+    effect: SlideEffect;
+    timer: ReturnType<typeof setTimeout>;
+  } | null>(null);
+  const setCursor = (k: number) => {
+    cursorRef.current = k;
+    setCursorState(k);
+    saveCursor(session, k);
+  };
+
+  /** Sets the mode a step leaves in force, with the same defaults the mode buttons use. */
+  const applySlideMode = (effect: SlideEffect, d: Session) => {
+    if (effect.reveal !== undefined) {
+      const p = d.applet.manifest.preparedStates?.find(
+        (x) => x.name === effect.reveal,
+      );
+      if (p)
+        setControl(session, {
+          mode: "reveal",
+          reveal: { json: preparedJson(p), phase: p.phase, at: Date.now() },
+        });
+      return;
+    }
+    if (effect.mode)
+      setControl(session, {
+        mode: effect.mode,
+        ...defaultsFor(effect.mode, d),
+      });
+  };
+  const clearPendingMode = () => {
+    if (pendingMode.current) clearTimeout(pendingMode.current.timer);
+    pendingMode.current = null;
+  };
+
+  const stepSlide = (dir: 1 | -1) => {
+    if (!data || slides.length === 0) return;
+    const k = Math.min(cursorRef.current, slides.length - 1) + dir;
+    if (k < 0 || k >= slides.length) return;
+    setCursor(k);
+    const forward = dir === 1;
+    const effect = slideEffect(slides, k);
+    const target = effect.phase ?? teacherPhase(data);
+    const cues = slideCues(slides, k, forward);
+    setSlide((m) => ({ phase: target, cues, n: (m?.n ?? 0) + 1 }));
+    clearPendingMode();
+    // Setting a mode before the applet reaches the step's phase would let that phase's allowed modes undo it.
+    if (target === teacherPhase(data)) applySlideMode(effect, data);
+    else
+      pendingMode.current = {
+        phase: target,
+        effect,
+        timer: setTimeout(() => {
+          const p = pendingMode.current;
+          pendingMode.current = null;
+          if (p && latestData.current)
+            applySlideMode(p.effect, latestData.current);
+        }, SLIDE_MODE_WAIT_MS),
+      };
+    if (!forward) return;
+    const s = slides[k];
+    if (s.wheel) onWheel(s.wheel);
+    if (s.timer !== undefined)
+      scriptTimer(session, s.timer, s.timerShared ?? true);
+  };
+  const toggleSlideshow = () => {
+    if (slides.length > 0) setSlideshowOn((o) => !o);
+  };
+  const show = useRef({
+    on: slideshowOn,
+    step: stepSlide,
+    toggle: toggleSlideshow,
+  });
+  show.current = { on: slideshowOn, step: stepSlide, toggle: toggleSlideshow };
+
+  // S toggles the slideshow. While it is on, the wheel and the step keys move through it.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey || e.altKey || isTextTarget(e.target)) return;
+      if (e.key === "s" || e.key === "S") {
+        e.preventDefault();
+        show.current.toggle();
+        return;
+      }
+      if (!show.current.on) return;
+      const dir = NEXT_KEYS.includes(e.key)
+        ? 1
+        : PREV_KEYS.includes(e.key)
+          ? -1
+          : 0;
+      if (dir === 0) return;
+      e.preventDefault();
+      show.current.step(dir);
+    };
+    const gesture = wheelGesture();
+    const onWheelEvent = (e: WheelEvent) => {
+      if (!show.current.on) return;
+      e.preventDefault();
+      const dir = gesture(e);
+      if (dir !== 0) show.current.step(dir);
+    };
+    window.addEventListener("keydown", onKey);
+    window.addEventListener("wheel", onWheelEvent, { passive: false });
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("wheel", onWheelEvent);
+    };
+  }, []);
+
   const write = useThrottledWriter((s: StoredState) =>
     writeTeacherState(session, s),
   );
@@ -148,6 +283,18 @@ export function TeacherSession() {
     setControl(session, { mode: next, ...defaultsFor(next, data) });
   }, [session, mode, phase, allowed?.join()]);
 
+  // A slideshow step's mode lands once the applet reaches the step's phase, after the switch above.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: runs when the teacher's phase changes
+  useEffect(() => {
+    const p = pendingMode.current;
+    if (!p || p.phase !== phase || !latestData.current) return;
+    clearPendingMode();
+    applySlideMode(p.effect, latestData.current);
+  }, [phase]);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: clears the wait on unmount only
+  useEffect(() => clearPendingMode, []);
+
   if (!data) return null;
   const { manifest } = data.applet;
   const target =
@@ -167,6 +314,10 @@ export function TeacherSession() {
           onWheel={onWheel}
           onSpotlight={(raw) => spotlight(typeof raw === "string" ? raw : null)}
           wheelPick={wheelPick}
+          slideshow={slides.length > 0 ? slideshowOn : undefined}
+          slide={slide}
+          onStep={(dir) => show.current.step(dir)}
+          onSlideshowToggle={() => show.current.toggle()}
         />
         {target && data.students?.[target] && (
           <div className="teacher-spotlight">
@@ -203,6 +354,18 @@ export function TeacherSession() {
             wheelOpen={wheelOpen}
             onWheel={() => setWheelOpen((o) => !o)}
             onBlank={blankOn}
+            slideshow={
+              slides.length > 0
+                ? {
+                    on: slideshowOn,
+                    at: Math.min(cursor, slides.length - 1),
+                    count: slides.length,
+                    next: slides[Math.min(cursor, slides.length - 1) + 1]
+                      ?.label,
+                    onToggle: toggleSlideshow,
+                  }
+                : undefined
+            }
           />
         )}
       </TeacherStateContext.Provider>
@@ -264,6 +427,10 @@ function TeacherApplet({
   onWheel,
   onSpotlight,
   wheelPick,
+  slideshow,
+  slide,
+  onStep,
+  onSlideshowToggle,
 }: {
   data: Session;
   onUpdate: (s: StoredState) => void;
@@ -273,6 +440,10 @@ function TeacherApplet({
   onWheel: (options: unknown) => void;
   onSpotlight: (student: unknown) => void;
   wheelPick: { student: string; n: number } | null;
+  slideshow: boolean | undefined;
+  slide: SlideMessage | null;
+  onStep: (dir: 1 | -1) => void;
+  onSlideshowToggle: () => void;
 }) {
   const [initial] = useState(data.teacherState ?? null);
   const students = useClass(data);
@@ -289,6 +460,10 @@ function TeacherApplet({
       onWheel={onWheel}
       onSpotlight={onSpotlight}
       wheelPick={wheelPick}
+      slideshow={slideshow}
+      slide={slide}
+      onStep={onStep}
+      onSlideshowToggle={onSlideshowToggle}
     />
   );
 }

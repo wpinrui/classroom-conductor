@@ -1,5 +1,5 @@
 import { MODES, type Mode } from "../firebase/types";
-import type { Manifest, PreparedState } from "./contract";
+import type { Manifest, PreparedState, Slide } from "./contract";
 
 const MANIFEST_RE =
   /<script[^>]*\bid=["']conductor-manifest["'][^>]*>([\s\S]*?)<\/script>/i;
@@ -18,6 +18,84 @@ function isPrepared(
   return (
     typeof p.name === "string" && Number.isInteger(p.phase) && "state" in p
   );
+}
+
+/** Same limit as a scripted timer. */
+const MAX_TIMER_SECONDS = 24 * 3600;
+
+const isMode = (v: unknown): v is Mode =>
+  typeof v === "string" && (MODES as readonly string[]).includes(v);
+
+const nonEmpty = (v: unknown): v is string =>
+  typeof v === "string" && v.trim() !== "";
+
+/** Validates one slideshow step and returns it with only the fields it declares. */
+function parseSlide(
+  v: unknown,
+  i: number,
+  phaseCount: number,
+  prepared: string[],
+): Slide {
+  const fail = (why: string): never => {
+    throw new ManifestError(`slides[${i}] ${why}`);
+  };
+  if (typeof v !== "object" || v === null || Array.isArray(v))
+    fail("must be an object");
+  const s = v as Record<string, unknown>;
+  if (!nonEmpty(s.label)) fail("needs a non-empty label");
+  const out: Slide = { label: s.label as string };
+  if (s.phase !== undefined) {
+    if (
+      !Number.isInteger(s.phase) ||
+      (s.phase as number) < 0 ||
+      (s.phase as number) >= phaseCount
+    )
+      fail("names a phase that is not declared");
+    out.phase = s.phase as number;
+  }
+  if (s.mode !== undefined) {
+    if (!isMode(s.mode)) fail(`names an unknown mode: ${String(s.mode)}`);
+    out.mode = s.mode as Mode;
+  }
+  if (s.cue !== undefined) {
+    if (!nonEmpty(s.cue)) fail("cue must be a non-empty string");
+    out.cue = s.cue as string;
+  }
+  if (s.wheel !== undefined) {
+    const w = s.wheel as Record<string, unknown>;
+    if (typeof w !== "object" || w === null || Array.isArray(w))
+      fail("wheel must be an object");
+    if (w.filter !== undefined && typeof w.filter !== "string")
+      fail("wheel.filter must be a string");
+    if (w.spin !== undefined && typeof w.spin !== "boolean")
+      fail("wheel.spin must be true or false");
+    out.wheel = {
+      ...(typeof w.filter === "string" ? { filter: w.filter } : {}),
+      ...(typeof w.spin === "boolean" ? { spin: w.spin } : {}),
+    };
+  }
+  if (s.timer !== undefined) {
+    if (
+      typeof s.timer !== "number" ||
+      !(s.timer > 0) ||
+      s.timer > MAX_TIMER_SECONDS
+    )
+      fail(`timer must be seconds above 0 and at most ${MAX_TIMER_SECONDS}`);
+    out.timer = s.timer as number;
+  }
+  if (s.timerShared !== undefined) {
+    if (typeof s.timerShared !== "boolean")
+      fail("timerShared must be true or false");
+    out.timerShared = s.timerShared as boolean;
+  }
+  if (s.reveal !== undefined) {
+    if (typeof s.reveal !== "string" || !prepared.includes(s.reveal))
+      fail("reveal must name a prepared state");
+    if (out.mode !== undefined && out.mode !== "reveal")
+      fail("cannot set a mode other than reveal beside reveal");
+    out.reveal = s.reveal as string;
+  }
+  return out;
 }
 
 /** Extracts and validates the manifest an applet file declares. */
@@ -70,12 +148,17 @@ export function parseManifest(html: string): Manifest {
       throw new ManifestError(
         "each phase in modes must allow at least one mode",
       );
-    const unknown = m.modes
-      .flat()
-      .find((id) => !(MODES as readonly string[]).includes(id));
+    const unknown = m.modes.flat().find((id) => !isMode(id));
     if (unknown !== undefined)
       throw new ManifestError(`modes names an unknown mode: ${unknown}`);
     modes = m.modes as Mode[][];
+  }
+  let slides: Slide[] | undefined;
+  if (m.slides !== undefined) {
+    if (!Array.isArray(m.slides))
+      throw new ManifestError("slides must be a list of steps");
+    const names = (prepared ?? []).map((p) => p.name);
+    slides = m.slides.map((v, i) => parseSlide(v, i, phaseCount, names));
   }
   return {
     title: m.title,
@@ -100,6 +183,7 @@ export function parseManifest(html: string): Manifest {
       : {}),
     ...(modes ? { modes } : {}),
     ...(m.handoff === false ? { handoff: false } : {}),
+    ...(slides && slides.length > 0 ? { slides } : {}),
   };
 }
 

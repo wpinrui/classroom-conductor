@@ -47,12 +47,21 @@ export function Controls({
   wheelOpen,
   onWheel,
   onBlank,
+  slideshow,
 }: {
   session: string;
   data: Session;
   wheelOpen: boolean;
   onWheel: () => void;
   onBlank: () => void;
+  /** Present only for an applet with slides. at is -1 before the first step. */
+  slideshow?: {
+    on: boolean;
+    at: number;
+    count: number;
+    next?: string;
+    onToggle: () => void;
+  };
 }) {
   const { manifest } = data.applet;
   const navigate = useNavigate();
@@ -201,6 +210,32 @@ export function Controls({
             <PulseButton session={session} />
           )}
         </div>
+
+        {slideshow && (
+          <div className="slideshow">
+            <div className="row">
+              <button
+                type="button"
+                aria-pressed={slideshow.on}
+                onClick={(e) => {
+                  // Release focus so Space steps the slideshow instead of pressing this again.
+                  e.currentTarget.blur();
+                  slideshow.onToggle();
+                }}
+              >
+                Slideshow
+              </button>
+              <output className="slideshow-at" aria-label="Slideshow step">
+                Step {slideshow.at + 1} of {slideshow.count}
+              </output>
+            </div>
+            {slideshow.next && (
+              <p className="slideshow-next" aria-label="Next step">
+                {slideshow.next}
+              </p>
+            )}
+          </div>
+        )}
 
         <TimerControls session={session} data={data} />
 
