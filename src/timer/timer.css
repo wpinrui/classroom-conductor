@@ -130,3 +130,18 @@
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: var(--space-2);
 }
+
+/* Brief toast, such as slideshow on or off. */
+.status.toast {
+  background: #000;
+  border-color: #000;
+  color: #fff;
+}
+
+.status.toast .on {
+  color: var(--color-success);
+}
+
+.status.toast .off {
+  color: var(--color-danger);
+}

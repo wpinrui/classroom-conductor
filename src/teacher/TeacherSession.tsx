@@ -31,6 +31,7 @@ import {
 import { Thumbnails } from "./Thumbnails";
 import { Wheel, type WheelCommand } from "./Wheel";
 
+const SLIDE_TOAST_MS = 1500;
 /** How long a slideshow step waits for the applet to reach its phase before setting the mode anyway. */
 const SLIDE_MODE_WAIT_MS = 3000;
 
@@ -88,6 +89,18 @@ export function TeacherSession() {
   // Slideshow: the teacher steps through manifest.slides. Going back re-applies a step, it never undoes one.
   const slides = data?.applet.manifest.slides ?? [];
   const [slideshowOn, setSlideshowOn] = useState(false);
+  // A brief toast on the teacher's screen whenever slideshow turns on or off.
+  const [slideToast, setSlideToast] = useState<boolean | null>(null);
+  const toastShown = useRef(false);
+  useEffect(() => {
+    if (!toastShown.current) {
+      toastShown.current = true;
+      return;
+    }
+    setSlideToast(slideshowOn);
+    const t = setTimeout(() => setSlideToast(null), SLIDE_TOAST_MS);
+    return () => clearTimeout(t);
+  }, [slideshowOn]);
   const [cursor, setCursorState] = useState(() => loadCursor(session));
   const cursorRef = useRef(cursor);
   const [slide, setSlide] = useState<SlideMessage | null>(null);
@@ -358,6 +371,14 @@ export function TeacherSession() {
           </div>
         )}
         <div className="status-bar">
+          {slideToast !== null && (
+            <output className="status toast">
+              Slideshow{" "}
+              <b className={slideToast ? "on" : "off"}>
+                {slideToast ? "On" : "Off"}
+              </b>
+            </output>
+          )}
           {/* The projector shows this screen, so it says only what students would see. */}
           {target && data.students?.[target] && (
             <output className="status" data-tone="watch">
