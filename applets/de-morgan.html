@@ -79,7 +79,9 @@ button:disabled { cursor: default; opacity: .4; }
 .alg i.bv { font-style: italic; padding: 0 .04em; }
 .alg .bo { padding: 0 .22em; }
 .alg .bp { padding: 0 .04em; }
-.alg .bar { display: inline-flex; align-items: flex-end; border-top: .06em solid currentColor; padding-top: .06em; margin: 0 .05em; }
+.alg .bar { position: relative; display: inline-flex; align-items: flex-end; padding-top: .12em; margin: 0 .05em; }
+/* Drawn as its own line, shifted right to follow the italic slant of the letters below. */
+.alg .bar::before { content: ""; position: absolute; top: 0; left: .14em; right: -.06em; border-top: .06em solid currentColor; }
 /* Each piece under a bar is only as tall as a capital letter, so the bar sits just above the letters, not a full line above. */
 .alg .bar > * { line-height: .82; }
 
