@@ -84,6 +84,13 @@ math.alg { font-family: "Cambria Math", "STIX Two Math", math; white-space: nowr
 .ex-line { display: flex; gap: 10px; align-items: center; }
 .ex-in { flex: 1; min-width: 320px; padding: 12px 16px; border: 2px solid var(--line); border-radius: 12px; background: #fff; font-family: var(--mono); font-size: 22px; }
 .ex-in:focus { outline: none; border-color: var(--accent); }
+.mx { display: flex; align-items: center; min-height: 58px; cursor: text; font-family: inherit; }
+.mx math { font-size: 30px; }
+.tt th .mx { min-height: 48px; }
+.tt th .mx math { font-size: 24px; }
+.mx .caret { background: var(--accent); animation: blink 1s steps(1) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+.pal button svg { width: 22px; height: 22px; vertical-align: middle; }
 .ex.bad .ex-in { border-color: var(--bad); }
 .err { color: var(--bad); font-size: 18px; }
 .pal { display: flex; gap: 6px; flex-wrap: wrap; }
@@ -288,7 +295,8 @@ const Bool = (() => {
       if (/\s/.test(c)) { i++; continue; }
       if (c === "(" || c === ")") { out.push(c); i++; continue; }
       if (c === "+" ) { out.push("OR"); i++; continue; }
-      if (c === "." || c === "*" || c === "⋅" || c === "&") { out.push("AND"); i++; continue; }
+      if (c === "." || c === "*" || c === "⋅" || c === "·" || c === "&") { out.push("AND"); i++; continue; }
+      if (c === "'") { out.push("BAR"); i++; continue; }
       if (c === "!" || c === "~") { out.push("NOT"); i++; continue; }
       if (c === "|") { out.push("OR"); i++; continue; }
       if (c === "0" || c === "1") { out.push(c); i++; continue; }
@@ -326,7 +334,10 @@ const Bool = (() => {
     }
     function notExpr() {
       if (peek() === "NOT") { p++; return { t: "not", a: notExpr() }; }
-      return atom();
+      // A bar is written after the thing it covers: A' is a bar over A, (A + B)' a bar over A + B.
+      let a = atom();
+      while (peek() === "BAR") { p++; a = { t: "not", a }; }
+      return a;
     }
     function atom() {
       const k = peek();
@@ -1775,6 +1786,76 @@ const I = {
 };
 
 // ---------- Expression input ----------
+// A maths editor: students build the expression with letters, +, the dot, brackets and a bar, and see it typeset as they go.
+// The text in the state is the token list joined by spaces, such as "( A + B ) '", which the engine parses as usual.
+const BAR_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 4h14"/><rect x="7" y="9" width="10" height="11" rx="1.5" stroke-dasharray="2.5 2"/></svg>';
+const carets = {};
+let focusedMx = null;
+
+// Tokens from stored text. Old word-form text such as "NOT (A OR B)" goes through the engine.
+function mxTokens(text) {
+  const t = String(text || "");
+  if (/[A-Za-z]{2,}|[!~&|*.⋅]/.test(t)) {
+    const r = Bool.parse(t);
+    if (r.ast) return astTokens(r.ast);
+  }
+  return t.replace(/\s+/g, "").split("").map((c) => (c === "⋅" ? "·" : c.toUpperCase()));
+}
+function astTokens(n) {
+  switch (n.t) {
+    case "v": return [n.v];
+    case "c": return [String(n.v)];
+    case "grp": return ["(", ...astTokens(n.a), ")"];
+    case "not": {
+      let a = n.a;
+      while (a.t === "grp") a = a.a;
+      const inner = astTokens(a);
+      return a.t === "v" || a.t === "c" || a.t === "not" ? [...inner, "'"] : ["(", ...inner, ")", "'"];
+    }
+    case "and": {
+      const w = (c) => (c.t === "or" ? ["(", ...astTokens(c), ")"] : astTokens(c));
+      return [...w(n.a), "·", ...w(n.b)];
+    }
+    case "or": return [...astTokens(n.a), "+", ...astTokens(n.b)];
+  }
+}
+// Typesets tokens, even an unfinished expression, with the caret at its index.
+function mxRender(tokens, caret) {
+  const root = [];
+  const stack = [root];
+  const top = () => stack[stack.length - 1];
+  const row = (arr) => arr.map((x) => x.html).join("");
+  const caretItem = { caret: true, html: '<mspace class="caret" width="0.07em" height="0.85em" depth="0.25em"></mspace>' };
+  for (let i = 0; i <= tokens.length; i++) {
+    if (i === caret) top().push(caretItem);
+    if (i === tokens.length) break;
+    const t = tokens[i];
+    if (t === "(") { const fr = []; fr.open = i; stack.push(fr); }
+    else if (t === ")" && stack.length > 1) {
+      const fr = stack.pop();
+      top().push({ html: `<mrow><mo data-i="${fr.open}">(</mo>${row(fr)}<mo data-i="${i}">)</mo></mrow>`, inner: row(fr) });
+    } else if (t === "'") {
+      const arr = top();
+      let j = arr.length - 1;
+      while (j >= 0 && arr[j].caret) j--;
+      if (j < 0) arr.push({ html: `<mo data-i="${i}">&#x203E;</mo>` });
+      else {
+        const it = arr[j];
+        // A bar groups what it covers, so brackets under it are dropped.
+        arr[j] = { html: `<mover accent="true" data-i="${i}"><mrow>${it.inner ?? it.html}</mrow><mo stretchy="true">&#x203E;</mo></mover>` };
+      }
+    } else if (t === "+" || t === "·") top().push({ html: `<mo data-i="${i}">${t === "·" ? "&#x22C5;" : "+"}</mo>` });
+    else if (t === "0" || t === "1") top().push({ html: `<mn data-i="${i}">${t}</mn>` });
+    else if (t === ")") top().push({ html: `<mo data-i="${i}">)</mo>` });
+    else top().push({ html: `<mi data-i="${i}">${esc(t)}</mi>` });
+  }
+  while (stack.length > 1) {
+    const fr = stack.pop();
+    top().push({ html: `<mrow><mo data-i="${fr.open}">(</mo>${row(fr)}</mrow>` });
+  }
+  return `<math class="alg">${row(root)}</math>`;
+}
+
 // path points at an object { text, done, bad }. Vars limits the palette.
 function exInput(path, obj, vars, opts = {}) {
   const key = opts.key || path;
@@ -1784,16 +1865,18 @@ function exInput(path, obj, vars, opts = {}) {
   if (obj.done && r.ast) {
     return `<button class="ex-done" data-act="exedit" data-path="${path}">${algAst(r.ast)}</button>`;
   }
-  const tb = (t, cls = "") => `<button class="${cls}" data-tok="${t}" data-for="${key}">${t}</button>`;
-  const pal = vars.map((v) => tb(v, "v")).join("") +
-    `<span class="gap"></span>` + ["NOT", "AND", "OR"].map((t) => tb(t)).join("") +
-    `<span class="gap"></span>` + ["(", ")"].map((t) => tb(t)).join("") +
-    (opts.consts ? `<span class="gap"></span>` + ["0", "1"].map((t) => tb(t)).join("") : "") +
-    `<span class="gap"></span><button data-tok="BACK" data-for="${key}" aria-label="Delete">\u232b</button>`;
+  const tokens = mxTokens(obj.text);
+  const caret = Math.min(carets[key] ?? tokens.length, tokens.length);
+  const tb = (t, label, cls = "", aria = "") => `<button class="${cls}" data-tok="${t}" data-for="${key}" ${aria ? `aria-label="${aria}"` : ""}>${label}</button>`;
+  const pal = vars.map((v) => tb(v, v, "v")).join("") +
+    `<span class="gap"></span>` + tb("+", "+") + tb("·", "·", "", "Dot") + tb("BAR", BAR_ICON, "", "Bar") +
+    `<span class="gap"></span>` + tb("(", "(") + tb(")", ")") +
+    (opts.consts ? `<span class="gap"></span>` + tb("0", "0") + tb("1", "1") : "") +
+    `<span class="gap"></span>` + tb("BACK", "⌫", "", "Delete");
   const bad = obj.bad && obj.text ? (r.error || "") : "";
   const action = opts.noConfirm ? "" : `<button class="btn primary icon" data-act="exconfirm" data-path="${path}" aria-label="Confirm" ${String(obj.text || "").trim() ? "" : "disabled"}>${I.check}</button>`;
   return `<div class="ex ${bad ? "bad" : ""}">
-    <div class="ex-line"><input class="ex-in" data-bind="${bind}" data-key="${key}" data-clear="${clear}" data-enter="${opts.enter || "exconfirm"}" data-path="${path}" spellcheck="false" autocomplete="off" />${opts.extra || ""}${action}</div>
+    <div class="ex-line"><div class="ex-in mx" tabindex="0" role="textbox" data-bind="${bind}" data-key="${key}" data-clear="${clear}" data-enter="${opts.enter || "exconfirm"}" data-path="${path}" data-vars="${vars.join("")}" data-consts="${opts.consts ? 1 : ""}">${focusedMx === key || tokens.length ? mxRender(tokens, focusedMx === key ? caret : -1) : ""}</div>${opts.extra || ""}${action}</div>
     <div class="pal">${pal}</div>
     ${bad ? `<div class="err">${esc(bad)}</div>` : ""}
   </div>`;
@@ -1802,35 +1885,78 @@ function exInput(path, obj, vars, opts = {}) {
 function clearPaths(list) {
   (list || "").split(",").filter(Boolean).forEach((p) => setPath(state, p, typeof getPath(state, p) === "boolean" ? false : ""));
 }
+// Applies one key or palette token to the editor with this key.
 function insertToken(key, tok) {
-  const input = $app.querySelector(`[data-key="${CSS.escape(key)}"]`);
-  if (!input) return;
-  const textPath = input.dataset.bind;
-  let v = getPath(state, textPath) || "";
-  let s = input.selectionStart ?? v.length;
-  let e = input.selectionEnd ?? v.length;
-  let before = v.slice(0, s), after = v.slice(e);
-  if (tok === "BACK") {
-    if (s === e) {
-      const b = before.replace(/\s+$/, "");
-      const m = b.match(/(NOT|AND|OR|[A-Za-z]+|.)$/i);
-      before = m ? b.slice(0, b.length - m[0].length) : b;
-    }
-    v = before + after;
-    s = before.length;
-  } else {
-    if (tok === ")") before = before.replace(/\s+$/, "");
-    const space = before.length && !/[\s(]$/.test(before) && tok !== ")" ? " " : "";
-    const ins = space + tok + (tok === "(" ? "" : " ");
-    v = before + ins + after.replace(/^\s+/, "");
-    s = before.length + ins.length;
-  }
-  setPath(state, textPath, v);
-  clearPaths(input.dataset.clear);
-  commit();
+  const el = $app.querySelector(`[data-key="${CSS.escape(key)}"]`);
+  if (!el) return;
+  const tokens = mxTokens(getPath(state, el.dataset.bind));
+  let c = Math.min(carets[key] ?? tokens.length, tokens.length);
+  if (tok === "BACK") { if (c > 0) { tokens.splice(c - 1, 1); c--; } }
+  else if (tok === "DEL") tokens.splice(c, 1);
+  else if (tok === "LEFT") c = Math.max(0, c - 1);
+  else if (tok === "RIGHT") c = Math.min(tokens.length, c + 1);
+  else if (tok === "HOME") c = 0;
+  else if (tok === "END") c = tokens.length;
+  else { tokens.splice(c, 0, tok === "BAR" ? "'" : tok); c++; }
+  carets[key] = c;
+  focusedMx = key;
+  const text = tokens.join(" ");
+  if (text !== (getPath(state, el.dataset.bind) || "")) {
+    setPath(state, el.dataset.bind, text);
+    clearPaths(el.dataset.clear);
+    commit();
+  } else render();
   const again = $app.querySelector(`[data-key="${CSS.escape(key)}"]`);
-  if (again) { again.focus(); again.setSelectionRange(s, s); }
+  if (again && document.activeElement !== again) again.focus({ preventScroll: true });
 }
+// Keyboard for a focused editor. Returns true when it handled the key.
+function mxKey(e) {
+  const el = e.target;
+  if (!el.classList || !el.classList.contains("mx")) return false;
+  const key = el.dataset.key;
+  const k = e.key;
+  const up = k.length === 1 ? k.toUpperCase() : k;
+  let tok = null;
+  if (el.dataset.vars.includes(up) && /^[A-Z]$/.test(up)) tok = up;
+  else if (k === "+") tok = "+";
+  else if (k === "." || k === "*") tok = "·";
+  else if (k === "'" || k === "!" || k === "~") tok = "BAR";
+  else if (k === "(" || k === ")") tok = k;
+  else if ((k === "0" || k === "1") && el.dataset.consts) tok = k;
+  else if (k === "Backspace") tok = "BACK";
+  else if (k === "Delete") tok = "DEL";
+  else if (k === "ArrowLeft") tok = "LEFT";
+  else if (k === "ArrowRight") tok = "RIGHT";
+  else if (k === "Home") tok = "HOME";
+  else if (k === "End") tok = "END";
+  else if (k === "Enter") { e.preventDefault(); const a = el.dataset.enter; if (ACT[a]) ACT[a](el); return true; }
+  if (!tok) return false;
+  e.preventDefault();
+  insertToken(key, tok);
+  return true;
+}
+// Tapping a symbol puts the caret after it. Tapping elsewhere in the box puts it at the end.
+document.addEventListener("pointerdown", (e) => {
+  const box = e.target.closest && e.target.closest(".mx");
+  if (!box) return;
+  const hit = e.target.closest("[data-i]");
+  const n = mxTokens(getPath(state, box.dataset.bind)).length;
+  carets[box.dataset.key] = hit && box.contains(hit) ? +hit.dataset.i + 1 : n;
+  focusedMx = box.dataset.key;
+  e.preventDefault();
+  if (document.activeElement !== box) box.focus({ preventScroll: true });
+  render();
+});
+document.addEventListener("focusin", (e) => {
+  if (e.target.classList && e.target.classList.contains("mx") && focusedMx !== e.target.dataset.key) { focusedMx = e.target.dataset.key; render(); }
+});
+document.addEventListener("focusout", (e) => {
+  if (!e.target.classList || !e.target.classList.contains("mx")) return;
+  setTimeout(() => {
+    const a = document.activeElement;
+    if (!(a && a.classList && a.classList.contains("mx")) && focusedMx) { focusedMx = null; render(); }
+  });
+});
 
 // ---------- Truth table cells ----------
 // The teacher's copy can fill a column with its correct values, one column at a time.
@@ -2690,7 +2816,7 @@ function fit() {
 }
 window.addEventListener("resize", fit);
 function syncValues() {
-  $app.querySelectorAll("[data-bind]").forEach((el) => {
+  $app.querySelectorAll("input[data-bind], textarea[data-bind], select[data-bind]").forEach((el) => {
     const v = getPath(state, el.dataset.bind) ?? "";
     if (el.value !== v) el.value = v;
   });
@@ -2825,7 +2951,7 @@ const ACT = {
     obj.done = false;
     commit();
     const inp = $app.querySelector(`[data-key="${CSS.escape(el.dataset.path)}"]`);
-    if (inp) { inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); }
+    if (inp) { carets[el.dataset.path] = mxTokens(obj.text).length; focusedMx = el.dataset.path; inp.focus(); render(); }
   },
   nandmode(el) { state.nand.mode = el.dataset.m; state.nand.shown = false; commit(); },
   nandshow() { state.nand.shown = !state.nand.shown; commit(); },
@@ -2884,6 +3010,7 @@ document.addEventListener("change", (e) => {
   }
 });
 document.addEventListener("keydown", (e) => {
+  if (mxKey(e)) return;
   const el = e.target;
   if (e.key === "Enter" && el.classList && el.classList.contains("ex-in")) {
     e.preventDefault();
