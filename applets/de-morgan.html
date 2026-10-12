@@ -2370,7 +2370,7 @@ function viewNor() {
       <table class="tt">${"<tr>" + head + "</tr>" + body}</table>
       ${ed ? `<button class="btn icon" data-act="noradd" aria-label="Add column">${I.plus}</button>` : ""}
     </div>
-    ${T().nor.theorem ? `<div class="theorem">${typeset("\overline{A + B} = \overline{A} \cdot \overline{B}")}</div>` : ""}
+    ${T().nor.theorem ? `<div class="theorem">${typeset(String.raw`\overline{A + B} = \overline{A} \cdot \overline{B}`)}</div>` : ""}
     ${ed ? `<div class="row"><button class="btn ${state.nor.theorem ? "on" : ""}" data-act="northeorem">${I.eye}Theorem</button></div>` : ""}
   </div>`;
 }
