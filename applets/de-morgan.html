@@ -10,7 +10,7 @@
   "phases": ["Warm-up", "Predict", "Truth table", "NOR half", "NAND half", "Passwords", "Challenge", "Practice", "Conclusion"],
   "preparedStates": [
     { "name": "Truth table", "phase": 2, "state": { "tt": { "cols": [{ "text": "M OR P", "done": true, "vals": "0111" }], "target": "1000" } } },
-    { "name": "NOR table", "phase": 3, "state": { "nor": { "c2": "1000", "c3": "1100", "c4": "1010", "c5": "1110", "c6": "1000" } } },
+    { "name": "NOR table", "phase": 3, "state": { "nor": { "cols": [{ "text": "A OR B", "done": true, "vals": "0111" }, { "text": "NOT A", "done": true, "vals": "1100" }, { "text": "NOT B", "done": true, "vals": "1010" }], "t": "1000", "o1": "1110", "o2": "1000" } } },
     { "name": "AND circuit", "phase": 6, "state": { "circ": { "gates": { "g1": { "type": "NOT", "x": 190, "y": 110 }, "g2": { "type": "NOT", "x": 190, "y": 290 }, "g3": { "type": "OR", "x": 340, "y": 200 }, "g4": { "type": "NOT", "x": 470, "y": 200 } }, "wires": { "g1:0": "A", "g2:0": "B", "g3:0": "g1", "g3:1": "g2", "g4:0": "g3", "Q": "g4" } } } }
   ],
   "modes": [
@@ -223,6 +223,16 @@ table.sum { border-collapse: collapse; width: 100%; font-size: 22px; }
 .tcard.back { background: repeating-linear-gradient(135deg, #e9e5da 0 14px, #f1eee6 14px 28px); border-color: #e0dbcf; font-size: 56px; color: #b8b1a1; }
 button.tcard { cursor: pointer; }
 .tcard .alg { font-size: 34px; font-weight: 400; justify-content: center; }
+
+/* NOR half: the target circuit and its tags */
+.cmp { display: flex; align-items: center; gap: 22px; }
+.ccard { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 14px 16px; border-radius: 18px; background: var(--card); border: 1px solid var(--line); }
+.ccard.goal { border: 3px solid var(--accent); background: var(--accent-soft); }
+.ccard .ctag { align-self: flex-start; }
+.ctag { display: inline-block; font: 800 22px/1.2 system-ui, sans-serif; padding: 2px 12px; border-radius: 8px; border: 2px solid var(--ink); }
+.ctag.goal { background: var(--accent); border-color: var(--accent); color: #fff; }
+.eqq { font-size: 64px; font-weight: 300; color: var(--soft); }
+.tt .goalcol { background: var(--accent-soft); }
 
 /* Task line */
 .task { max-width: 1000px; text-align: center; margin-bottom: 20px; }
@@ -1660,7 +1670,7 @@ const DEFAULTS = {
   warm: { round: -1, q: -1, deal: 1, shown: false },
   predict: { ex: 0, shown: {}, counts: {}, votes: {}, hide: false },
   tt: { cols: [], target: "----", reveal: false },
-  nor: { ...BLANK_TABLE },
+  nor: { cols: [], t: "----", o1: "----", o2: "----" },
   nand: { mode: "type", shown: false, table: false, cells: { ...BLANK_TABLE }, text: "", done: false, bad: false, pick: "" },
   pw: { code: DEFAULT_CODE, password: "", confirm: "", result: "", err: "" },
   circ: { gates: {}, wires: {}, showCount: false },
@@ -1791,7 +1801,8 @@ function insertToken(key, tok) {
 }
 
 // ---------- Truth table cells ----------
-const cyc = (c) => (c === "-" ? "0" : c === "0" ? "1" : "0");
+// Truth table cells cycle empty, 0, 1, then back to empty.
+const cyc = (c) => (c === "-" ? "0" : c === "0" ? "1" : "-");
 const setChar = (str, i, ch) => str.slice(0, i) + ch + str.slice(i + 1);
 const pad4 = (s) => (String(s || "") + "----").slice(0, 4);
 const showCell = (c) => (c === "0" || c === "1" ? c : "");
@@ -2063,19 +2074,48 @@ const NAND_DEFS = [{ k: "a", e: "A" }, { k: "b", e: "B" }, { k: "c2", e: "NOT (A
 const hasData = (cells) => Object.values(cells || {}).some((v) => /[01]/.test(String(v)));
 
 // ---------- Phase 3: NOR half ----------
+// The class works out each circuit's output. No algebra is given: the teacher adds working columns as the class names them.
+const NOR_OUTS = [{ k: "t", tag: "NOR", goal: true }, { k: "o1", tag: "1" }, { k: "o2", tag: "2" }];
+const norHas = (n) => n.cols.length > 0 || /[01]/.test(n.t + n.o1 + n.o2);
 function viewNor() {
-  const twoIn = (g, main) => ({ w: 400, h: 200, inputs: { A: [40, 55], B: [40, 145] }, out: { name: "", x: 370, y: 100 }, ...main });
-  const c0 = twoIn(0, { gates: { o: { type: "OR", x: 120, y: 70 }, n: { type: "NOT", x: 240, y: 70 } }, wires: { "o:0": "A", "o:1": "B", "n:0": "o", Q: "n" } });
-  const cand = (type) => twoIn(0, { gates: { n1: { type: "NOT", x: 110, y: 25 }, n2: { type: "NOT", x: 110, y: 115 }, g: { type, x: 250, y: 70 } }, wires: { "n1:0": "A", "n2:0": "B", "g:0": "n1", "g:1": "n2", Q: "g" } });
-  const box = (L, e, n) => `<div class="card col" style="align-items:center;padding:14px 16px;gap:6px">${n ? `<div class="muted small" style="align-self:flex-start;font-weight:700">${n}</div>` : ""}${circuitSVG(L, false).replace(/width="400" height="200"/, 'width="352" height="176"')}<div style="font-size:30px">${alg(e)}</div></div>`;
-  const cells = isTeacher() || hasData(state.nor) ? state.nor : T().nor;
+  const twoIn = (main) => ({ w: 400, h: 200, inputs: { A: [40, 55], B: [40, 145] }, out: { name: "", x: 370, y: 100 }, ...main });
+  const c0 = twoIn({ gates: { o: { type: "OR", x: 120, y: 70 }, n: { type: "NOT", x: 240, y: 70 } }, wires: { "o:0": "A", "o:1": "B", "n:0": "o", Q: "n" } });
+  const cand = (type) => twoIn({ gates: { n1: { type: "NOT", x: 110, y: 25 }, n2: { type: "NOT", x: 110, y: 115 }, g: { type, x: 250, y: 70 } }, wires: { "n1:0": "A", "n2:0": "B", "g:0": "n1", "g:1": "n2", Q: "g" } });
+  const svg = (L) => circuitSVG(L, false).replace(/width="400" height="200"/, 'width="340" height="170"');
+  const card = (L, o) => `<div class="ccard ${o.goal ? "goal" : ""}"><span class="ctag ${o.goal ? "goal" : ""}">${o.tag}</span>${svg(L)}</div>`;
+  const ed = isTeacher();
+  const n = ed || norHas(state.nor) ? state.nor : T().nor;
+  const full = NOR_OUTS.every((o) => !pad4(n[o.k]).includes("-"));
+  const goalOk = pad4(n.t) === "1000";
+  const match = (k) => full && goalOk && k !== "t" && pad4(n[k]) === pad4(n.t);
+  const anyMatch = full && goalOk && NOR_OUTS.some((o) => match(o.k));
+  const cls = (o) => (match(o.k) || (o.goal && anyMatch) ? "match" : o.goal ? "goalcol" : "");
+  const cell = (attrs, v, extra = "") => `<td class="cell ${ed ? "" : "ro"} ${extra}" ${ed ? attrs : ""}>${showCell(v)}</td>`;
+  let head = `<th>${alg("A")}</th><th>${alg("B")}</th>`;
+  n.cols.forEach((c, ci) => {
+    head += ed
+      ? `<th>${exInput(`nor.cols.${ci}`, c, ["A", "B"])}<button class="x" data-act="nordel" data-i="${ci}" aria-label="Remove column">${I.trash}</button></th>`
+      : `<th>${c.done ? alg(c.text) : ""}</th>`;
+  });
+  head += NOR_OUTS.map((o) => `<th class="${cls(o)}"><span class="ctag ${o.goal ? "goal" : ""}">${o.tag}</span></th>`).join("");
+  let body = "";
+  ROWS.forEach(([a, b], ri) => {
+    body += `<tr><td class="in">${a}</td><td class="in">${b}</td>`;
+    n.cols.forEach((c, ci) => { body += cell(`data-act="norcell" data-c="${ci}" data-r="${ri}"`, pad4(c.vals)[ri]); });
+    body += NOR_OUTS.map((o) => cell(`data-act="norcell" data-c="${o.k}" data-r="${ri}"`, pad4(n[o.k])[ri], cls(o))).join("");
+    body += "</tr>";
+  });
   return `<div class="stage">
-    <div class="row" style="gap:20px;align-items:stretch">
-      ${box(c0, "NOT (A OR B)")}
-      ${box(cand("OR"), "NOT A OR NOT B", "1")}
-      ${box(cand("AND"), "NOT A AND NOT B", "2")}
+    <div class="cmp">
+      ${card(c0, NOR_OUTS[0])}
+      <span class="eqq">=</span>
+      ${card(cand("OR"), NOR_OUTS[1])}
+      ${card(cand("AND"), NOR_OUTS[2])}
     </div>
-    ${combinedTable("nor", cells, NOR_DEFS, isTeacher())}
+    <div class="row" style="flex-wrap:nowrap;align-items:center">
+      <table class="tt">${"<tr>" + head + "</tr>" + body}</table>
+      ${ed ? `<button class="btn icon" data-act="noradd" aria-label="Add column">${I.plus}</button>` : ""}
+    </div>
   </div>`;
 }
 
@@ -2503,7 +2543,7 @@ const TASKS = [
   () => null,
   () => ['"I do not have a mango or a pear." Is this true for the basket below?'],
   () => ["Fill in the truth table to check who was right.", "Tap a cell to switch between 0 and 1."],
-  () => ["Which circuit gives the same output as NOT (A OR B)?"],
+  () => ["Which circuit, 1 or 2, gives the same output as the NOR circuit?"],
   () => (T().nand.mode === "pick" ? ["Which one is equal to NOT (A AND B)?"] : ["Write an expression equal to this one, with bars only on single letters."]),
   () => ["Rewrite the warning condition with no brackets, then check that Sign up still works."],
   () => ["You ran out of AND gates. Build A AND B using only OR and NOT gates.", "Drag gates onto the board. Drag from a gate's output dot to another gate's input dot to wire them."],
@@ -2638,6 +2678,14 @@ const ACT = {
     commit();
   },
   ttreveal() { state.tt.reveal = !state.tt.reveal; commit(); },
+  noradd() { state.nor.cols.push({ text: "", done: false, bad: false, vals: "----" }); commit(); const i = state.nor.cols.length - 1; const el = $app.querySelector(`[data-key="nor.cols.${i}"]`); el && el.focus(); },
+  nordel(el) { state.nor.cols.splice(+el.dataset.i, 1); commit(); },
+  norcell(el) {
+    const r = +el.dataset.r, c = el.dataset.c;
+    if (/^\d+$/.test(c)) { const col = state.nor.cols[+c]; col.vals = setChar(pad4(col.vals), r, cyc(pad4(col.vals)[r])); }
+    else state.nor[c] = setChar(pad4(state.nor[c]), r, cyc(pad4(state.nor[c])[r]));
+    commit();
+  },
   cbcell(el) {
     const cells = getPath(state, el.dataset.path);
     const k = el.dataset.k, r = +el.dataset.r;
@@ -2648,7 +2696,7 @@ const ACT = {
     const path = el.dataset.path;
     const obj = getPath(state, path);
     if (!obj || !obj.text.trim()) return;
-    const vars = path.startsWith("tt.") ? ["M", "P"] : path.startsWith("nand") ? ["A", "B"] : ["A", "B", "C"];
+    const vars = path.startsWith("tt.") ? ["M", "P"] : path.startsWith("nand") || path.startsWith("nor") ? ["A", "B"] : ["A", "B", "C"];
     const r = Bool.parse(obj.text, vars);
     if (r.ast) { obj.done = true; obj.bad = false; } else obj.bad = true;
     commit();
