@@ -433,3 +433,16 @@ button[aria-busy="true"]::after {
   border-color: var(--color-success);
   box-shadow: 0 0 0 2px var(--color-success);
 }
+
+/* The panel clips its sides, so its tooltips open inward: from the right edge, or from the left for the labels on the left. */
+.stage .controls [data-tip]::before {
+  left: auto;
+  right: 0;
+  translate: 0 0;
+}
+
+.stage .controls .stat[data-tip]::before,
+.stage .controls .stepper-label[data-tip]::before {
+  left: 0;
+  right: auto;
+}

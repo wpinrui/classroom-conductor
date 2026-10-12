@@ -11,7 +11,6 @@ import { allowedModes, defaultsFor } from "./modes";
 import { BlankIcon, ChatIcon, GridIcon, PersonIcon, WheelIcon } from "./icons";
 import { Reveal } from "./Reveal";
 import { Stepper } from "./Stepper";
-import { Thumbnails } from "./Thumbnails";
 import "./teacher.css";
 
 /** Watch, Work and Stop groups, in switcher and number-key order. */
@@ -47,6 +46,8 @@ export function Controls({
   wheelOpen,
   onWheel,
   onBlank,
+  thumbsOpen,
+  onThumbs,
   slideshow,
 }: {
   session: string;
@@ -54,6 +55,8 @@ export function Controls({
   wheelOpen: boolean;
   onWheel: () => void;
   onBlank: () => void;
+  thumbsOpen: boolean;
+  onThumbs: () => void;
   /** Present only for an applet with slides. at is -1 before the first step. */
   slideshow?: {
     on: boolean;
@@ -69,7 +72,6 @@ export function Controls({
   const students = Object.keys(data.students ?? {});
   const online = students.filter((s) => data.presence?.[s]).length;
   const chatLimit = control.chatLimit ?? DEFAULT_CHAT_LIMIT;
-  const [thumbsOpen, setThumbsOpen] = useState(false);
   const [endArmed, setEndArmed] = useState(false);
   const allowed = allowedModes(data);
   const groups = MODE_GROUPS.map((g) =>
@@ -140,9 +142,9 @@ export function Controls({
             type="button"
             className="quiet icon-button"
             aria-label="Student screens"
-            data-tip="Student screens"
+            data-tip="Student screens (G)"
             aria-pressed={thumbsOpen}
-            onClick={() => setThumbsOpen((o) => !o)}
+            onClick={onThumbs}
           >
             <GridIcon />
           </button>
@@ -264,7 +266,6 @@ export function Controls({
           End
         </button>
       </aside>
-      {thumbsOpen && <Thumbnails session={session} data={data} />}
     </>
   );
 }

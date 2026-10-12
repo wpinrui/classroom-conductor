@@ -116,6 +116,8 @@ export type AppletMessage =
   | { cc: "step"; dir: 1 | -1 }
   /** S pressed inside the teacher's frame. */
   | { cc: "slideshowToggle" }
+  /** A teacher hotkey pressed inside the applet, outside a text field. The applet still receives the key. */
+  | { cc: "hotkey"; key: string }
   /** Starts a countdown, or cancels it when seconds is null. Shared unless shared is false. Only the teacher's frame is heard. */
   | { cc: "timer"; seconds: number | null; shared: boolean };
 

@@ -38,6 +38,7 @@ Consequences for the applet:
 - It runs in an iframe with `sandbox="allow-scripts allow-forms allow-modals"`. The origin is opaque, so `localStorage`, `sessionStorage`, cookies and IndexedDB throw or fail. Popups, downloads and navigating the top page are blocked.
 - Nothing survives a reload except the state (section 4).
 - Ctrl+., Cmd+. and the middle mouse button are taken by the Conductor before the applet's handlers see them. Do not bind them.
+- G, outside a text field, also opens the teacher's student screens. The applet still receives it, so avoid binding G in the teacher's view.
 - In the teacher's own frame of an applet with `slides`, S is taken too. While the slideshow is on, so are the scroll wheel, PageDown, PageUp, ArrowDown, ArrowUp and Space. Keys typed into a text field are left alone (section 6, Slideshow).
 
 **Outside network**
