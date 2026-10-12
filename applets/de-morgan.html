@@ -171,6 +171,9 @@ table.tt { border-collapse: separate; border-spacing: 0; background: var(--card)
 .tt th .hacts .x, .tt th .hacts .fill { display: inline-flex; margin: 0; }
 .tt tr:has(.hacts:not(:empty)) > th { padding-top: 42px; }
 .tt th .fill svg { width: 20px; height: 20px; }
+/* A faded column: the teacher has set it aside so the class looks at the others. */
+.tt td.dimcol, .tt th.dimcol > :not(.hacts) { opacity: .22; }
+.tt th .dimb { color: var(--soft); }
 .tt th .x:hover { color: var(--bad); background: var(--bad-soft); }
 .tt th .ex-done { font-size: 28px; }
 .tt td.add { background: #faf9f6; min-width: 0; padding: 0; }
@@ -1774,9 +1777,9 @@ const DEFAULTS = {
   me: "",
   warm: { round: -1, q: -1, deal: 1, shown: false },
   predict: { ex: 0, shown: {}, counts: {}, votes: {}, hide: false },
-  tt: { cols: [], target: "----", reveal: false },
+  tt: { cols: [], target: "----", reveal: false, dimT: false },
   // The NOR column was found in the truth table phase, so it arrives filled in.
-  nor: { cols: [], t: "1000", o1: "----", o2: "----" },
+  nor: { cols: [], t: "1000", o1: "----", o2: "----", dimOut: {} },
   nand: { mode: "type", shown: false, table: false, cells: { ...BLANK_TABLE }, text: "", done: false, bad: false, pick: "" },
   pw: { code: DEFAULT_CODE, password: "", confirm: "", result: "", err: "", passes: false },
   circ: { gates: {}, wires: {}, showCount: false },
@@ -1848,6 +1851,8 @@ const I = {
   plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
   back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 5H9l-6 7 6 7h12z"/><path d="M17 9l-6 6M11 9l6 6"/></svg>',
   reset: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 109-9 9.7 9.7 0 00-6.7 2.7L3 8"/><path d="M3 3v5h5"/></svg>',
+  // Eye off from Lucide (lucide.dev), ISC licence.
+  eyeOff: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49"/><path d="M14.084 14.158a3 3 0 0 1-4.242-4.242"/><path d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143"/><path d="m2 2 20 20"/></svg>',
   // Wand from Lucide (lucide.dev), ISC licence.
   wand: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4V2"/><path d="M15 16v-2"/><path d="M8 9h2"/><path d="M20 9h2"/><path d="M17.8 11.8 19 13"/><path d="M15 9h.01"/><path d="M17.8 6.2 19 5"/><path d="m3 21 9-9"/><path d="M12.2 6.2 11 5"/></svg>',
   // Trash 2 from Lucide (lucide.dev), ISC licence.
@@ -2033,6 +2038,12 @@ document.addEventListener("focusout", (e) => {
 // ---------- Truth table cells ----------
 // The teacher's copy can fill a column with its correct values, one column at a time.
 // path points at the column's four-character string. e is the column's expression over vars.
+// The teacher's fade toggle for one column. path points at a boolean in the state.
+function dimBtn(path, on) {
+  if (!isTeacher()) return "";
+  return `<button class="fill dimb" data-act="dimcol" data-path="${esc(path)}" aria-label="${on ? "Show column" : "Fade column"}">${on ? I.eye : I.eyeOff}</button>`;
+}
+const dimCls = (on) => (on ? "dimcol" : "");
 function fillBtn(path, e, vars) {
   if (!isTeacher() || !Bool.parse(e, vars).ast) return "";
   return `<button class="fill" data-act="fillcol" data-path="${esc(path)}" data-e="${esc(e)}" data-v="${vars.join("")}" aria-label="Fill column">${I.wand}</button>`;
@@ -2268,16 +2279,16 @@ function viewTT() {
   let head = `${BASKET_HEAD}<th>${alg("M")}</th><th>${alg("P")}</th>`;
   tt.cols.forEach((c, ci) => {
     const path = `tt.cols.${ci}`;
-    head += `<th>${exInput(path, c, ["M", "P"], { cls: "" })}<span class="hacts"><button class="x" data-act="ttdel" data-i="${ci}" aria-label="Remove column">${I.trash}</button>${c.done ? fillBtn(`${path}.vals`, c.text, ["M", "P"]) : ""}</span></th>`;
+    head += `<th class="${dimCls(c.dim)}">${exInput(path, c, ["M", "P"], { cls: "" })}<span class="hacts"><button class="x" data-act="ttdel" data-i="${ci}" aria-label="Remove column">${I.trash}</button>${c.done ? fillBtn(`${path}.vals`, c.text, ["M", "P"]) : ""}${dimBtn(`${path}.dim`, c.dim)}</span></th>`;
   });
-  head += `<th class="target">${alg("NOT (M OR P)")}<span class="hacts">${rv ? "" : fillBtn("tt.target", "NOT (M OR P)", ["M", "P"])}</span></th>`;
+  head += `<th class="target ${dimCls(tt.dimT)}">${alg("NOT (M OR P)")}<span class="hacts">${rv ? "" : fillBtn("tt.target", "NOT (M OR P)", ["M", "P"])}${dimBtn("tt.dimT", tt.dimT)}</span></th>`;
   let body = "";
   ROWS.forEach(([m, p], ri) => {
     body += `<tr>${basketCell(m, p)}<td class="in">${m}</td><td class="in">${p}</td>`;
-    tt.cols.forEach((c, ci) => { body += `<td class="cell" data-act="ttcell" data-c="${ci}" data-r="${ri}">${showCell(pad4(c.vals)[ri])}</td>`; });
+    tt.cols.forEach((c, ci) => { body += `<td class="cell ${dimCls(c.dim)}" data-act="ttcell" data-c="${ci}" data-r="${ri}">${showCell(pad4(c.vals)[ri])}</td>`; });
     body += rv
-      ? `<td class="cell ro target match">${"1000"[ri]}</td></tr>`
-      : `<td class="cell target" data-act="ttcell" data-c="t" data-r="${ri}">${showCell(pad4(tt.target)[ri])}</td></tr>`;
+      ? `<td class="cell ro target match ${dimCls(tt.dimT)}">${"1000"[ri]}</td></tr>`
+      : `<td class="cell target ${dimCls(tt.dimT)}" data-act="ttcell" data-c="t" data-r="${ri}">${showCell(pad4(tt.target)[ri])}</td></tr>`;
   });
   return `<div class="stage" style="margin-top:20px">
     <div style="visibility:${rv ? "visible" : "hidden"}">${circuitSVG(NOR_GATE, false)}</div>
@@ -2297,11 +2308,12 @@ function combinedTable(path, cells, defs, editable) {
   const matches = (d) => full && d.k !== ref.k && pad4(cells[d.k]) === pad4(cells[ref.k]) && pad4(cells[ref.k]) === correct(ref);
   const anyMatch = defs.slice(3).some(matches);
   const cls = (d) => (matches(d) || (anyMatch && d.k === ref.k) ? "match" : "");
-  let html = `<table class="tt"><tr>${defs.map((d, ci) => `<th class="${cls(d)}">${alg(d.e)}<span class="hacts">${editable && ci >= 2 ? fillBtn(`${path}.${d.k}`, d.e, ["A", "B"]) : ""}</span></th>`).join("")}</tr>`;
+  const dim = cells.dim || {};
+  let html = `<table class="tt"><tr>${defs.map((d, ci) => `<th class="${cls(d)} ${dimCls(dim[d.k])}">${alg(d.e)}<span class="hacts">${editable && ci >= 2 ? fillBtn(`${path}.${d.k}`, d.e, ["A", "B"]) + dimBtn(`${path}.dim.${d.k}`, dim[d.k]) : ""}</span></th>`).join("")}</tr>`;
   ROWS.forEach(([a, b], ri) => {
     html += "<tr>" + defs.map((d, ci) => {
       if (ci < 2) return `<td class="in">${ci === 0 ? a : b}</td>`;
-      return `<td class="cell ${editable ? "" : "ro"} ${cls(d)}" ${editable ? `data-act="cbcell" data-path="${path}" data-k="${d.k}" data-r="${ri}"` : ""}>${showCell(pad4(cells[d.k])[ri])}</td>`;
+      return `<td class="cell ${editable ? "" : "ro"} ${cls(d)} ${dimCls(dim[d.k])}" ${editable ? `data-act="cbcell" data-path="${path}" data-k="${d.k}" data-r="${ri}"` : ""}>${showCell(pad4(cells[d.k])[ri])}</td>`;
     }).join("") + "</tr>";
   });
   return html + "</table>";
@@ -2331,15 +2343,16 @@ function viewNor() {
   let head = `<th>${alg("A")}</th><th>${alg("B")}</th>`;
   n.cols.forEach((c, ci) => {
     head += ed
-      ? `<th>${exInput(`nor.cols.${ci}`, c, ["A", "B"])}<span class="hacts"><button class="x" data-act="nordel" data-i="${ci}" aria-label="Remove column">${I.trash}</button>${c.done ? fillBtn(`nor.cols.${ci}.vals`, c.text, ["A", "B"]) : ""}</span></th>`
-      : `<th>${c.done ? alg(c.text) : ""}</th>`;
+      ? `<th class="${dimCls(c.dim)}">${exInput(`nor.cols.${ci}`, c, ["A", "B"])}<span class="hacts"><button class="x" data-act="nordel" data-i="${ci}" aria-label="Remove column">${I.trash}</button>${c.done ? fillBtn(`nor.cols.${ci}.vals`, c.text, ["A", "B"]) : ""}${dimBtn(`nor.cols.${ci}.dim`, c.dim)}</span></th>`
+      : `<th class="${dimCls(c.dim)}">${c.done ? alg(c.text) : ""}</th>`;
   });
-  head += NOR_OUTS.map((o) => `<th class="${cls(o)}"><span class="ctag ${o.goal ? "goal" : ""}">${o.tag}</span><span class="hacts">${o.goal ? "" : fillBtn(`nor.${o.k}`, o.e, ["A", "B"])}</span></th>`).join("");
+  const dimOut = n.dimOut || {};
+  head += NOR_OUTS.map((o) => `<th class="${cls(o)} ${dimCls(dimOut[o.k])}"><span class="ctag ${o.goal ? "goal" : ""}">${o.tag}</span><span class="hacts">${o.goal ? "" : fillBtn(`nor.${o.k}`, o.e, ["A", "B"])}${dimBtn(`nor.dimOut.${o.k}`, dimOut[o.k])}</span></th>`).join("");
   let body = "";
   ROWS.forEach(([a, b], ri) => {
     body += `<tr><td class="in">${a}</td><td class="in">${b}</td>`;
-    n.cols.forEach((c, ci) => { body += cell(`data-act="norcell" data-c="${ci}" data-r="${ri}"`, pad4(c.vals)[ri]); });
-    body += NOR_OUTS.map((o) => (o.goal ? `<td class="cell ro ${cls(o)}">${showCell(pad4(n.t)[ri])}</td>` : cell(`data-act="norcell" data-c="${o.k}" data-r="${ri}"`, pad4(n[o.k])[ri], cls(o)))).join("");
+    n.cols.forEach((c, ci) => { body += cell(`data-act="norcell" data-c="${ci}" data-r="${ri}"`, pad4(c.vals)[ri], dimCls(c.dim)); });
+    body += NOR_OUTS.map((o) => (o.goal ? `<td class="cell ro ${cls(o)} ${dimCls(dimOut.t)}">${showCell(pad4(n.t)[ri])}</td>` : cell(`data-act="norcell" data-c="${o.k}" data-r="${ri}"`, pad4(n[o.k])[ri], `${cls(o)} ${dimCls(dimOut[o.k])}`))).join("");
     body += "</tr>";
   });
   return `<div class="stage">
@@ -3079,6 +3092,7 @@ const ACT = {
     commit();
   },
   ttreveal() { state.tt.reveal = !state.tt.reveal; commit(); },
+  dimcol(el) { setPath(state, el.dataset.path, !getPath(state, el.dataset.path)); commit(); },
   fillcol(el) {
     const vars = el.dataset.v.split("");
     const ast = Bool.parse(el.dataset.e, vars).ast;
