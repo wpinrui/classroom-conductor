@@ -3,6 +3,7 @@ import { Chat } from "../chat/Chat";
 import type { Control, Mode } from "../firebase/types";
 import {
   useControl,
+  useAppletHtml,
   useSessionApplet,
   useTeacherState,
 } from "../hooks/session";
@@ -127,14 +128,15 @@ export function StudentStage({ session, uid, me }: Omit<StageProps, "html">) {
   const control = useControl(session);
   const applet = useSessionApplet(session);
   const teacher = useTeacherState(session);
-  if (!control || !applet)
+  const html = useAppletHtml(session, applet?.html);
+  if (!control || !applet || !html)
     return (
       <main className="stage">
         <Loading />
       </main>
     );
   const mode = control.mode;
-  const props = { session, uid, me, html: applet.html };
+  const props = { session, uid, me, html };
   const ownProps = own[mode];
   const View = views[mode];
   // Focus keeps the student's applet loaded underneath the blackout.

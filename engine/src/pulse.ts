@@ -109,7 +109,8 @@ export async function producePulse(
   ]);
   const p = pulseSnap.val() as Pulse | null;
   const applet = appletSnap.val() as {
-    html: string;
+    html?: string;
+    hash?: string;
     manifest: Manifest;
   } | null;
   if (!p) throw new Error("pulse is missing");
@@ -119,7 +120,7 @@ export async function producePulse(
 
   const input = readableInput(p.input, studentsSnap.val() ?? {});
   const whole = p.student === undefined;
-  const key = cacheKey(applet.html, whole);
+  const key = cacheKey(applet.hash ?? applet.html ?? "", whole);
   const generate = async (failure?: string) =>
     extractCode(
       await claude(pulsePrompt(applet.manifest, whole, input, failure)),

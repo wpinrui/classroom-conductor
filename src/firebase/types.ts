@@ -30,7 +30,8 @@ export interface StoredState {
 
 export interface LibraryApplet {
   name: string;
-  html: string;
+  /** Only on applets saved before the page moved to its own path. */
+  html?: string;
   manifest: Manifest;
   createdAt: number;
 }
@@ -125,7 +126,8 @@ export interface Session {
   code: string;
   createdAt: number;
   ended?: number;
-  applet: { name: string; html: string; manifest: Manifest };
+  /** The page itself lives at sessionHtml. hash fingerprints it. html is only on older sessions. */
+  applet: { name: string; manifest: Manifest; hash?: string; html?: string };
   /** nameKey to display name, copied from the manifest. Absent when any name may join. */
   namelist?: Record<string, string>;
   control: Control;

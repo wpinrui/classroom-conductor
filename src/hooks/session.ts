@@ -1,6 +1,8 @@
-import { useCallback, useEffect, useRef } from "react";
+import { get, ref } from "firebase/database";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { Manifest } from "../applet/contract";
-import { trackPresence } from "../firebase/client";
+import { trackPresence, unpackHtml } from "../firebase/client";
+import { db } from "../firebase/config";
 import { paths } from "../firebase/paths";
 import type {
   ChatMessage,
@@ -24,9 +26,48 @@ export const useSession = (s: string) => useValue<Session>(paths.session(s));
 
 export const useControl = (s: string) => useValue<Control>(paths.control(s));
 export const useSessionApplet = (s: string) =>
-  useValue<{ name: string; html: string; manifest: Manifest }>(
+  useValue<{ name: string; manifest: Manifest; html?: string }>(
     `${paths.session(s)}/applet`,
   );
+
+const HTML_CACHE = "appletHtml";
+
+/**
+ * The session's applet page. Read once, never listened to, and remembered in this browser,
+ * so reloads cost no download. legacy is the page from an older session that still stores it inline.
+ */
+export function useAppletHtml(
+  session: string,
+  legacy: string | undefined,
+): string | undefined {
+  const [found, setFound] = useState<{ session: string; html: string }>();
+  useEffect(() => {
+    let current = true;
+    const done = (html: string) => current && setFound({ session, html });
+    (async () => {
+      if (legacy) return done(await unpackHtml(legacy));
+      try {
+        const cached = JSON.parse(localStorage.getItem(HTML_CACHE) ?? "null");
+        if (cached?.session === session && typeof cached.html === "string")
+          return done(cached.html);
+      } catch {}
+      const snap = await get(ref(db, paths.sessionHtml(session))).catch(
+        () => null,
+      );
+      const raw = snap?.val();
+      if (typeof raw !== "string") return;
+      const html = await unpackHtml(raw);
+      try {
+        localStorage.setItem(HTML_CACHE, JSON.stringify({ session, html }));
+      } catch {}
+      done(html);
+    })();
+    return () => {
+      current = false;
+    };
+  }, [session, legacy]);
+  return found?.session === session ? found.html : undefined;
+}
 export const useTeacherState = (s: string) =>
   useValue<StoredState>(paths.teacherState(s));
 export const useStudents = (s: string) =>

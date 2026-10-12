@@ -2,6 +2,11 @@
 export const paths = {
   applets: (teacher: string) => `teachers/${teacher}/applets`,
   applet: (teacher: string, id: string) => `teachers/${teacher}/applets/${id}`,
+  /** A library applet's page, compressed, kept apart so listing the library stays light. */
+  libraryHtml: (teacher: string, id: string) =>
+    `teachers/${teacher}/appletHtml/${id}`,
+  /** A session's applet page, compressed, kept apart so nobody listens to it. Fetched once per browser. */
+  sessionHtml: (session: string) => `appletHtml/${session}`,
   code: (code: string) => `codes/${code}`,
   live: (session: string) => `live/${session}`,
   session: (s: string) => `sessions/${s}`,

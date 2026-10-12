@@ -23,9 +23,11 @@ function isDone(json: string | undefined): boolean {
 export function Thumbnails({
   session,
   data,
+  html,
 }: {
   session: string;
   data: Session;
+  html: string;
 }) {
   const { mode, spotlight, gallery = {} } = data.control;
   const spotlighting = mode === "spotlight" || mode === "anonymousSpotlight";
@@ -99,10 +101,7 @@ export function Thumbnails({
               aria-label={s.name}
               onClick={() => click(uid)}
             >
-              <Thumb
-                html={data.applet.html}
-                state={data.states?.[uid] ?? null}
-              />
+              <Thumb html={html} state={data.states?.[uid] ?? null} />
             </button>
             <span className="thumb-name">{s.name}</span>
             {latestPulse.has(uid) && <span className="dot accent thumb-dot" />}
