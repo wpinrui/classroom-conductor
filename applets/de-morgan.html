@@ -2196,8 +2196,8 @@ function votesFor(e) {
 }
 function predictTop(ex, hide) {
   const E = hide ? {} : EXAMPLES[ex] || EXAMPLES[0];
-  return `<div class="huge">${alg("NOT (M OR P)")}</div>
-    <div class="legend"><span>${alg("M")} = ${MANGO}</span><span>${alg("P")} = ${PEAR}</span></div>
+  return `<div class="legend"><span>${alg("M")} = ${MANGO}</span><span>${alg("P")} = ${PEAR}</span></div>
+    <div class="huge">${alg("NOT (M OR P)")}</div>
     <div class="basket">${E.m ? MANGO : ""}${E.p ? PEAR : ""}</div>`;
 }
 function viewPredict() {
@@ -2811,7 +2811,7 @@ function viewConc() {
 // What the student should do in each phase. Shown on the teacher's screen too, since it is projected.
 const TASKS = [
   () => null,
-  () => ['"I do not have a mango or a pear." Is this true for the basket below?'],
+  () => ['"I do not have a mango or a pear."'],
   () => ["Fill in the truth table to check who was right.", "Tap a cell to switch between 0 and 1."],
   () => ["Which circuit, 1 or 2, gives the same output as the NOR circuit?"],
   () => (T().nand.mode === "pick" ? ["Which one is equal to NOT (A AND B)?"] : ["Write an expression equal to this one, with bars only on single letters."]),
