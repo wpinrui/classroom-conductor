@@ -7,7 +7,7 @@ import {
   useTeacherState,
 } from "../hooks/session";
 import { Countdown } from "../timer/Countdown";
-import { Edge, Frozen, Loading } from "./Cues";
+import { Edge, Frozen, Loading, NamePill } from "./Cues";
 import { GroupView } from "./GroupView";
 import { OwnApplet, type OwnProps, type StageProps } from "./OwnApplet";
 import "./student.css";
@@ -26,6 +26,7 @@ export function DemoView({ session, html }: StageProps) {
         owner="teacher"
       />
       <Edge kind="watch" />
+      <NamePill>Teacher</NamePill>
     </>
   );
 }
@@ -37,6 +38,7 @@ function RevealView({ session, html }: StageProps) {
     <>
       <AppletFrame html={html} state={control?.reveal} interactive={false} />
       <Edge kind="watch" />
+      <NamePill>Teacher</NamePill>
     </>
   );
 }

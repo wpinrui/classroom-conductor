@@ -15,7 +15,7 @@ The teacher uploads the HTML file and starts a session. Students join with a cod
 | Independent | Each student works in their own applet. |
 | Demo | Students watch the teacher's applet live. |
 | Handoff | Offered only during Demo. Every student's state is replaced by the teacher's current state, then the class goes Independent. |
-| Spotlight | Everyone watches one student's applet, with their name. Anonymous Spotlight hides the name. |
+| Spotlight | Everyone watches one student's applet, labelled with their name. Anonymous Spotlight labels it "Classmate" instead. The spotlighted student sees "You". |
 | Gallery | Several students' applets are shown side by side on everyone's screen. |
 | Group | Several students edit one shared state together. |
 | Paced | The teacher sets the highest phase students may reach. |

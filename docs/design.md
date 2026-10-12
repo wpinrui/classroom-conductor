@@ -93,6 +93,8 @@ Labels, exactly: Demo, Reveal, Spotlight, Anonymous, Gallery, Independent, Paced
 
 Keys 1 to 9 and 0 switch modes in table order while the panel is open.
 
+In Spotlight and Anonymous, every student is listed by name under the switcher, sorted by name, like the Reveal choices. Offline students are muted with a dashed border. The spotlighted student is the selected state. Tapping a name spotlights that student, and tapping the selected one again ends the spotlight. Long names wrap.
+
 ### Thumbnail grid
 
 A drawer docked to the bottom of the viewport, left of the controls panel, toggled by a grid icon button on the panel. Height 40vh, resizable by dragging its top edge. Tiles auto-fill at a 12rem minimum, 16:10, `--space-3` apart.
@@ -132,11 +134,11 @@ The applet fills the viewport in every mode. The student sees no chrome except t
 
 | Mode | What the student sees |
 | --- | --- |
-| Demo | The teacher's applet, view-only. A 3px accent inset edge around the viewport means "watching". |
-| Reveal | The pushed state, view-only, with the same accent edge. |
-| Spotlight | The spotlighted student's applet, view-only, with the accent edge. Their name sits bottom left in a pill: surface fill, weight 600. |
-| Anonymous | As Spotlight, with no name pill. |
-| Spotlighted student | Their own applet, editable. A 3px success inset edge means "you are on screen". |
+| Demo | The teacher's applet, view-only. A 3px accent inset edge around the viewport means "watching". A Teacher name pill sits bottom left. |
+| Reveal | The pushed state, view-only, with the same accent edge and the Teacher name pill. |
+| Spotlight | The spotlighted student's applet, view-only, with the accent edge. Their name sits bottom left in a pill: surface fill, border, overlay shadow, `--font-size-xl`, weight 600. |
+| Anonymous | As Spotlight, with the pill reading Classmate. |
+| Spotlighted student | Their own applet, editable. A 3px success inset edge means "you are on screen", and the pill reads You. |
 | Gallery | Selected students' applets in an auto-fit grid, `--space-3` gaps, each view-only with its name in caption size below it. |
 | Independent | Their own applet, editable. No cue. |
 | Paced | Their own applet, held to the teacher's phase. No cue. |
