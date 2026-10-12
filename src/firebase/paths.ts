@@ -6,6 +6,7 @@ export const paths = {
   live: (session: string) => `live/${session}`,
   session: (s: string) => `sessions/${s}`,
   control: (s: string) => `sessions/${s}/control`,
+  wheel: (s: string) => `sessions/${s}/control/wheel`,
   teacherState: (s: string) => `sessions/${s}/teacherState`,
   students: (s: string) => `sessions/${s}/students`,
   student: (s: string, uid: string) => `sessions/${s}/students/${uid}`,

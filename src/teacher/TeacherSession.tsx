@@ -1,14 +1,18 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "react-router";
 import { AppletFrame, TeacherStateContext } from "../applet/AppletFrame";
-import type { ClassMember, WheelFilter } from "../applet/contract";
+import type {
+  ClassMember,
+  WheelFilter,
+  WheelOptions,
+} from "../applet/contract";
 import { Chat } from "../chat/Chat";
-import { writeTeacherState } from "../firebase/client";
+import { setWheel, writeTeacherState } from "../firebase/client";
 import type { Session, StoredState } from "../firebase/types";
 import { useSession, useThrottledWriter } from "../hooks/session";
 import { PulsePanel } from "../pulse/Pulse";
 import { Controls } from "./Controls";
-import { Wheel } from "./Wheel";
+import { Wheel, type WheelCommand } from "./Wheel";
 
 /** The teacher's live view: their own applet with the controls overlaid. */
 export function TeacherSession() {
@@ -17,6 +21,21 @@ export function TeacherSession() {
   const [controlsOpen, setControlsOpen] = useState(true);
   const [wheelOpen, setWheelOpen] = useState(false);
   const [filters, setFilters] = useState<WheelFilter[]>([]);
+  const [wheelCommand, setWheelCommand] = useState<WheelCommand | null>(null);
+  const commands = useRef(0);
+
+  /** An applet drives a class tool. The teacher can still close or change it from the controls. */
+  const onTool = (tool: string, raw: unknown) => {
+    if (tool !== "wheel" || typeof raw !== "object" || raw === null) return;
+    const o = raw as WheelOptions;
+    if (typeof o.replacement === "boolean")
+      setWheel(session, { replacement: o.replacement });
+    if (o.open === false && !o.spin) return setWheelOpen(false);
+    const filter = typeof o.filter === "string" ? o.filter : undefined;
+    if (o.open || o.spin) setWheelOpen(true);
+    if (filter !== undefined || o.spin)
+      setWheelCommand({ filter, spin: !!o.spin, n: ++commands.current });
+  };
   const write = useThrottledWriter((s: StoredState) =>
     writeTeacherState(session, s),
   );
@@ -41,6 +60,7 @@ export function TeacherSession() {
           onUpdate={write}
           onShortcut={() => setControlsOpen((o) => !o)}
           onFilters={setFilters}
+          onTool={onTool}
         />
         {controlsOpen && (
           <Controls
@@ -54,7 +74,10 @@ export function TeacherSession() {
       {wheelOpen && (
         <Wheel
           data={data}
+          session={session}
           filters={filters}
+          command={wheelCommand}
+          onCommandDone={() => setWheelCommand(null)}
           onClose={() => setWheelOpen(false)}
         />
       )}
@@ -88,11 +111,13 @@ function TeacherApplet({
   onUpdate,
   onShortcut,
   onFilters,
+  onTool,
 }: {
   data: Session;
   onUpdate: (s: StoredState) => void;
   onShortcut: () => void;
   onFilters: (f: WheelFilter[]) => void;
+  onTool: (tool: string, options: unknown) => void;
 }) {
   const [initial] = useState(data.teacherState ?? null);
   const students = useClass(data);
@@ -105,6 +130,7 @@ function TeacherApplet({
       owner="teacher"
       students={students}
       onFilters={onFilters}
+      onTool={onTool}
     />
   );
 }

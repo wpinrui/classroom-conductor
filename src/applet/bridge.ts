@@ -8,7 +8,8 @@ function send(m){parent.postMessage(m,"*");}
 window.conductor={
 connect:function(h){handlers=h;send({cc:"connect"});},
 update:function(state,phase){send({cc:"update",state:JSON.parse(JSON.stringify(state===undefined?null:state)),phase:phase|0,seq:seq});},
-filters:function(list){send({cc:"filters",filters:JSON.parse(JSON.stringify(list||[]))});}
+filters:function(list){send({cc:"filters",filters:JSON.parse(JSON.stringify(list||[]))});},
+tool:function(name,options){send({cc:"tool",tool:String(name),options:JSON.parse(JSON.stringify(options===undefined?{}:options))});}
 };
 window.addEventListener("message",function(e){
 if(e.source!==parent||!handlers)return;

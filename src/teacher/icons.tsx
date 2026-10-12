@@ -72,3 +72,10 @@ export const WheelIcon = () => (
     <path d="M12 13V5M12 13l6.9 4M12 13l-6.9 4M10 2h4l-2 3z" />
   </Svg>
 );
+
+export const ResetIcon = () => (
+  <Svg>
+    <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
+    <path d="M3 3v5h5" />
+  </Svg>
+);

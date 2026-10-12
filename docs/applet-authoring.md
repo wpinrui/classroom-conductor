@@ -11,7 +11,7 @@ Every rule is marked as one of two kinds.
 
 Read `examples/number-line.html` first. It is the smallest applet that does everything right.
 `applets/python-for-loops.html` is a full lesson built the same way.
-`applets/mango-or-pear.html` shows the context and the name wheel filters.
+`applets/mango-or-pear.html` shows the context, the name wheel filters and a scripted class tool.
 
 ## 1. The file
 
@@ -102,7 +102,7 @@ host.update(state, phase);
 - Treat a missing field as its empty value instead of trusting `null`. `examples/number-line.html` reads a missing `x` as unplaced.
 - Disable the next phase control when the phase limit forbids it, so a student never presses a button that silently fails.
 
-## 4. Context and the name wheel
+## 4. Context, the name wheel and class tools
 
 An applet cannot read the database, so the host hands it what it needs to see beyond its own state.
 
@@ -128,6 +128,22 @@ host.connect({
 - Keep filter names short and unique. They become buttons beside the wheel.
 - Publish nothing that would leak a hidden result. The wheel shows how many students each filter holds. `applets/mango-or-pear.html` publishes its True and False filters only after the teacher reveals the counts.
 - Keep per question data keyed by a stable id that the teacher's state assigns. A student's answer then stays attached to its question when the teacher moves on.
+
+### Class tools
+
+`conductor.tool(name, options)` lets the applet drive a Conductor class tool from the teacher's frame. `docs/applet-contract.md` lists each tool's options.
+
+**Required**
+
+- Call `tool` from the teacher's own frame only, with `role === "teacher"`. The host ignores every other frame.
+- Send only what you mean to change. Every option is optional, and a missing one leaves the tool as it is.
+- Never fight the teacher. A tool the teacher closed or changed stays that way until the applet calls again, so call only on a teacher action or once on load. Never call on a timer or on every class update.
+- Guard the call with `host.tool?.(...)`, since an older host or the fallback may not have it.
+
+**Recommended**
+
+- Put a tool's call on the thing it acts on. The mango or pear applet puts a wheel button on each revealed bar, which spins over the students who gave that answer.
+- Set session settings once, when the teacher's frame first gets its context. The mango or pear applet turns the wheel's replacement off there, so each student is called on at most once a lesson.
 
 ## 5. The interface
 
@@ -208,5 +224,5 @@ Before handing over an applet, check every required item:
 - The phase never passes the limit.
 - `instructions` assume the bot cannot see the state.
 - `pulsePrompt` describes every state field and phase index.
-- The screen renders without a context, and filters go out from the teacher's frame only.
+- The screen renders without a context, and filters and tool calls go out from the teacher's frame only.
 - No needless text, no em-dashes and no middle dots.

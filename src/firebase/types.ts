@@ -53,6 +53,15 @@ export interface Control {
   groupSize?: number;
   /** Chat messages per student per minute. Absent means the default. 0 means unlimited. */
   chatLimit?: number;
+  wheel?: WheelSettings;
+}
+
+/** Name wheel settings that last the whole session. */
+export interface WheelSettings {
+  /** False takes each drawn student out of the pool. Absent means true. */
+  replacement?: boolean;
+  /** Students drawn while replacement was off. */
+  drawn?: Record<string, true>;
 }
 
 /** Chat messages per student per minute when control.chatLimit is absent. */

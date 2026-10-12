@@ -40,12 +40,26 @@ export interface WheelFilter {
   students: string[];
 }
 
+/** Options for conductor.tool("wheel", options). Each field is optional and changes only what it names. */
+export interface WheelOptions {
+  /** true opens the wheel and false closes it. */
+  open?: boolean;
+  /** Filter name to select. An empty string selects the whole class. */
+  filter?: string;
+  /** false means a drawn student leaves the pool for the rest of the session. */
+  replacement?: boolean;
+  /** true opens the wheel and spins it. */
+  spin?: boolean;
+}
+
 /** Applet to host. */
 export type AppletMessage =
   | { cc: "connect" }
   | { cc: "update"; state: unknown; phase: number; seq: number }
   /** Replaces the filters the name wheel offers. Only the teacher's frame is heard. */
   | { cc: "filters"; filters: WheelFilter[] }
+  /** Drives a class tool, such as the name wheel. Only the teacher's frame is heard. */
+  | { cc: "tool"; tool: string; options: unknown }
   /** The controls shortcut, pressed while the applet has focus. */
   | { cc: "shortcut" };
 

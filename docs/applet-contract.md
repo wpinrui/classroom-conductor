@@ -63,5 +63,29 @@ Rules:
   state back if the applet tries.
 - Ctrl+. and Cmd+. are reserved for the teacher's controls.
 
+## 3. Class tools
+
+The teacher's frame can drive the Conductor's class tools. The teacher can still open, change or close any of them from the controls, and the teacher's change wins.
+
+```js
+conductor.tool(name, options);
+```
+
+Only the teacher's own frame is heard. Every field in `options` is optional and changes only what it names.
+
+### Name wheel
+
+```js
+conductor.tool("wheel", { filter: "Said yes", spin: true });
+conductor.tool("wheel", { replacement: false });
+```
+
+| Option | Effect |
+| --- | --- |
+| `open` | `true` opens the wheel and `false` closes it. |
+| `filter` | Selects a filter by name. `""` selects the whole class. |
+| `spin` | `true` opens the wheel and spins it. |
+| `replacement` | `false` takes each drawn student out of the pool for the rest of the session. `true` puts drawing back to normal. The teacher's "No repeats" toggle sets the same value. |
+
 See `examples/counter.html` for a complete applet.
 `docs/applet-authoring.md` explains every rule and adds pedagogy.

@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import type { WheelFilter } from "../applet/contract";
+import { setWheel } from "../firebase/client";
 import type { Session } from "../firebase/types";
+import { ResetIcon } from "./icons";
 import "./wheel.css";
 
 interface Member {
@@ -73,22 +75,49 @@ function slicePath(i: number, n: number) {
 }
 
 /** The name wheel: picks a random online student from the class or from a filter the applet publishes. */
+export interface WheelCommand {
+  /** Filter to select. Undefined keeps the current one. */
+  filter?: string;
+  spin: boolean;
+  /** Grows with every command, so each one acts exactly once. */
+  n: number;
+}
+
 export function Wheel({
   data,
+  session,
   filters,
+  command,
+  onCommandDone,
   onClose,
 }: {
   data: Session;
+  session: string;
   filters: WheelFilter[];
+  command: WheelCommand | null;
+  onCommandDone: () => void;
   onClose: () => void;
 }) {
   const [chosen, setChosen] = useState(EVERYONE);
   const [spin, setSpin] = useState<Spin | null>(null);
   const disc = useRef<SVGGElement>(null);
+  /** The pool a pending command spins once it is on screen, or null. */
+  const spinNext = useRef<string | null>(null);
+  const lastCommand = useRef(0);
+  const settings = data.control.wheel ?? {};
+  const replacement = settings.replacement ?? true;
+  const drawn = settings.drawn ?? {};
   const filter = filters.find((f) => f.name === chosen);
   const pool = chosen === EVERYONE || !filter ? EVERYONE : chosen;
-  const live = poolMembers(data, filter ? filter.students : null);
   const spinning = !!spin && !spin.done;
+  // The student just drawn stays on the wheel until it moves on, even when drawing them took them out.
+  const shownWinner = spin?.done ? spin.members[spin.winner]?.uid : undefined;
+  const drawable = (uids: string[] | null) =>
+    poolMembers(data, uids).filter((m) => replacement || !drawn[m.uid]);
+  const candidates = drawable(filter ? filter.students : null);
+  const live = poolMembers(data, filter ? filter.students : null).filter(
+    (m) => replacement || !drawn[m.uid] || m.uid === shownWinner,
+  );
   // A finished spin stays on screen until the pool it was drawn from changes.
   const held = spin && (spinning || keyOf(spin.members) === keyOf(live));
   const members = held ? spin.members : live;
@@ -103,15 +132,18 @@ export function Wheel({
   }, [onClose]);
 
   const go = () => {
-    if (spinning || members.length === 0) return;
-    const last =
-      spin && held && spin.done && members.length > 1 ? spin.winner : -1;
+    if (spinning || candidates.length === 0) return;
+    const prev = held && spin?.done ? spin.members[spin.winner]?.uid : null;
     // Never call the same student twice running when anyone else is left.
-    let pick = randomIndex(members.length - (last >= 0 ? 1 : 0));
+    const last =
+      candidates.length > 1 ? candidates.findIndex((m) => m.uid === prev) : -1;
+    let pick = randomIndex(candidates.length - (last >= 0 ? 1 : 0));
     if (last >= 0 && pick >= last) pick += 1;
     const jitter = randomIndex(1000) / 1000 - 0.5;
-    const turn = landingTurn(spin?.turn ?? 0, pick, members.length, jitter);
-    setSpin({ members, winner: pick, turn, done: false });
+    const turn = landingTurn(spin?.turn ?? 0, pick, candidates.length, jitter);
+    setSpin({ members: candidates, winner: pick, turn, done: false });
+    if (!replacement)
+      setWheel(session, { [`drawn/${candidates[pick].uid}`]: true });
     // Reduced motion zeroes the transition, so transitionend never fires.
     requestAnimationFrame(() => {
       const el = disc.current;
@@ -129,15 +161,33 @@ export function Wheel({
     setSpin((s) => s && { ...s, done: true });
   };
 
+  // An applet's command picks the pool now and spins once that pool has rendered.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: act once per command
+  useEffect(() => {
+    if (!command || command.n === lastCommand.current) return;
+    lastCommand.current = command.n;
+    if (command.filter !== undefined) choose(command.filter);
+    if (command.spin) spinNext.current = command.filter ?? chosen;
+    onCommandDone();
+  }, [command?.n]);
+
+  // Runs after every render, so it sees the pool the command picked.
+  useEffect(() => {
+    if (spinNext.current !== chosen || spinning) return;
+    spinNext.current = null;
+    go();
+  });
+
   const n = members.length;
   const font = Math.min(7, (2 * Math.PI * 62 * 0.55) / Math.max(n, 1));
   const options = [
-    { name: EVERYONE, count: poolMembers(data, null).length },
+    { name: EVERYONE, count: drawable(null).length },
     ...filters.map((f) => ({
       name: f.name,
-      count: poolMembers(data, f.students).length,
+      count: drawable(f.students).length,
     })),
   ];
+  const anyDrawn = Object.keys(drawn).length > 0;
 
   return (
     <section className="wheel-sheet" aria-label="Name wheel">
@@ -149,23 +199,47 @@ export function Wheel({
       >
         ✕
       </button>
-      {options.length > 1 && (
-        <div className="wheel-pools">
-          {options.map((o) => (
+      <div className="wheel-bar">
+        {options.length > 1 && (
+          <div className="wheel-pools">
+            {options.map((o) => (
+              <button
+                key={o.name}
+                type="button"
+                className="wheel-pool"
+                aria-pressed={pool === o.name}
+                disabled={spinning}
+                onClick={() => choose(o.name)}
+              >
+                {o.name || "Everyone"}
+                <span className="wheel-count">{o.count}</span>
+              </button>
+            ))}
+          </div>
+        )}
+        <div className="wheel-settings">
+          <button
+            type="button"
+            className="wheel-pool"
+            aria-pressed={!replacement}
+            onClick={() => setWheel(session, { replacement: !replacement })}
+          >
+            No repeats
+          </button>
+          {anyDrawn && (
             <button
-              key={o.name}
               type="button"
-              className="wheel-pool"
-              aria-pressed={pool === o.name}
+              className="quiet icon-button"
+              aria-label="Put everyone back"
+              data-tip="Put everyone back"
               disabled={spinning}
-              onClick={() => choose(o.name)}
+              onClick={() => setWheel(session, { drawn: null })}
             >
-              {o.name || "Everyone"}
-              <span className="wheel-count">{o.count}</span>
+              <ResetIcon />
             </button>
-          ))}
+          )}
         </div>
-      )}
+      </div>
       <div className="wheel" data-empty={n === 0 || undefined}>
         <svg viewBox="-114 -114 228 228" className="wheel-svg" aria-hidden>
           <g
@@ -226,7 +300,7 @@ export function Wheel({
         <button
           type="button"
           className="primary wheel-hub"
-          disabled={n === 0}
+          disabled={candidates.length === 0}
           onClick={go}
         >
           Spin
