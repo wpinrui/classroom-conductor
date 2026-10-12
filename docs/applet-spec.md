@@ -38,6 +38,7 @@ Consequences for the applet:
 - It runs in an iframe with `sandbox="allow-scripts allow-forms allow-modals"`. The origin is opaque, so `localStorage`, `sessionStorage`, cookies and IndexedDB throw or fail. Popups, downloads and navigating the top page are blocked.
 - Nothing survives a reload except the state (section 4).
 - Ctrl+. and Cmd+. are taken by the Conductor before the applet's handlers see them. Do not bind them.
+- In the teacher's own frame of an applet with `slides`, S is taken too. While the slideshow is on, so are the scroll wheel, PageDown, PageUp, ArrowDown, ArrowUp and Space. Keys typed into a text field are left alone (section 6, Slideshow).
 
 **Outside network**
 
@@ -65,7 +66,13 @@ Declare the manifest in a JSON script tag, anywhere in the file:
   "pulsePrompt": "Each state has x, a number from 0 to 1 ...",
   "namelist": ["Ann Lee", "Bo Tan"],
   "preparedStates": [{ "name": "Read as digits", "state": { "x": 0.38, "note": "" }, "phase": 1 }],
-  "modes": [["independent", "spotlight"], ["independent", "reveal"]]
+  "modes": [["independent", "spotlight"], ["independent", "reveal"]],
+  "slides": [
+    { "label": "First question", "cue": "question 1" },
+    { "label": "Pick someone", "wheel": { "spin": true } },
+    { "label": "Explain", "phase": 1, "mode": "independent", "timer": 120 },
+    { "label": "Show the wrong answer", "reveal": "Read as digits" }
+  ]
 }
 </script>
 ```
@@ -84,6 +91,7 @@ Declare the manifest in a JSON script tag, anywhere in the file:
 | `preparedStates` | Optional list of `{ name, state, phase }`. `name` is a string. `state` must be present. `phase` is an integer from 0 to the number of phases minus 1. |
 | `handoff` | Optional boolean. |
 | `modes` | Optional list with exactly one entry per phase. Each entry is a non-empty list of mode ids: `independent`, `demo`, `spotlight`, `anonymousSpotlight`, `gallery`, `group`, `paced`, `freeze`, `focus`, `reveal`. |
+| `slides` | Optional list of step objects. Each step needs `label`, a non-empty string. Every other field is optional. `phase` is an integer from 0 to the number of phases minus 1. `mode` is one of the mode ids above. `cue` is a non-empty string. `wheel` is an object with an optional string `filter` and an optional boolean `spin`. `timer` is a number of seconds above 0 and at most 86,400. `timerShared` is a boolean. `reveal` is the `name` of a prepared state, and a step with `reveal` may set `mode` only to `reveal`. |
 
 **What each field does**
 
@@ -102,6 +110,14 @@ Declare the manifest in a JSON script tag, anywhere in the file:
 - Handoff is offered only during Demo, so a phase that does not allow Demo never shows it.
 - Leave `modes` out to offer every mode in every phase.
 - `handoff: false` hides the Handoff button. Leave it out to offer Handoff during Demo.
+- `slides` scripts the lesson for the teacher's slideshow (section 6, Slideshow). Leave it out and the teacher gets no slideshow.
+- A step's `label` is what the teacher sees as the next step. Students never see it.
+- `phase` holds from its step until a later step names another. Steps before the first `phase` leave the phase as it is.
+- `mode` holds the same way. A `reveal` step counts as mode `reveal` showing that prepared state.
+- `cue` names an action the applet performs in the teacher's frame, through the `slide` handler.
+- `wheel` drives the name wheel exactly like `host.wheel`. `timer` starts a countdown exactly like `host.timer`, shared with students unless `timerShared` is `false`. Both run only when the teacher steps forward onto the step.
+- A step with only a `label` is a gap. The slideshow holds there while the teacher acts by hand.
+- When a step's mode is not allowed by `modes` in its phase, the class gets that phase's default instead, as for any other mode change.
 
 ## 4. The runtime
 
@@ -120,6 +136,8 @@ host.connect({
   setContext({ role, teacher, students }) {},
   // Optional. Teacher's own frame only. The name wheel stopped on this student id.
   wheelPicked(studentId) {},
+  // Optional. Teacher's own frame only. Move to phase, then apply each cue in order (section 6).
+  slide({ phase, cues }) {},
 });
 
 // On load, after connect, and after every change to the state or the phase.
@@ -238,6 +256,39 @@ host.timer?.(null);                    // cancel
 
 - Seconds must be a number above 0 and at most 86,400. Anything else is ignored.
 - A new timer replaces the running one.
+
+### Slideshow
+
+The teacher can drive the lesson from the manifest's `slides`. S switches the slideshow on and off. While it is on, the scroll wheel, PageDown, ArrowDown and Space step forward. PageUp and ArrowUp step back. Clickers send PageDown and PageUp, so they work too. One wheel gesture is one step. Students see no difference, because a step only does what the teacher could do by hand.
+
+The teacher can leave the slideshow at any time, act by hand and come back. Coming back resumes at the same step and changes nothing until the next step.
+
+A step does this, in order:
+
+1. Sets the mode the step leaves in force, if any (section 3, `slides`).
+2. Calls `slide({ phase, cues })` in the teacher's own live frame.
+3. When stepping forward only, runs the step's `wheel` and `timer`.
+
+`phase` is the phase the step leaves in force. When no step so far names one, it is the teacher's current phase.
+
+`cues` is a list of `{ name, fresh }`. It holds every `cue` from the first step of the current phase run up to this step, in step order. A phase run is the unbroken stretch of steps that share the same phase. `fresh` is `true` only on the last cue, and only when the teacher stepped forward onto a step that has a `cue` of its own. Every other cue is a replay with `fresh: false`.
+
+Going back does not undo anything. It re-applies the earlier step, so the applet rebuilds that step from the start of its phase run. The wheel and the timer do not run again.
+
+**Required**
+
+- Implement `slide` if the manifest has `slides` with any `cue` or `phase`. Without it the slideshow still sets modes, the wheel and the timer, but the applet stays where it is.
+- In `slide`, move to `phase` first, the same way the applet changes phase on its own, including calling `update`. Then apply each cue in order, and call `update` once the state has changed.
+- Make a replay deterministic. A cue with `fresh: false` must skip randomness and one-off effects such as sounds, confetti, timers and wheel spins. The same cues must rebuild the same screen every time.
+- Ignore a cue name the applet does not know.
+
+**Recommended**
+
+- Write cues as setters, not steps. "question 2" says where to be. "next question" depends on where the applet already is, and breaks once cues are replayed from the start of the phase. A replay from the start of the phase must rebuild the situation exactly.
+- Keep a phase's cues independent of the phases before it. The replay starts at the phase run, not at the first step.
+- Do the random part of a cue only when `fresh` is `true`, and keep its result in the state. A replay then reads it back instead of drawing again.
+- Use a label-only step where the teacher should act by hand, such as choosing whom to spotlight.
+- Pair a `wheel` step with `wheelPicked`, as in Spotlight above, to put the pick on the projector.
 
 ## 7. Chatbot and Pulse
 
@@ -461,6 +512,10 @@ A yes or no vote. The teacher types a question. Students vote, then explain. The
 - The phase never passes the limit.
 - The view comes from `context.role`, and the applet renders without a context.
 - Filters and tool calls are guarded with `?.` and sent from teacher actions or once on first context.
+- `slides`, if present, gives every step a `label`, uses declared phases and modes, and names only prepared states that exist.
+- `slide` moves to the phase first, then applies the cues in order, and calls `update` like any other change.
+- Cues are setters, so replaying a phase run's cues from its start rebuilds the same screen.
+- A cue with `fresh: false` does nothing random and nothing one-off.
 - `instructions` assume the bot cannot see the state.
 - `pulsePrompt` describes every state field and phase index.
 - No needless text, no em-dashes and no middle dots.

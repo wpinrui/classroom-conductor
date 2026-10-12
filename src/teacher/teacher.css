@@ -193,6 +193,24 @@ button[aria-busy="true"]::after {
   flex: 1;
 }
 
+.slideshow {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.slideshow-at {
+  flex: 1;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.slideshow-next {
+  margin: 0;
+  font-size: var(--font-size-caption);
+  color: var(--color-text-muted);
+  overflow-wrap: anywhere;
+}
+
 .end {
   margin-top: auto;
 }

@@ -6,6 +6,7 @@ import type {
   AppletMessage,
   ClassMember,
   HostMessage,
+  SlideCue,
   WheelFilter,
 } from "./contract";
 
@@ -49,6 +50,14 @@ interface Props {
   onSpotlight?: (student: unknown) => void;
   /** The student the name wheel last landed on. n grows with every pick, so each one is sent once. */
   wheelPick?: { student: string; n: number } | null;
+  /** Slideshow on or off. Pass it only for the teacher's frame of an applet with slides. */
+  slideshow?: boolean;
+  /** The slideshow step to apply. n grows with every step, so each one is sent once. */
+  slide?: { phase: number; cues: SlideCue[]; n: number } | null;
+  /** Called when a slideshow step key or wheel gesture happens inside the applet. */
+  onStep?: (dir: 1 | -1) => void;
+  /** Called when S is pressed inside the applet. */
+  onSlideshowToggle?: () => void;
 }
 
 type Known = { json: string; phase: number };
@@ -69,6 +78,10 @@ export function AppletFrame({
   onTimer,
   onSpotlight,
   wheelPick,
+  slideshow,
+  slide,
+  onStep,
+  onSlideshowToggle,
 }: Props) {
   const teacherState = useContext(TeacherStateContext);
   const teacher = owner === "student" ? teacherState : null;
@@ -99,6 +112,9 @@ export function AppletFrame({
     onWheel,
     onTimer,
     onSpotlight,
+    onStep,
+    onSlideshowToggle,
+    slideshow,
     contextJson,
   });
   latest.current = {
@@ -110,6 +126,9 @@ export function AppletFrame({
     onWheel,
     onTimer,
     onSpotlight,
+    onStep,
+    onSlideshowToggle,
+    slideshow,
     contextJson,
   };
   const srcDoc = useMemo(() => withBridge(html), [html]);
@@ -150,9 +169,15 @@ export function AppletFrame({
         latest.current.onWheel?.(m.options);
       } else if (m?.cc === "spotlight") {
         latest.current.onSpotlight?.(m.student);
+      } else if (m?.cc === "step") {
+        if (m.dir === 1 || m.dir === -1) latest.current.onStep?.(m.dir);
+      } else if (m?.cc === "slideshowToggle") {
+        latest.current.onSlideshowToggle?.();
       } else if (m?.cc === "connect") {
         connected.current = true;
         post({ cc: "phaseLimit", maxPhase });
+        if (latest.current.slideshow !== undefined)
+          post({ cc: "slideshow", on: latest.current.slideshow });
         postContext();
         if (state) push(state);
       } else if (m?.cc === "update") {
@@ -190,6 +215,18 @@ export function AppletFrame({
     if (connected.current && wheelPick)
       post({ cc: "wheelPicked", student: wheelPick.student });
   }, [wheelPick?.n]);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: post only when slideshow turns on or off
+  useEffect(() => {
+    if (connected.current && slideshow !== undefined)
+      post({ cc: "slideshow", on: slideshow });
+  }, [slideshow]);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: post once per step
+  useEffect(() => {
+    if (connected.current && slide)
+      post({ cc: "slide", phase: slide.phase, cues: slide.cues });
+  }, [slide?.n]);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: post only when the limit changes
   useEffect(() => {
