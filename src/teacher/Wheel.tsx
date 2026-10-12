@@ -27,6 +27,14 @@ const MAX_NAME = 16;
 
 const keyOf = (m: Member[]) => m.map((x) => x.uid).join(",");
 
+/** The element's transition duration in milliseconds, 0 when it has none. */
+function durationMs(el: Element | null): number {
+  if (!el) return 0;
+  const d = getComputedStyle(el).transitionDuration.split(",")[0].trim();
+  const n = Number.parseFloat(d) || 0;
+  return d.endsWith("ms") ? n : n * 1000;
+}
+
 /** A uniform random index below n, from the crypto source. */
 export function randomIndex(n: number): number {
   const buf = new Uint32Array(1);
@@ -149,6 +157,12 @@ export function Wheel({
     const jitter = randomIndex(1000) / 1000 - 0.5;
     const turn = landingTurn(spin?.turn ?? 0, pick, candidates.length, jitter);
     setSpin({ members: candidates, winner: pick, turn, done: false });
+    // Backstop for when transitionend never fires, such as a spin started before the wheel was painted.
+    const ms = durationMs(disc.current) + 300;
+    setTimeout(
+      () => setSpin((s) => (s && s.turn === turn ? { ...s, done: true } : s)),
+      ms,
+    );
     if (!replacement)
       setWheel(session, { [`drawn/${candidates[pick].uid}`]: true });
     // Reduced motion zeroes the transition, so transitionend never fires.
@@ -187,10 +201,13 @@ export function Wheel({
   }, [spin?.done, spin?.turn]);
 
   // Runs after every render, so it sees the pool the command picked.
+  // Two frames later the wheel has been painted, so the spin animates instead of jumping.
+  const goRef = useRef(go);
+  goRef.current = go;
   useEffect(() => {
     if (spinNext.current !== chosen || spinning) return;
     spinNext.current = null;
-    go();
+    requestAnimationFrame(() => requestAnimationFrame(() => goRef.current()));
   });
 
   const n = members.length;
