@@ -58,6 +58,8 @@ interface Props {
   onStep?: (dir: 1 | -1) => void;
   /** Called when S is pressed inside the applet. */
   onSlideshowToggle?: () => void;
+  /** Called when a teacher hotkey is pressed inside the applet. */
+  onHotkey?: (key: string) => void;
 }
 
 type Known = { json: string; phase: number };
@@ -82,6 +84,7 @@ export function AppletFrame({
   slide,
   onStep,
   onSlideshowToggle,
+  onHotkey,
 }: Props) {
   const teacherState = useContext(TeacherStateContext);
   const teacher = owner === "student" ? teacherState : null;
@@ -114,6 +117,7 @@ export function AppletFrame({
     onSpotlight,
     onStep,
     onSlideshowToggle,
+    onHotkey,
     slideshow,
     contextJson,
   });
@@ -128,6 +132,7 @@ export function AppletFrame({
     onSpotlight,
     onStep,
     onSlideshowToggle,
+    onHotkey,
     slideshow,
     contextJson,
   };
@@ -171,6 +176,8 @@ export function AppletFrame({
         latest.current.onSpotlight?.(m.student);
       } else if (m?.cc === "step") {
         if (m.dir === 1 || m.dir === -1) latest.current.onStep?.(m.dir);
+      } else if (m?.cc === "hotkey") {
+        if (typeof m.key === "string") latest.current.onHotkey?.(m.key);
       } else if (m?.cc === "slideshowToggle") {
         latest.current.onSlideshowToggle?.();
       } else if (m?.cc === "connect") {

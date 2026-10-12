@@ -28,6 +28,7 @@ import {
   slideEffect,
   wheelGesture,
 } from "./slides";
+import { Thumbnails } from "./Thumbnails";
 import { Wheel, type WheelCommand } from "./Wheel";
 
 /** How long a slideshow step waits for the applet to reach its phase before setting the mode anyway. */
@@ -41,6 +42,8 @@ export function TeacherSession() {
   const data = useSession(session);
   const [controlsOpen, setControlsOpen] = useState(true);
   const [wheelOpen, setWheelOpen] = useState(false);
+  // The student screens drawer. Lives here so G works with the controls hidden.
+  const [thumbsOpen, setThumbsOpen] = useState(false);
   const [filters, setFilters] = useState<WheelFilter[]>([]);
   const [wheelCommand, setWheelCommand] = useState<WheelCommand | null>(null);
   const commands = useRef(0);
@@ -226,6 +229,17 @@ export function TeacherSession() {
         (t.tagName === "INPUT" ||
           t.tagName === "TEXTAREA" ||
           t.isContentEditable);
+      if (
+        !e.ctrlKey &&
+        !e.metaKey &&
+        !e.altKey &&
+        !typing &&
+        (e.key === "g" || e.key === "G")
+      ) {
+        e.preventDefault();
+        setThumbsOpen((o) => !o);
+        return;
+      }
       if (!e.ctrlKey && !e.metaKey && !e.altKey && !typing && e.key === "b") {
         e.preventDefault();
         blankOn();
@@ -331,6 +345,7 @@ export function TeacherSession() {
           slide={slide}
           onStep={(dir) => show.current.step(dir)}
           onSlideshowToggle={() => show.current.toggle()}
+          onHotkey={(k) => k === "g" && setThumbsOpen((o) => !o)}
         />
         {target && data.students?.[target] && (
           <div className="teacher-spotlight">
@@ -367,6 +382,8 @@ export function TeacherSession() {
             wheelOpen={wheelOpen}
             onWheel={() => setWheelOpen((o) => !o)}
             onBlank={blankOn}
+            thumbsOpen={thumbsOpen}
+            onThumbs={() => setThumbsOpen((o) => !o)}
             slideshow={
               slides.length > 0
                 ? {
@@ -382,6 +399,7 @@ export function TeacherSession() {
           />
         )}
       </TeacherStateContext.Provider>
+      {thumbsOpen && <Thumbnails session={session} data={data} />}
       {wheelOpen && (
         <Wheel
           data={data}
@@ -444,6 +462,7 @@ function TeacherApplet({
   slide,
   onStep,
   onSlideshowToggle,
+  onHotkey,
 }: {
   data: Session;
   onUpdate: (s: StoredState) => void;
@@ -457,6 +476,7 @@ function TeacherApplet({
   slide: SlideMessage | null;
   onStep: (dir: 1 | -1) => void;
   onSlideshowToggle: () => void;
+  onHotkey: (key: string) => void;
 }) {
   const [initial] = useState(data.teacherState ?? null);
   const students = useClass(data);
@@ -477,6 +497,7 @@ function TeacherApplet({
       slide={slide}
       onStep={onStep}
       onSlideshowToggle={onSlideshowToggle}
+      onHotkey={onHotkey}
     />
   );
 }
