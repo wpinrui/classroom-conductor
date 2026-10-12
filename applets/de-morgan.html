@@ -75,15 +75,8 @@ button:disabled { cursor: default; opacity: .4; }
 .seg button.on { background: var(--ink); color: #fff; }
 
 /* Algebra */
-.alg { display: inline-flex; align-items: flex-end; white-space: nowrap; font-family: "Cambria Math", "STIX Two Math", "Times New Roman", serif; }
-.alg i.bv { font-style: italic; padding: 0 .04em; }
-.alg .bo { padding: 0 .22em; }
-.alg .bp { padding: 0 .04em; }
-.alg .bar { position: relative; display: inline-flex; align-items: flex-end; padding-top: .12em; margin: 0 .05em; }
-/* Drawn as its own line, shifted right to follow the italic slant of the letters below. */
-.alg .bar::before { content: ""; position: absolute; top: 0; left: .14em; right: -.06em; border-top: .06em solid currentColor; }
-/* Each piece under a bar is only as tall as a capital letter, so the bar sits just above the letters, not a full line above. */
-.alg .bar > * { line-height: .82; }
+/* Algebra is MathML, typeset by the browser with the maths font, so bars sit and stack by the font's own metrics. */
+math.alg { font-family: "Cambria Math", "STIX Two Math", math; white-space: nowrap; }
 
 /* Expression input */
 .ex { display: flex; flex-direction: column; gap: 10px; }
@@ -118,6 +111,9 @@ table.tt { border-collapse: separate; border-spacing: 0; background: var(--card)
 .tt th.add button { width: 56px; height: 56px; font-size: 32px; color: var(--accent); }
 .tt th .x { display: block; margin: 6px auto 0; color: var(--soft); padding: 4px; border-radius: 6px; line-height: 0; }
 .tt th .x svg, button[data-act="exdel"] svg { width: 20px; height: 20px; }
+.tt th .fill { display: block; margin: 6px auto 0; color: var(--accent); padding: 4px; border-radius: 6px; line-height: 0; }
+.tt th .fill:hover { background: var(--accent-soft); }
+.tt th .fill svg { width: 20px; height: 20px; }
 .tt th .x:hover { color: var(--bad); background: var(--bad-soft); }
 .tt th .ex-done { font-size: 28px; }
 .tt td.add { background: #faf9f6; min-width: 0; padding: 0; }
@@ -226,7 +222,7 @@ table.sum { border-collapse: collapse; width: 100%; font-size: 22px; }
 .tcard { min-height: 280px; border-radius: 22px; background: var(--card); border: 1px solid var(--line); padding: 28px; display: flex; flex-direction: column; justify-content: center; gap: 18px; font-size: 28px; font-weight: 600; text-align: center; }
 .tcard.back { background: repeating-linear-gradient(135deg, #e9e5da 0 14px, #f1eee6 14px 28px); border-color: #e0dbcf; font-size: 56px; color: #b8b1a1; }
 button.tcard { cursor: pointer; }
-.tcard .alg { font-size: 34px; font-weight: 400; justify-content: center; }
+.tcard .alg { font-size: 34px; font-weight: 400; }
 
 /* NOR half: the target circuit and its tags */
 .cmp { display: flex; align-items: center; gap: 22px; }
@@ -435,23 +431,24 @@ const Bool = (() => {
 
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
-  // Algebra form as HTML. Groups typed by the student keep their brackets.
+  // Algebra form as MathML. Groups typed by the student keep their brackets.
   // Ungrouped trees from the engine get the brackets precedence needs.
+  const paren = (inner) => "<mrow><mo>(</mo>" + inner + "<mo>)</mo></mrow>";
   function html(n) {
     switch (n.t) {
-      case "v": return '<i class="bv">' + esc(n.v) + "</i>";
-      case "c": return '<span class="bc">' + n.v + "</span>";
-      case "grp": return '<span class="bp">(</span>' + html(n.a) + '<span class="bp">)</span>';
+      case "v": return "<mi>" + esc(n.v) + "</mi>";
+      case "c": return "<mn>" + n.v + "</mn>";
+      case "grp": return paren(html(n.a));
       case "not": {
         let a = n.a;
         while (a.t === "grp") a = a.a;
-        return '<span class="bar">' + html(a) + "</span>";
+        return '<mover accent="true"><mrow>' + html(a) + '</mrow><mo stretchy="true">&#x203E;</mo></mover>';
       }
       case "and": {
-        const w = (c) => (c.t === "or" ? '<span class="bp">(</span>' + html(c) + '<span class="bp">)</span>' : html(c));
-        return w(n.a) + '<span class="bo">⋅</span>' + w(n.b);
+        const w = (c) => (c.t === "or" ? paren(html(c)) : html(c));
+        return "<mrow>" + w(n.a) + "<mo>&#x22C5;</mo>" + w(n.b) + "</mrow>";
       }
-      case "or": return html(n.a) + '<span class="bo">+</span>' + html(n.b);
+      case "or": return "<mrow>" + html(n.a) + "<mo>+</mo>" + html(n.b) + "</mrow>";
     }
   }
 
@@ -1729,9 +1726,9 @@ function T() {
 const P = (text) => Bool.parse(text).ast;
 const alg = (text, cls = "") => {
   const r = Bool.parse(text);
-  return r.ast ? `<span class="alg ${cls}">${Bool.html(r.ast)}</span>` : esc(text);
+  return r.ast ? `<math class="alg ${cls}">${Bool.html(r.ast)}</math>` : esc(text);
 };
-const algAst = (ast, cls = "") => `<span class="alg ${cls}">${Bool.html(ast)}</span>`;
+const algAst = (ast, cls = "") => `<math class="alg ${cls}">${Bool.html(ast)}</math>`;
 
 // ---------- Icons ----------
 const I = {
@@ -1745,6 +1742,8 @@ const I = {
   plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
   back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 5H9l-6 7 6 7h12z"/><path d="M17 9l-6 6M11 9l6 6"/></svg>',
   reset: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 109-9 9.7 9.7 0 00-6.7 2.7L3 8"/><path d="M3 3v5h5"/></svg>',
+  // Wand from Lucide (lucide.dev), ISC licence.
+  wand: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4V2"/><path d="M15 16v-2"/><path d="M8 9h2"/><path d="M20 9h2"/><path d="M17.8 11.8 19 13"/><path d="M15 9h.01"/><path d="M17.8 6.2 19 5"/><path d="m3 21 9-9"/><path d="M12.2 6.2 11 5"/></svg>',
   // Trash 2 from Lucide (lucide.dev), ISC licence.
   trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>',
   table: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 4v16M15 4v16"/></svg>',
@@ -1809,6 +1808,12 @@ function insertToken(key, tok) {
 }
 
 // ---------- Truth table cells ----------
+// The teacher's copy can fill a column with its correct values, one column at a time.
+// path points at the column's four-character string. e is the column's expression over vars.
+function fillBtn(path, e, vars) {
+  if (!isTeacher() || !Bool.parse(e, vars).ast) return "";
+  return `<button class="fill" data-act="fillcol" data-path="${esc(path)}" data-e="${esc(e)}" data-v="${vars.join("")}" aria-label="Fill column">${I.wand}</button>`;
+}
 // Truth table cells cycle empty, 0, 1, then back to empty.
 const cyc = (c) => (c === "-" ? "0" : c === "0" ? "1" : "-");
 const setChar = (str, i, ch) => str.slice(0, i) + ch + str.slice(i + 1);
@@ -2042,9 +2047,9 @@ function viewTT() {
   let head = `<th>${alg("M")}</th><th>${alg("P")}</th>`;
   tt.cols.forEach((c, ci) => {
     const path = `tt.cols.${ci}`;
-    head += `<th>${exInput(path, c, ["M", "P"], { cls: "" })}<button class="x" data-act="ttdel" data-i="${ci}" aria-label="Remove column">${I.trash}</button></th>`;
+    head += `<th>${exInput(path, c, ["M", "P"], { cls: "" })}<button class="x" data-act="ttdel" data-i="${ci}" aria-label="Remove column">${I.trash}</button>${c.done ? fillBtn(`${path}.vals`, c.text, ["M", "P"]) : ""}</th>`;
   });
-  head += `<th class="target">${alg("NOT (M OR P)")}</th>`;
+  head += `<th class="target">${alg("NOT (M OR P)")}${fillBtn("tt.target", "NOT (M OR P)", ["M", "P"])}</th>`;
   let body = "";
   ROWS.forEach(([m, p], ri) => {
     body += `<tr><td class="in">${m}</td><td class="in">${p}</td>`;
@@ -2068,7 +2073,7 @@ function combinedTable(path, cells, defs, editable) {
   const matches = (d) => full && d.k !== ref.k && pad4(cells[d.k]) === pad4(cells[ref.k]) && pad4(cells[ref.k]) === correct(ref);
   const anyMatch = defs.slice(3).some(matches);
   const cls = (d) => (matches(d) || (anyMatch && d.k === ref.k) ? "match" : "");
-  let html = `<table class="tt"><tr>${defs.map((d) => `<th class="${cls(d)}">${alg(d.e)}</th>`).join("")}</tr>`;
+  let html = `<table class="tt"><tr>${defs.map((d, ci) => `<th class="${cls(d)}">${alg(d.e)}${editable && ci >= 2 ? fillBtn(`${path}.${d.k}`, d.e, ["A", "B"]) : ""}</th>`).join("")}</tr>`;
   ROWS.forEach(([a, b], ri) => {
     html += "<tr>" + defs.map((d, ci) => {
       if (ci < 2) return `<td class="in">${ci === 0 ? a : b}</td>`;
@@ -2083,7 +2088,7 @@ const hasData = (cells) => Object.values(cells || {}).some((v) => /[01]/.test(St
 
 // ---------- Phase 3: NOR half ----------
 // The class works out each circuit's output. No algebra is given: the teacher adds working columns as the class names them.
-const NOR_OUTS = [{ k: "t", tag: "NOR", goal: true }, { k: "o1", tag: "1" }, { k: "o2", tag: "2" }];
+const NOR_OUTS = [{ k: "t", tag: "NOR", goal: true, e: "NOT (A OR B)" }, { k: "o1", tag: "1", e: "NOT A OR NOT B" }, { k: "o2", tag: "2", e: "NOT A AND NOT B" }];
 const norHas = (n) => n.cols.length > 0 || /[01]/.test(n.t + n.o1 + n.o2);
 function viewNor() {
   const twoIn = (main) => ({ w: 400, h: 200, inputs: { A: [40, 55], B: [40, 145] }, out: { name: "", x: 370, y: 100 }, ...main });
@@ -2102,10 +2107,10 @@ function viewNor() {
   let head = `<th>${alg("A")}</th><th>${alg("B")}</th>`;
   n.cols.forEach((c, ci) => {
     head += ed
-      ? `<th>${exInput(`nor.cols.${ci}`, c, ["A", "B"])}<button class="x" data-act="nordel" data-i="${ci}" aria-label="Remove column">${I.trash}</button></th>`
+      ? `<th>${exInput(`nor.cols.${ci}`, c, ["A", "B"])}<button class="x" data-act="nordel" data-i="${ci}" aria-label="Remove column">${I.trash}</button>${c.done ? fillBtn(`nor.cols.${ci}.vals`, c.text, ["A", "B"]) : ""}</th>`
       : `<th>${c.done ? alg(c.text) : ""}</th>`;
   });
-  head += NOR_OUTS.map((o) => `<th class="${cls(o)}"><span class="ctag ${o.goal ? "goal" : ""}">${o.tag}</span></th>`).join("");
+  head += NOR_OUTS.map((o) => `<th class="${cls(o)}"><span class="ctag ${o.goal ? "goal" : ""}">${o.tag}</span>${fillBtn(`nor.${o.k}`, o.e, ["A", "B"])}</th>`).join("");
   let body = "";
   ROWS.forEach(([a, b], ri) => {
     body += `<tr><td class="in">${a}</td><td class="in">${b}</td>`;
@@ -2553,7 +2558,7 @@ const TASKS = [
   () => ["Fill in the truth table to check who was right.", "Tap a cell to switch between 0 and 1."],
   () => ["Which circuit, 1 or 2, gives the same output as the NOR circuit?"],
   () => (T().nand.mode === "pick" ? ["Which one is equal to NOT (A AND B)?"] : ["Write an expression equal to this one, with bars only on single letters."]),
-  () => ["Rewrite the warning condition with no brackets, then check that Sign up still works."],
+  () => null,
   () => ["You ran out of AND gates. Build A AND B using only OR and NOT gates.", "Drag gates onto the board. Drag from a gate's output dot to another gate's input dot to wire them."],
   () => ["Simplify the expression one line at a time.", "Write each new line, pick the law you used, then press Check."],
   () => ((isTeacher() ? state.conc.view === "exit" : T().conc.exitOpen) ? ["Simplify this expression so every bar sits on a single letter.", "Use + for working lines, then submit your final answer."] : null),
@@ -2686,6 +2691,13 @@ const ACT = {
     commit();
   },
   ttreveal() { state.tt.reveal = !state.tt.reveal; commit(); },
+  fillcol(el) {
+    const vars = el.dataset.v.split("");
+    const ast = Bool.parse(el.dataset.e, vars).ast;
+    if (!ast) return;
+    setPath(state, el.dataset.path, ROWS.map(([a, b]) => Bool.evalAt(ast, { [vars[0]]: a, [vars[1]]: b })).join(""));
+    commit();
+  },
   noradd() { state.nor.cols.push({ text: "", done: false, bad: false, vals: "----" }); commit(); const i = state.nor.cols.length - 1; const el = $app.querySelector(`[data-key="nor.cols.${i}"]`); el && el.focus(); },
   nordel(el) { state.nor.cols.splice(+el.dataset.i, 1); commit(); },
   norcell(el) {
