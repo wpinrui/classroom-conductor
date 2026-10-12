@@ -33,3 +33,8 @@ export function Frozen() {
     </>
   );
 }
+
+/** Whose screen the student is looking at, whenever it is not their own applet. */
+export function NamePill({ children }: { children: React.ReactNode }) {
+  return <div className="name-pill">{children}</div>;
+}

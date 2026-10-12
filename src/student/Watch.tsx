@@ -3,7 +3,7 @@ import { paths } from "../firebase/paths";
 import type { Student } from "../firebase/types";
 import { useControl, useStudentState } from "../hooks/session";
 import { useValue } from "../hooks/useValue";
-import { Edge, Loading } from "./Cues";
+import { Edge, Loading, NamePill } from "./Cues";
 import { OwnApplet, type StageProps } from "./OwnApplet";
 
 /** Another student's applet, view-only. */
@@ -37,13 +37,15 @@ function spotlight(named: boolean) {
         <>
           <OwnApplet {...props} />
           <Edge kind="live" />
+          <NamePill>You</NamePill>
         </>
       );
+    const label = named ? name : "Classmate";
     return (
       <>
         <Screen session={props.session} html={props.html} student={target} />
         <Edge kind="watch" />
-        {name && <div className="name-pill">{name}</div>}
+        {label && <NamePill>{label}</NamePill>}
       </>
     );
   };

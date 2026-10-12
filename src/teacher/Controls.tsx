@@ -172,6 +172,10 @@ export function Controls({
 
         {control.mode === "paced" && <Paced session={session} data={data} />}
         {control.mode === "reveal" && <Reveal session={session} data={data} />}
+        {(control.mode === "spotlight" ||
+          control.mode === "anonymousSpotlight") && (
+          <SpotlightPicker session={session} data={data} />
+        )}
         {control.mode === "group" && <Groups session={session} data={data} />}
 
         <div className="actions">
@@ -233,5 +237,30 @@ function Paced({ session, data }: { session: string; data: Session }) {
       max={phases.length - 1}
       onStep={(d) => setControl(session, { pacedPhase: at + d })}
     />
+  );
+}
+
+/** Every student by name. Tapping one spotlights them, tapping them again ends the spotlight. */
+function SpotlightPicker({ session, data }: { session: string; data: Session }) {
+  const current = data.control.spotlight;
+  const students = Object.entries(data.students ?? {}).sort(([, a], [, b]) =>
+    a.name.localeCompare(b.name),
+  );
+  return (
+    <div className="choices spotlight-picker">
+      {students.map(([uid, s]) => (
+        <button
+          key={uid}
+          type="button"
+          aria-pressed={current === uid}
+          data-offline={!data.presence?.[uid] || undefined}
+          onClick={() =>
+            setControl(session, { spotlight: current === uid ? null : uid })
+          }
+        >
+          {s.name}
+        </button>
+      ))}
+    </div>
   );
 }
