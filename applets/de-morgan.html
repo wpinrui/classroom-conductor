@@ -152,6 +152,8 @@ table.tt { border-collapse: separate; border-spacing: 0; background: var(--card)
 .tt th { font-weight: 500; font-size: 28px; background: #faf9f6; vertical-align: bottom; }
 .tt td { font-size: 30px; font-variant-numeric: tabular-nums; min-width: 84px; height: 62px; }
 .tt td.in { color: var(--soft); }
+.tt td.fruitcell { font-size: 36px; letter-spacing: 4px; background: #faf9f6; min-width: 120px; }
+.tt th.fruithead { font: 600 18px system-ui, sans-serif; color: var(--soft); }
 .tt td.cell { cursor: pointer; }
 .tt td.cell:hover { background: var(--accent-soft); }
 .tt td.ro { cursor: default; }
@@ -2248,6 +2250,9 @@ function viewPredict() {
 }
 
 // ---------- Phase 2: Truth table ----------
+// The basket each row stands for, so the class keeps sight of what the table is about.
+const basketCell = (m, p) => `<td class="fruitcell">${m || p ? `${m ? MANGO : ""}${p ? PEAR : ""}` : `<span class="muted">—</span>`}</td>`;
+const BASKET_HEAD = `<th class="fruithead">Basket</th>`;
 function viewTT() {
   if (isTeacher() && state.tt.reveal) {
     const L = { w: 560, h: 210, inputs: { M: [50, 55], P: [50, 145] }, out: { name: "", x: 520, y: 100 }, gates: { g: { type: "NOR", x: 240, y: 70, label: "NOR" } }, wires: { "g:0": "M", "g:1": "P", Q: "g" } };
@@ -2255,13 +2260,13 @@ function viewTT() {
     const vals = "1000";
     return `<div class="stage" style="margin-top:20px">
       ${svg}
-      <table class="tt"><tr><th>${alg("M")}</th><th>${alg("P")}</th><th>${alg("NOT (M OR P)")}</th></tr>
-      ${ROWS.map(([m, p], i) => `<tr><td class="in">${m}</td><td class="in">${p}</td><td>${vals[i]}</td></tr>`).join("")}</table>
+      <table class="tt"><tr>${BASKET_HEAD}<th>${alg("M")}</th><th>${alg("P")}</th><th>${alg("NOT (M OR P)")}</th></tr>
+      ${ROWS.map(([m, p], i) => `<tr>${basketCell(m, p)}<td class="in">${m}</td><td class="in">${p}</td><td>${vals[i]}</td></tr>`).join("")}</table>
       <div class="row"><button class="btn" data-act="ttreveal">${I.left}</button></div>
     </div>`;
   }
   const tt = state.tt;
-  let head = `<th>${alg("M")}</th><th>${alg("P")}</th>`;
+  let head = `${BASKET_HEAD}<th>${alg("M")}</th><th>${alg("P")}</th>`;
   tt.cols.forEach((c, ci) => {
     const path = `tt.cols.${ci}`;
     head += `<th>${exInput(path, c, ["M", "P"], { cls: "" })}<button class="x" data-act="ttdel" data-i="${ci}" aria-label="Remove column">${I.trash}</button>${c.done ? fillBtn(`${path}.vals`, c.text, ["M", "P"]) : ""}</th>`;
@@ -2269,7 +2274,7 @@ function viewTT() {
   head += `<th class="target">${alg("NOT (M OR P)")}${fillBtn("tt.target", "NOT (M OR P)", ["M", "P"])}</th>`;
   let body = "";
   ROWS.forEach(([m, p], ri) => {
-    body += `<tr><td class="in">${m}</td><td class="in">${p}</td>`;
+    body += `<tr>${basketCell(m, p)}<td class="in">${m}</td><td class="in">${p}</td>`;
     tt.cols.forEach((c, ci) => { body += `<td class="cell" data-act="ttcell" data-c="${ci}" data-r="${ri}">${showCell(pad4(c.vals)[ri])}</td>`; });
     body += `<td class="cell target" data-act="ttcell" data-c="t" data-r="${ri}">${showCell(pad4(tt.target)[ri])}</td></tr>`;
   });
