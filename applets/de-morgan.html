@@ -19,11 +19,12 @@
     ["independent", "spotlight", "reveal"],
     ["independent", "reveal"],
     ["independent"],
-    ["independent"],
+    ["independent", "demo", "spotlight"],
     ["independent", "spotlight", "reveal"],
     ["independent"],
     ["independent"]
-  ]
+  ],
+  "handoff": false
 }
 </script>
 <style>
@@ -189,6 +190,14 @@ svg.circ .gate:active { cursor: grabbing; }
 .result b { display: block; font-size: 22px; }
 .result.fail { background: var(--bad-soft); color: var(--bad); }
 .result.ok { background: var(--good-soft); color: var(--good); }
+.result.none { background: #ebe8e0; color: var(--soft); }
+.helper { width: 100%; border-radius: 14px; border: 1px solid var(--line); background: #1e2129; overflow: hidden; }
+.helper button { display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 16px; color: #e8e6df; text-align: left; }
+.helper button svg { width: 20px; height: 20px; flex: none; transition: transform .15s; }
+.helper.open button svg { transform: rotate(90deg); }
+.helper .hlx { margin: 0; font: 19px/1.55 var(--mono); tab-size: 4; white-space: pre; color: #e8e6df; }
+.helper .body { padding: 0 20px 14px 46px; }
+.helper .dim { color: #7f848e; }
 .result ul { margin: 6px 0 0; padding-left: 22px; }
 /* The textarea is transparent and sits over a highlighted copy of the same text, kept in step on every change and scroll. */
 .codewrap { position: relative; width: 100%; height: 470px; border-radius: 14px; border: 1px solid var(--line); background: #1e2129; overflow: hidden; }
@@ -1664,7 +1673,8 @@ const ROWS = [[0, 0], [0, 1], [1, 0], [1, 1]];
 const $app = document.getElementById("app");
 const $nav = document.getElementById("nav");
 
-const DEFAULT_CODE = `def is_strong(password):
+// Not the focus of the lesson, so it sits collapsed above the editor and runs before the student's code.
+const HELPER_CODE = `def is_strong(password):
     # At least 8 characters and 1 number
     if len(password) < 8:
         return False
@@ -1672,12 +1682,17 @@ const DEFAULT_CODE = `def is_strong(password):
         if char.isdigit():
             return True
     return False
-
-is_strong_password = is_strong(password)
+`;
+const DEFAULT_CODE = `is_strong_password = is_strong(password)
 passwords_match = password == confirm_password
+
+# Show success when the sign-up succeeds
+if is_strong_password and passwords_match:
+    show_success()
 
 # TODO: Call show_warning() when the sign-up should fail
 `;
+let helperOpen = false;
 
 const BLANK_TABLE = { c2: "----", c3: "----", c4: "----", c5: "----", c6: "----" };
 const DEFAULTS = {
@@ -2207,9 +2222,12 @@ function viewNand() {
 // ---------- Phase 5: Passwords ----------
 function viewPw() {
   const pw = state.pw;
-  const res = pw.result === "fail"
-    ? `<div class="result fail"><b>Sign up failed</b><ul><li>The password needs at least 8 characters and 1 number.</li><li>Both passwords must match.</li></ul></div>`
-    : pw.result === "ok" ? `<div class="result ok"><b>Signed up</b></div>` : "";
+  // Shows exactly what the code triggered, so a condition that overlaps or misses is visible.
+  const fail = pw.result === "fail" || pw.result === "both";
+  const ok = pw.result === "ok" || pw.result === "both";
+  const res = (fail ? `<div class="result fail"><b>Sign up failed</b><ul><li>The password needs at least 8 characters and 1 number.</li><li>Both passwords must match.</li></ul></div>` : "")
+    + (ok ? `<div class="result ok"><b>Signed up</b></div>` : "")
+    + (pw.result === "none" ? `<div class="result none"><b>Nothing was shown</b></div>` : "");
   return `<div class="stage">
     <div class="pwwrap">
       <div class="card form">
@@ -2219,6 +2237,7 @@ function viewPw() {
         ${res}
       </div>
       <div class="col">
+        <div class="helper ${helperOpen ? "open" : ""}"><button data-act="helper" aria-expanded="${helperOpen}">${I.right}<pre class="hlx">${highlightPy("def is_strong(password):").trimEnd()}${helperOpen ? "" : ` <span class="dim">...</span>`}</pre></button>${helperOpen ? `<pre class="hlx body">${highlightPy(HELPER_CODE.split("\n").slice(1).join("\n")).trimEnd()}</pre>` : ""}</div>
         <div class="codewrap"><pre class="hl" aria-hidden="true"></pre><textarea class="code" data-bind="pw.code" data-key="pw.code" data-clear="pw.result,pw.err" spellcheck="false" autocomplete="off" autocapitalize="off"></textarea></div>
         ${pw.err ? `<div class="pyerr">${esc(pw.err)}</div>` : ""}
         <div class="row" style="justify-content:flex-end"><button class="btn" data-act="pwreset">${I.reset}Reset</button></div>
@@ -2233,18 +2252,24 @@ function runPython() {
     "_warned = [False]",
     "def show_warning():",
     "    _warned[0] = True",
+    "_succeeded = [False]",
+    "def show_success():",
+    "    _succeeded[0] = True",
+    HELPER_CODE.trimEnd(),
     "password = " + JSON.stringify(pw.password),
     "confirm_password = " + JSON.stringify(pw.confirm),
     "",
   ].join("\n");
-  const offset = 6;
+  // The student's line 1 comes right after the prelude.
+  const offset = prelude.split("\n").length - 1;
   running = true;
   render();
   Sk.configure({ output: () => {}, __future__: Sk.python3, execLimit: 3000, read: (f) => { throw new Sk.builtin.ImportError("Imports are not available here"); } });
   Sk.misceval.asyncToPromise(() => Sk.importMainWithBody("<stdin>", false, prelude + pw.code, true))
     .then((m) => {
       const warned = Sk.ffi.remapToJs(m.$d._warned)[0];
-      pw.result = warned ? "fail" : "ok";
+      const succeeded = Sk.ffi.remapToJs(m.$d._succeeded)[0];
+      pw.result = warned && succeeded ? "both" : warned ? "fail" : succeeded ? "ok" : "none";
       pw.err = "";
     })
     .catch((e) => {
@@ -2260,7 +2285,7 @@ function runPython() {
 }
 
 // Python syntax highlighting for the editor.
-const PY_RE = /(#[^\n]*)|("(?:[^"\\\n]|\\.)*"?|'(?:[^'\\\n]|\\.)*'?)|\b(def|return|if|elif|else|for|while|in|not|and|or|is|import|from|as|pass|break|continue|class|lambda|try|except|finally|with|global|del|assert|raise)\b|\b(True|False|None|\d+(?:\.\d+)?)\b|\b(len|print|range|int|str|float|input|bool|list|abs|min|max|sum|show_warning)\b(?=\()|\b([A-Za-z_]\w*)(?=\()/g;
+const PY_RE = /(#[^\n]*)|("(?:[^"\\\n]|\\.)*"?|'(?:[^'\\\n]|\\.)*'?)|\b(def|return|if|elif|else|for|while|in|not|and|or|is|import|from|as|pass|break|continue|class|lambda|try|except|finally|with|global|del|assert|raise)\b|\b(True|False|None|\d+(?:\.\d+)?)\b|\b(len|print|range|int|str|float|input|bool|list|abs|min|max|sum|show_warning|show_success)\b(?=\()|\b([A-Za-z_]\w*)(?=\()/g;
 function highlightPy(code) {
   let out = "", last = 0, m, afterDef = false;
   PY_RE.lastIndex = 0;
@@ -2775,6 +2800,7 @@ const ACT = {
   nandtable() { state.nand.table = !state.nand.table; commit(); },
   nandpick(el) { state.nand.pick = el.dataset.k; commit(); },
   signup() { runPython(); },
+  helper() { helperOpen = !helperOpen; render(true); },
   pwreset() { state.pw.code = DEFAULT_CODE; state.pw.result = ""; state.pw.err = ""; commit(); },
   circcount() { state.circ.showCount = !state.circ.showCount; commit(); },
   pq(el) { state.prac.cur = el.dataset.id; commit(); },
