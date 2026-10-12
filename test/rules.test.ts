@@ -49,7 +49,7 @@ beforeEach(async () => {
       teacher: TEACHER,
       code: "ABC234",
       createdAt: 1,
-      applet: { name: "a", html: "<p>", manifest: {} },
+      applet: { name: "a", html: "<p>", manifest: { instructions: "Be kind." } },
       control: { mode: "independent" },
     });
     await set(ref(ctx.database(), "codes/ABC234"), {

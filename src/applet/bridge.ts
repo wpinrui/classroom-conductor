@@ -10,7 +10,8 @@ connect:function(h){handlers=h;send({cc:"connect"});},
 update:function(state,phase){send({cc:"update",state:JSON.parse(JSON.stringify(state===undefined?null:state)),phase:phase|0,seq:seq});},
 filters:function(list){send({cc:"filters",filters:JSON.parse(JSON.stringify(list||[]))});},
 timer:function(seconds,opts){send({cc:"timer",seconds:seconds==null?null:Number(seconds),shared:!(opts&&opts.shared===false)});},
-wheel:function(options){send({cc:"wheel",options:JSON.parse(JSON.stringify(options===undefined?{}:options))});}
+wheel:function(options){send({cc:"wheel",options:JSON.parse(JSON.stringify(options===undefined?{}:options))});},
+spotlight:function(student){send({cc:"spotlight",student:student==null?null:String(student)});}
 };
 window.addEventListener("message",function(e){
 if(e.source!==parent||!handlers)return;
@@ -19,6 +20,7 @@ if(!m)return;
 if(m.cc==="setState"){seq=m.seq;handlers.setState(m.state,m.phase);}
 else if(m.cc==="phaseLimit"&&handlers.setPhaseLimit)handlers.setPhaseLimit(m.maxPhase);
 else if(m.cc==="context"&&handlers.setContext)handlers.setContext(m.context);
+else if(m.cc==="wheelPicked"&&handlers.wheelPicked)handlers.wheelPicked(m.student);
 });
 window.addEventListener("keydown",function(e){
 if((e.ctrlKey||e.metaKey)&&e.key==="."){e.preventDefault();send({cc:"shortcut"});}

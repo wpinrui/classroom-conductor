@@ -34,9 +34,9 @@ export function parseManifest(html: string): Manifest {
     throw new ManifestError("title must be a non-empty string");
   if (!isStringArray(m.phases) || m.phases.length === 0)
     throw new ManifestError("phases must be a non-empty list of names");
-  if (typeof m.instructions !== "string")
+  if (m.instructions !== undefined && typeof m.instructions !== "string")
     throw new ManifestError("instructions must be a string");
-  if (typeof m.pulsePrompt !== "string")
+  if (m.pulsePrompt !== undefined && typeof m.pulsePrompt !== "string")
     throw new ManifestError("pulsePrompt must be a string");
   if (m.namelist !== undefined && !isStringArray(m.namelist))
     throw new ManifestError("namelist must be a list of names");
@@ -56,8 +56,12 @@ export function parseManifest(html: string): Manifest {
   return {
     title: m.title,
     phases: m.phases,
-    instructions: m.instructions,
-    pulsePrompt: m.pulsePrompt,
+    ...(typeof m.instructions === "string"
+      ? { instructions: m.instructions }
+      : {}),
+    ...(typeof m.pulsePrompt === "string"
+      ? { pulsePrompt: m.pulsePrompt }
+      : {}),
     ...(m.namelist ? { namelist: m.namelist as string[] } : {}),
     ...(prepared ? { preparedStates: prepared } : {}),
   };

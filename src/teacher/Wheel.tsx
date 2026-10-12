@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { WheelFilter } from "../applet/contract";
 import { setWheel } from "../firebase/client";
 import type { Session } from "../firebase/types";
-import { ResetIcon } from "./icons";
+import { ResetIcon, SpotlightIcon } from "./icons";
 import "./wheel.css";
 
 interface Member {
@@ -90,6 +90,8 @@ export function Wheel({
   command,
   onCommandDone,
   onClose,
+  onPicked,
+  onSpotlight,
 }: {
   data: Session;
   session: string;
@@ -97,6 +99,9 @@ export function Wheel({
   command: WheelCommand | null;
   onCommandDone: () => void;
   onClose: () => void;
+  /** Called once per spin, with the student it landed on. */
+  onPicked: (uid: string) => void;
+  onSpotlight: (uid: string) => void;
 }) {
   const [chosen, setChosen] = useState(EVERYONE);
   const [spin, setSpin] = useState<Spin | null>(null);
@@ -104,6 +109,8 @@ export function Wheel({
   /** The pool a pending command spins once it is on screen, or null. */
   const spinNext = useRef<string | null>(null);
   const lastCommand = useRef(0);
+  /** Turn of the last spin reported to onPicked. Every spin has its own turn. */
+  const reported = useRef(0);
   const settings = data.control.wheel ?? {};
   const replacement = settings.replacement ?? true;
   const drawn = settings.drawn ?? {};
@@ -170,6 +177,14 @@ export function Wheel({
     if (command.spin) spinNext.current = command.filter ?? chosen;
     onCommandDone();
   }, [command?.n]);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: report once per finished spin
+  useEffect(() => {
+    if (!spin?.done || spin.turn === reported.current) return;
+    reported.current = spin.turn;
+    const uid = spin.members[spin.winner]?.uid;
+    if (uid) onPicked(uid);
+  }, [spin?.done, spin?.turn]);
 
   // Runs after every render, so it sees the pool the command picked.
   useEffect(() => {
@@ -308,9 +323,22 @@ export function Wheel({
           Spin
         </button>
       </div>
-      <output className="wheel-winner" aria-live="polite">
-        {winner !== null ? members[winner].name : ""}
-      </output>
+      <div className="wheel-result">
+        <output className="wheel-winner" aria-live="polite">
+          {winner !== null ? members[winner].name : ""}
+        </output>
+        {winner !== null && (
+          <button
+            type="button"
+            className="quiet icon-button"
+            aria-label="Spotlight"
+            data-tip="Spotlight"
+            onClick={() => onSpotlight(members[winner].uid)}
+          >
+            <SpotlightIcon />
+          </button>
+        )}
+      </div>
     </section>
   );
 }

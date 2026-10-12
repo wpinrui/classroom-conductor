@@ -114,16 +114,18 @@ export function Thumbnails({
               >
                 <SpotlightIcon />
               </button>
-              <button
-                type="button"
-                aria-label="Pulse"
-                data-tip="Pulse"
-                aria-busy={pending.has(uid)}
-                disabled={pending.has(uid)}
-                onClick={() => requestPulse(session, uid).then(showPulse)}
-              >
-                <PulseIcon />
-              </button>
+              {data.applet.manifest.pulsePrompt !== undefined && (
+                <button
+                  type="button"
+                  aria-label="Pulse"
+                  data-tip="Pulse"
+                  aria-busy={pending.has(uid)}
+                  disabled={pending.has(uid)}
+                  onClick={() => requestPulse(session, uid).then(showPulse)}
+                >
+                  <PulseIcon />
+                </button>
+              )}
             </div>
           </li>
         ))}

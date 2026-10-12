@@ -27,11 +27,16 @@ describe("parseManifest", () => {
     expect(parseManifest(page(m))).toEqual(m);
   });
 
+  it("leaves out the chatbot and Pulse when they are absent", () => {
+    const m = { title: "Fractions", phases: ["Intro"] };
+    expect(parseManifest(page(m))).toEqual(m);
+  });
+
   it.each([
     ["no manifest", "<html></html>"],
     ["bad JSON", page(valid).replace("{", "{,")],
     ["no phases", page({ ...valid, phases: [] })],
-    ["missing prompt", page({ ...valid, pulsePrompt: undefined })],
+    ["a prompt that is not a string", page({ ...valid, pulsePrompt: 3 })],
     [
       "prepared state on an undeclared phase",
       page({ ...valid, preparedStates: [{ name: "a", state: 1, phase: 2 }] }),

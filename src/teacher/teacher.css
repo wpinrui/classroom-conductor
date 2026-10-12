@@ -364,3 +364,29 @@ button[aria-busy="true"]::after {
 .thumb-actions:focus-within {
   opacity: 1;
 }
+
+/* The spotlit student's screen covers the teacher's applet, so the projector shows it too. */
+.teacher-spotlight {
+  position: absolute;
+  inset: 0;
+  z-index: var(--z-chrome);
+}
+
+.teacher-spotlight .name-pill {
+  position: absolute;
+  left: var(--space-4);
+  bottom: var(--space-4);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  font-weight: var(--font-weight-strong);
+  pointer-events: none;
+}
+
+.blank {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-blackout);
+  background: var(--color-scrim);
+  cursor: none;
+}

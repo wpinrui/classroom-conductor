@@ -45,6 +45,8 @@ export async function answerChat(
   ]);
   const manifest = manifestSnap.val() as Manifest | null;
   if (!manifest) throw new Error("session has no applet");
+  if (manifest.instructions === undefined)
+    throw new Error("this applet has no chatbot");
 
   const history: ChatMessage[] = [];
   chatSnap.forEach((m) => {
