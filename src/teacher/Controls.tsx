@@ -175,13 +175,15 @@ export function Controls({
         {control.mode === "group" && <Groups session={session} data={data} />}
 
         <div className="actions">
-          <button
-            type="button"
-            className="primary handoff"
-            onClick={() => handoff(session, students)}
-          >
-            Handoff
-          </button>
+          {control.mode === "demo" && (
+            <button
+              type="button"
+              className="primary handoff"
+              onClick={() => handoff(session, students)}
+            >
+              Handoff
+            </button>
+          )}
           {manifest.pulsePrompt !== undefined && (
             <PulseButton session={session} />
           )}
