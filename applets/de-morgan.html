@@ -231,7 +231,9 @@ svg.circ .body { fill: #fff; stroke: var(--ink); stroke-width: 3; stroke-linejoi
 svg.circ .lead { stroke: var(--ink); stroke-width: 3; }
 svg.circ .wire { fill: none; stroke: var(--ink); stroke-width: 3; }
 svg.circ .wire.hit { stroke: transparent; stroke-width: 18; cursor: pointer; }
-svg.circ .wire.hit:hover + .wire, svg.circ .wire.live { stroke: var(--accent); }
+svg.circ .wire.live { stroke: var(--accent); }
+/* Clicking a wire removes it, so hovering one turns it red. */
+svg.circ .wire.hit:hover + .wire { stroke: var(--bad); stroke-dasharray: 8 6; }
 svg.circ .port { fill: #b7c1d4; stroke: transparent; stroke-width: 12; }
 svg.circ .port.io { cursor: crosshair; }
 svg.circ .port.io:hover { fill: var(--accent); }
