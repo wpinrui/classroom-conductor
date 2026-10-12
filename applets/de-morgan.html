@@ -20,7 +20,7 @@
     ["independent", "reveal"],
     ["independent"],
     ["independent", "demo", "spotlight"],
-    ["independent", "spotlight", "reveal"],
+    ["independent", "demo", "spotlight", "reveal"],
     ["independent"],
     ["independent"]
   ],
@@ -1702,7 +1702,7 @@ const DEFAULTS = {
   tt: { cols: [], target: "----", reveal: false },
   nor: { cols: [], t: "----", o1: "----", o2: "----" },
   nand: { mode: "type", shown: false, table: false, cells: { ...BLANK_TABLE }, text: "", done: false, bad: false, pick: "" },
-  pw: { code: DEFAULT_CODE, password: "", confirm: "", result: "", err: "" },
+  pw: { code: DEFAULT_CODE, password: "", confirm: "", result: "", err: "", passes: false },
   circ: { gates: {}, wires: {}, showCount: false },
   prac: { cur: "q0", work: {}, log: [] },
   conc: { flipped: {}, exitOpen: false, view: "cards", shown: false },
@@ -2238,39 +2238,52 @@ function viewPw() {
       </div>
       <div class="col">
         <div class="helper ${helperOpen ? "open" : ""}"><button data-act="helper" aria-expanded="${helperOpen}">${I.right}<pre class="hlx">${highlightPy("def is_strong(password):").trimEnd()}${helperOpen ? "" : ` <span class="dim">...</span>`}</pre></button>${helperOpen ? `<pre class="hlx body">${highlightPy(HELPER_CODE.split("\n").slice(1).join("\n")).trimEnd()}</pre>` : ""}</div>
-        <div class="codewrap"><pre class="hl" aria-hidden="true"></pre><textarea class="code" data-bind="pw.code" data-key="pw.code" data-clear="pw.result,pw.err" spellcheck="false" autocomplete="off" autocapitalize="off"></textarea></div>
+        <div class="codewrap"><pre class="hl" aria-hidden="true"></pre><textarea class="code" data-bind="pw.code" data-key="pw.code" data-clear="pw.result,pw.err,pw.passes" spellcheck="false" autocomplete="off" autocapitalize="off"></textarea></div>
         ${pw.err ? `<div class="pyerr">${esc(pw.err)}</div>` : ""}
         <div class="row" style="justify-content:flex-end"><button class="btn" data-act="pwreset">${I.reset}Reset</button></div>
       </div>
     </div>
   </div>`;
 }
+const pyPrelude = (password, confirm) => [
+  "_warned = [False]",
+  "def show_warning():",
+  "    _warned[0] = True",
+  "_succeeded = [False]",
+  "def show_success():",
+  "    _succeeded[0] = True",
+  HELPER_CODE.trimEnd(),
+  "password = " + JSON.stringify(password),
+  "confirm_password = " + JSON.stringify(confirm),
+  "",
+].join("\n");
+// Runs the student's code for one sign-up attempt. Resolves to what it triggered.
+function runCase(code, password, confirm) {
+  Sk.configure({ output: () => {}, __future__: Sk.python3, execLimit: 3000, read: () => { throw new Sk.builtin.ImportError("Imports are not available here"); } });
+  return Sk.misceval.asyncToPromise(() => Sk.importMainWithBody("<stdin>", false, pyPrelude(password, confirm) + code, true))
+    .then((m) => ({ warned: Sk.ffi.remapToJs(m.$d._warned)[0], succeeded: Sk.ffi.remapToJs(m.$d._succeeded)[0] }));
+}
+// The code passes only if it does the right thing for every kind of attempt, not just the one typed in.
+const PW_CASES = [["abc12345", "abc12345", true], ["abc", "abc", false], ["abc12345", "abc12346", false], ["abc", "xyz", false]];
+async function passesAll(code) {
+  for (const [pass, conf, good] of PW_CASES) {
+    const r = await runCase(code, pass, conf);
+    if (r.warned === good || r.succeeded !== good) return false;
+  }
+  return true;
+}
 function runPython() {
   if (typeof Sk === "undefined" || running) return;
   const pw = state.pw;
-  const prelude = [
-    "_warned = [False]",
-    "def show_warning():",
-    "    _warned[0] = True",
-    "_succeeded = [False]",
-    "def show_success():",
-    "    _succeeded[0] = True",
-    HELPER_CODE.trimEnd(),
-    "password = " + JSON.stringify(pw.password),
-    "confirm_password = " + JSON.stringify(pw.confirm),
-    "",
-  ].join("\n");
   // The student's line 1 comes right after the prelude.
-  const offset = prelude.split("\n").length - 1;
+  const offset = pyPrelude(pw.password, pw.confirm).split("\n").length - 1;
   running = true;
   render();
-  Sk.configure({ output: () => {}, __future__: Sk.python3, execLimit: 3000, read: (f) => { throw new Sk.builtin.ImportError("Imports are not available here"); } });
-  Sk.misceval.asyncToPromise(() => Sk.importMainWithBody("<stdin>", false, prelude + pw.code, true))
-    .then((m) => {
-      const warned = Sk.ffi.remapToJs(m.$d._warned)[0];
-      const succeeded = Sk.ffi.remapToJs(m.$d._succeeded)[0];
-      pw.result = warned && succeeded ? "both" : warned ? "fail" : succeeded ? "ok" : "none";
+  runCase(pw.code, pw.password, pw.confirm)
+    .then(async (r) => {
+      pw.result = r.warned && r.succeeded ? "both" : r.warned ? "fail" : r.succeeded ? "ok" : "none";
       pw.err = "";
+      pw.passes = await passesAll(pw.code).catch(() => false);
     })
     .catch((e) => {
       let msg = String(e && e.toString ? e.toString() : e);
@@ -2280,6 +2293,7 @@ function runPython() {
       if (/TimeLimitError/.test(msg)) msg = "The code ran too long. Check for a loop that never ends.";
       pw.result = "";
       pw.err = msg;
+      pw.passes = false;
     })
     .finally(() => { running = false; commit(); });
 }
@@ -2624,9 +2638,9 @@ const TASKS = [
   () => ["Which circuit, 1 or 2, gives the same output as the NOR circuit?"],
   () => (T().nand.mode === "pick" ? ["Which one is equal to NOT (A AND B)?"] : ["Write an expression equal to this one, with bars only on single letters."]),
   () => null,
-  () => ["You ran out of AND gates. Build A AND B using only OR and NOT gates.", "Drag gates onto the board. Drag from a gate's output dot to another gate's input dot to wire them."],
-  () => ["Simplify the expression one line at a time.", "Write each new line, pick the law you used, then press Check."],
-  () => ((isTeacher() ? state.conc.view === "exit" : T().conc.exitOpen) ? ["Simplify this expression so every bar sits on a single letter.", "Use + for working lines, then submit your final answer."] : null),
+  () => ["Build A AND B using only OR and NOT gates."],
+  () => ["Simplify the expression one line at a time."],
+  () => ((isTeacher() ? state.conc.view === "exit" : T().conc.exitOpen) ? ["Simplify this expression so every bar sits on a single letter."] : null),
 ];
 function taskHTML() {
   const t = TASKS[phase] && TASKS[phase]();
@@ -2688,9 +2702,27 @@ function renderNav() {
     <div class="pips">${Array.from({ length: NPHASES }, (_, i) => `<span class="pip ${i === phase ? "on" : ""}"></span>`).join("")}</div>
     <button class="btn icon" data-nav="1" ${phase >= NPHASES - 1 || (maxPhase !== null && phase >= maxPhase) ? "disabled" : ""} aria-label="Next">${I.right}</button>`;
 }
+// The Conductor turns a student's thumbnail green while $done is true. Phases with no single goal leave it out.
+function doneNow() {
+  switch (phase) {
+    case 2: return pad4(state.tt.target) === "1000";
+    case 4: return T().nand.mode === "pick" ? state.nand.pick === "o1" : !!state.nand.done && nandGrade(state.nand.text) === "y";
+    case 5: return !!state.pw.passes;
+    case 6: return circSolved(state.circ);
+    case 7: return practiceDone(state);
+    case 8: return !!state.exit.sub && exitGrade(state.exit.sub) === "y";
+    default: return undefined;
+  }
+}
+function send() {
+  const d = isTeacher() ? undefined : doneNow();
+  if (d === undefined) delete state.$done;
+  else state.$done = d;
+  host.update(state, phase);
+}
 function commit() {
   render();
-  host.update(state, phase);
+  send();
 }
 function setPhase(p) {
   let n = Math.max(0, Math.min(NPHASES - 1, p | 0));
@@ -2724,7 +2756,7 @@ function syncCounts() {
   const old = state.predict.counts[e] || {};
   if (old.t !== c.t || old.f !== c.f) {
     state.predict.counts[e] = c;
-    host.update(state, phase);
+    send();
   }
 }
 
@@ -2801,7 +2833,7 @@ const ACT = {
   nandpick(el) { state.nand.pick = el.dataset.k; commit(); },
   signup() { runPython(); },
   helper() { helperOpen = !helperOpen; render(true); },
-  pwreset() { state.pw.code = DEFAULT_CODE; state.pw.result = ""; state.pw.err = ""; commit(); },
+  pwreset() { state.pw.code = DEFAULT_CODE; state.pw.result = ""; state.pw.err = ""; state.pw.passes = false; commit(); },
   circcount() { state.circ.showCount = !state.circ.showCount; commit(); },
   pq(el) { state.prac.cur = el.dataset.id; commit(); },
   pcheck() { practiceCheck(); },
@@ -2884,7 +2916,7 @@ function followTeacher() {
   if (ctx.role !== "student" || typeof lastTeacherPhase !== "number") return;
   let target = lastTeacherPhase;
   if (maxPhase !== null) target = Math.min(target, maxPhase);
-  if (target !== phase) { phase = target; lastHtml = ""; host.update(state, phase); }
+  if (target !== phase) { phase = target; lastHtml = ""; send(); }
 }
 host.connect({
   setState(s, p) {
@@ -2920,7 +2952,7 @@ if (!gotState) {
   if (ctx.role === "student" && typeof lastTeacherPhase === "number") phase = maxPhase !== null ? Math.min(lastTeacherPhase, maxPhase) : lastTeacherPhase;
 }
 booted = true;
-host.update(state, phase);
+send();
 render();
 })();
 </script>
