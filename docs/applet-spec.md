@@ -92,7 +92,7 @@ Declare the manifest in a JSON script tag, anywhere in the file:
 - `pulsePrompt` switches the Pulse on and specifies it (section 7). Leave it out to switch the Pulse off.
 - An empty string keeps a feature on with no guidance. Leave the field out instead.
 - `namelist` locks the session to those names. A student must type one to join. Matching ignores case, surrounding spaces and repeated spaces. Leave it out to let any name join.
-- `preparedStates` become buttons in the teacher's Reveal picker, labelled by `name`. Keep names short and unique.
+- `preparedStates` become buttons in the teacher's Reveal picker, labelled by `name`. The picker shows only the prepared states whose `phase` is the teacher's current phase. Keep names short and unique.
 - Prepared states arrive exactly as written.
 - `modes` narrows the modes the teacher is offered in each phase. The phase is the teacher's own phase.
 - The first mode in each list is that phase's default.
