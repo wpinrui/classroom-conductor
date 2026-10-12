@@ -58,7 +58,7 @@
   --duration-fast: 120ms;
   --duration-base: 200ms;
   --ease-out: cubic-bezier(0.2, 0, 0, 1);
-  --duration-spin: 4600ms;
+  --duration-spin: 3220ms;
   --ease-spin: cubic-bezier(0.12, 0.6, 0.08, 1);
 
   /* Stacking, lowest to highest. */
