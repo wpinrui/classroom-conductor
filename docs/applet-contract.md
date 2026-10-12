@@ -34,11 +34,24 @@ conductor.connect({
   setState(state, phase) {},
   // Optional. The highest phase allowed, or null for no limit.
   setPhaseLimit(maxPhase) {},
+  // Optional. Who this frame belongs to, and what it can see beyond its state.
+  setContext({ role, teacher, students }) {},
 });
 
 // Call on load and after every change to the state or the phase.
 conductor.update(state, phase);
+
+// Optional, from the teacher's frame. Named sets of students for the name wheel.
+conductor.filters([{ name: "Said yes", students: ["uid1", "uid2"] }]);
 ```
+
+`setContext` arrives before the first `setState` and again whenever it changes.
+
+- `role` is `"teacher"` when the frame shows the teacher's state and `"student"` otherwise. Render the teacher's view from it.
+- `teacher` is `{ state, phase }`, the teacher's live state, in student frames. It is `null` in teacher frames. Use it to follow what the teacher sets up, such as the current question.
+- `students` maps each student id to `{ name, phase, state, online }`, in the teacher's own frame only. It is `null` everywhere else, including Demo.
+
+`filters` replaces every filter the name wheel offers. The wheel always offers the whole class, so publish only the sets a predicate picks out.
 
 Rules:
 

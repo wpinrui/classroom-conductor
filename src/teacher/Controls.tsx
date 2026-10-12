@@ -12,7 +12,7 @@ import { PulseButton } from "../pulse/Pulse";
 import { routes } from "../routes";
 import { TimerControls } from "../timer/TimerControls";
 import { Groups } from "./Groups";
-import { ChatIcon, GridIcon, PersonIcon } from "./icons";
+import { ChatIcon, GridIcon, PersonIcon, WheelIcon } from "./icons";
 import { Reveal } from "./Reveal";
 import { Stepper } from "./Stepper";
 import { Thumbnails } from "./Thumbnails";
@@ -58,9 +58,13 @@ const isTyping = (t: EventTarget | null) =>
 export function Controls({
   session,
   data,
+  wheelOpen,
+  onWheel,
 }: {
   session: string;
   data: Session;
+  wheelOpen: boolean;
+  onWheel: () => void;
 }) {
   const navigate = useNavigate();
   const control = data.control;
@@ -128,6 +132,16 @@ export function Controls({
             onClick={() => setThumbsOpen((o) => !o)}
           >
             <GridIcon />
+          </button>
+          <button
+            type="button"
+            className="quiet icon-button"
+            aria-label="Name wheel"
+            data-tip="Name wheel"
+            aria-pressed={wheelOpen}
+            onClick={onWheel}
+          >
+            <WheelIcon />
           </button>
           <ChatToggle className="quiet icon-button" />
         </div>
