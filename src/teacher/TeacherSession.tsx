@@ -45,6 +45,8 @@ export function TeacherSession() {
   const [wheelOpen, setWheelOpen] = useState(false);
   // The student screens drawer. Lives here so G works with the controls hidden.
   const [thumbsOpen, setThumbsOpen] = useState(false);
+  // The full-screen join screen: the address and the code, for the projector.
+  const [joinOpen, setJoinOpen] = useState(false);
   const [filters, setFilters] = useState<WheelFilter[]>([]);
   const [wheelCommand, setWheelCommand] = useState<WheelCommand | null>(null);
   const commands = useRef(0);
@@ -405,6 +407,7 @@ export function TeacherSession() {
             onBlank={blankOn}
             thumbsOpen={thumbsOpen}
             onThumbs={() => setThumbsOpen((o) => !o)}
+            onJoin={() => setJoinOpen(true)}
             slideshow={
               slides.length > 0
                 ? {
@@ -442,6 +445,9 @@ export function TeacherSession() {
       {manifest.pulsePrompt !== undefined && <PulsePanel session={session} />}
       {manifest.instructions !== undefined && (
         <Chat session={session} uid={data.teacher} teacher />
+      )}
+      {joinOpen && (
+        <JoinScreen code={data.code} onClose={() => setJoinOpen(false)} />
       )}
       {blank && (
         // biome-ignore lint/a11y/noStaticElementInteractions: any key also ends the blank
@@ -521,5 +527,29 @@ function TeacherApplet({
       onSlideshowToggle={onSlideshowToggle}
       onHotkey={onHotkey}
     />
+  );
+}
+
+/** Where students go to join. */
+const JOIN_URL = "mr-wong.netlify.app";
+
+/** The address and the join code, filling the screen. Any click or key closes it. */
+function JoinScreen({ code, onClose }: { code: string; onClose: () => void }) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      onClose();
+    };
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
+  }, [onClose]);
+  return (
+    // biome-ignore lint/a11y/noStaticElementInteractions: any key also closes it
+    // biome-ignore lint/a11y/useKeyWithClickEvents: any key also closes it
+    <div className="join-screen" onClick={onClose}>
+      <div className="join-url">{JOIN_URL}</div>
+      <div className="join-big">{code}</div>
+    </div>
   );
 }

@@ -48,6 +48,7 @@ export function Controls({
   onBlank,
   thumbsOpen,
   onThumbs,
+  onJoin,
   slideshow,
 }: {
   session: string;
@@ -57,6 +58,7 @@ export function Controls({
   onBlank: () => void;
   thumbsOpen: boolean;
   onThumbs: () => void;
+  onJoin: () => void;
   /** Present only for an applet with slides. at is -1 before the first step. */
   slideshow?: {
     on: boolean;
@@ -122,9 +124,15 @@ export function Controls({
   return (
     <>
       <aside className="controls">
-        <output className="join-code" aria-label="Join code">
+        <button
+          type="button"
+          className="quiet join-code"
+          aria-label="Show join screen"
+          data-tip="Show join screen"
+          onClick={onJoin}
+        >
           {data.code}
-        </output>
+        </button>
 
         <div className="presence">
           <output
