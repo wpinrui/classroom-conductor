@@ -313,7 +313,7 @@ button.tcard { cursor: pointer; }
 .opt { display: flex; flex-direction: column; align-items: center; gap: 12px; }
 .onum { display: grid; place-items: center; width: 60px; height: 60px; border-radius: 50%; background: var(--ink); color: #fff; font: 800 34px/1 system-ui, sans-serif; }
 
-/* Title card a student sees as each Predict question arrives: fades in and out over 1.5s. */
+/* Title cards a student sees entering Predict and at each of its questions: each fades in and out over 1.5s. */
 .flash { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; background: var(--bg); font-size: 96px; font-weight: 700; pointer-events: none; animation: flash 1.5s ease-in-out forwards; }
 @keyframes flash { 0% { opacity: 0; } 25% { opacity: 1; } 70% { opacity: 1; } 100% { opacity: 0; } }
 
@@ -2821,19 +2821,31 @@ function viewConc() {
 }
 
 // ---------- Question title card ----------
-// A student entering Predict, or moving to another of its questions, sees "Question N" fade in and out.
+// A student entering Predict sees "Rapid Fire T/F", then "Question 1". Each later question gets its own title.
+// Every title fades in and out over 1.5s.
 let titledEx = null;
+let flashTimers = [];
+function flash(texts) {
+  flashTimers.forEach(clearTimeout);
+  flashTimers = [];
+  document.querySelectorAll(".flash").forEach((f) => f.remove());
+  texts.forEach((text, i) => {
+    flashTimers.push(setTimeout(() => {
+      const f = document.createElement("div");
+      f.className = "flash";
+      f.textContent = text;
+      document.body.appendChild(f);
+      flashTimers.push(setTimeout(() => f.remove(), 1600));
+    }, i * 1500));
+  });
+}
 function questionTitle() {
   const ex = !isTeacher() && phase === 1 ? T().predict.ex | 0 : null;
   if (ex === titledEx) return;
+  const entering = titledEx === null;
   titledEx = ex;
   if (ex === null) return;
-  document.querySelectorAll(".flash").forEach((f) => f.remove());
-  const f = document.createElement("div");
-  f.className = "flash";
-  f.textContent = "Question " + (ex + 1);
-  document.body.appendChild(f);
-  setTimeout(() => f.remove(), 1600);
+  flash(entering ? ["Rapid Fire T/F", "Question " + (ex + 1)] : ["Question " + (ex + 1)]);
 }
 
 // ---------- Task lines ----------
