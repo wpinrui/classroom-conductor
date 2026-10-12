@@ -1653,7 +1653,7 @@ const BLANK_TABLE = { c2: "----", c3: "----", c4: "----", c5: "----", c6: "----"
 const DEFAULTS = {
   me: "",
   warm: { round: -1, q: -1, deal: 1, shown: false },
-  predict: { ex: 0, shown: {}, counts: {}, votes: {} },
+  predict: { ex: 0, shown: {}, counts: {}, votes: {}, hide: false },
   tt: { cols: [], target: "----", reveal: false },
   nor: { ...BLANK_TABLE },
   nand: { mode: "type", shown: false, table: false, cells: { ...BLANK_TABLE }, text: "", done: false, bad: false, pick: "" },
@@ -1960,8 +1960,8 @@ function votesFor(e) {
   }
   return out;
 }
-function predictTop(ex) {
-  const E = EXAMPLES[ex] || EXAMPLES[0];
+function predictTop(ex, hide) {
+  const E = hide ? {} : EXAMPLES[ex] || EXAMPLES[0];
   return `<div class="huge">${alg("NOT (M OR P)")}</div>
     <div class="legend"><span>${alg("M")} = ${MANGO}</span><span>${alg("P")} = ${PEAR}</span></div>
     <div class="basket">${E.m ? MANGO : ""}${E.p ? PEAR : ""}</div>`;
@@ -1977,8 +1977,9 @@ function viewPredict() {
     const total = Math.max(1, counts.t + counts.f);
     const bar = (lbl, n) => `<div class="barrow"><span>${lbl}</span><div class="track"><div class="fill" style="width:${(100 * n) / total}%"></div></div><span class="n">${n}</span></div>`;
     return `<div class="stage">
-      <div class="dots">${EXAMPLES.map((_, i) => `<button class="${i === ex ? "on" : ""} ${tp.shown["e" + i] ? "done" : ""}" data-act="ex" data-i="${i}">${i + 1}</button>`).join("")}</div>
-      ${predictTop(ex)}
+      <div class="row"><div class="dots">${EXAMPLES.map((_, i) => `<button class="${i === ex ? "on" : ""} ${tp.shown["e" + i] ? "done" : ""}" data-act="ex" data-i="${i}">${i + 1}</button>`).join("")}</div>
+        <button class="btn ${tp.hide ? "on" : ""}" data-act="phide">${I.eye}${tp.hide ? "Show basket" : "Hide basket"}</button></div>
+      ${predictTop(ex, tp.hide)}
       ${shown
         ? `<div class="bars">${bar("True", counts.t)}${bar("False", counts.f)}</div>
            <div class="row">
@@ -1990,7 +1991,7 @@ function viewPredict() {
   }
   const mine = state.predict.votes[e] || "";
   return `<div class="stage">
-    ${predictTop(ex)}
+    ${predictTop(ex, tp.hide)}
     <div class="tf">
       <button class="${mine === "t" ? "pick" : ""}" data-act="vote" data-v="t" ${mine ? "disabled" : ""}>True</button>
       <button class="${mine === "f" ? "pick" : ""}" data-act="vote" data-v="f" ${mine ? "disabled" : ""}>False</button>
@@ -2592,6 +2593,7 @@ const ACT = {
   pick() { host.wheel?.({ filter: "", spin: true }); },
   spin(el) { host.wheel?.({ filter: el.dataset.f, spin: true }); },
   ex(el) { state.predict.ex = +el.dataset.i; commit(); publishFilters(); },
+  phide() { state.predict.hide = !state.predict.hide; commit(); },
   reveal() {
     const e = "e" + (state.predict.ex | 0);
     state.predict.shown[e] = true;
