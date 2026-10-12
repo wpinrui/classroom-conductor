@@ -29,19 +29,13 @@
     {"label": "Warm-up", "phase": 0, "mode": "independent"},
     {"label": "Round A decals", "cue": "deal A"},
     {"label": "Who has a heart?", "cue": "question 1"},
-    {"label": "Pick someone", "wheel": {"filter": "", "spin": true}},
     {"label": "Who does not have a heart?", "mode": "independent", "cue": "question 2"},
-    {"label": "Pick someone", "wheel": {"filter": "", "spin": true}},
     {"label": "Round B decals", "mode": "independent", "cue": "deal B"},
     {"label": "Yellow or green?", "cue": "question 1"},
-    {"label": "Pick someone", "wheel": {"filter": "", "spin": true}},
     {"label": "Yellow and green?", "mode": "independent", "cue": "question 2"},
-    {"label": "Pick someone", "wheel": {"filter": "", "spin": true}},
     {"label": "Round C decals", "mode": "independent", "cue": "deal C"},
     {"label": "Mango or pear?", "cue": "question 1"},
-    {"label": "Pick someone", "wheel": {"filter": "", "spin": true}},
     {"label": "Not mango or pear?", "mode": "independent", "cue": "question 2"},
-    {"label": "Pick someone", "wheel": {"filter": "", "spin": true}},
     {"label": "Predict example 1", "phase": 1, "mode": "independent", "cue": "example 1"},
     {"label": "Show results", "cue": "results"},
     {"label": "Example 2", "cue": "example 2"},
@@ -2180,7 +2174,6 @@ function viewWarm() {
         <button class="btn" data-act="deal">${I.shuffle}Shuffle</button>
         <button class="btn icon" data-act="wq" data-d="-1" aria-label="Previous question" ${t.q < 0 ? "disabled" : ""}>${I.left}</button>
         <button class="btn" data-act="wq" data-d="1" ${t.q >= 1 ? "disabled" : ""}>${t.q < 0 ? "Question" : "Next"}${I.right}</button>
-        <button class="btn primary" data-act="pick">${I.wheel}Pick</button>
       </div>` : ""}
     </div>`;
   }
