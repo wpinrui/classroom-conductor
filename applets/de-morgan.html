@@ -79,7 +79,9 @@ button:disabled { cursor: default; opacity: .4; }
 .alg i.bv { font-style: italic; padding: 0 .04em; }
 .alg .bo { padding: 0 .22em; }
 .alg .bp { padding: 0 .04em; }
-.alg .bar { display: inline-flex; align-items: flex-end; border-top: .06em solid currentColor; padding-top: .2em; margin: 0 .05em; }
+.alg .bar { display: inline-flex; align-items: flex-end; border-top: .06em solid currentColor; padding-top: .06em; margin: 0 .05em; }
+/* Each piece under a bar is only as tall as a capital letter, so the bar sits just above the letters, not a full line above. */
+.alg .bar > * { line-height: .82; }
 
 /* Expression input */
 .ex { display: flex; flex-direction: column; gap: 10px; }
