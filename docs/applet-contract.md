@@ -51,3 +51,4 @@ Rules:
 - Ctrl+. and Cmd+. are reserved for the teacher's controls.
 
 See `examples/counter.html` for a complete applet.
+`docs/applet-authoring.md` explains every rule and adds pedagogy.
