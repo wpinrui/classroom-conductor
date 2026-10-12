@@ -190,8 +190,20 @@ svg.circ .gate:active { cursor: grabbing; }
 .result.fail { background: var(--bad-soft); color: var(--bad); }
 .result.ok { background: var(--good-soft); color: var(--good); }
 .result ul { margin: 6px 0 0; padding-left: 22px; }
-.code { width: 100%; height: 470px; resize: none; padding: 18px 20px; border-radius: 14px; border: 1px solid var(--line); background: #1e2129; color: #e8e6df; font: 19px/1.55 var(--mono); tab-size: 4; white-space: pre; }
-.code:focus { outline: 3px solid var(--accent-soft); }
+/* The textarea is transparent and sits over a highlighted copy of the same text, kept in step on every change and scroll. */
+.codewrap { position: relative; width: 100%; height: 470px; border-radius: 14px; border: 1px solid var(--line); background: #1e2129; overflow: hidden; }
+.codewrap:focus-within { outline: 3px solid var(--accent-soft); }
+.code, .hl { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; padding: 18px 20px; border: 0; font: 19px/1.55 var(--mono); tab-size: 4; white-space: pre; overflow: auto; }
+.code { resize: none; background: transparent; color: transparent; caret-color: #e8e6df; outline: none; }
+.code::selection { background: rgba(97, 175, 239, .35); }
+.hl { color: #e8e6df; pointer-events: none; overflow: hidden; }
+.hl .k { color: #c678dd; }
+.hl .s { color: #98c379; }
+.hl .c { color: #7f848e; font-style: italic; }
+.hl .c b { color: #e5c07b; font-style: normal; }
+.hl .n { color: #d19a66; }
+.hl .b { color: #61afef; }
+.hl .f { color: #61afef; }
 .pyerr { background: var(--bad-soft); color: var(--bad); padding: 12px 16px; border-radius: 12px; font: 17px/1.4 var(--mono); white-space: pre-wrap; }
 
 /* Practice */
@@ -1664,9 +1676,7 @@ const DEFAULT_CODE = `def is_strong(password):
 is_strong_password = is_strong(password)
 passwords_match = password == confirm_password
 
-# Warn when the sign-up should fail
-if not (is_strong_password and passwords_match):
-    show_warning()
+# TODO: Call show_warning() when the sign-up should fail
 `;
 
 const BLANK_TABLE = { c2: "----", c3: "----", c4: "----", c5: "----", c6: "----" };
@@ -2209,7 +2219,7 @@ function viewPw() {
         ${res}
       </div>
       <div class="col">
-        <textarea class="code" data-bind="pw.code" data-key="pw.code" data-clear="pw.result,pw.err" spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
+        <div class="codewrap"><pre class="hl" aria-hidden="true"></pre><textarea class="code" data-bind="pw.code" data-key="pw.code" data-clear="pw.result,pw.err" spellcheck="false" autocomplete="off" autocapitalize="off"></textarea></div>
         ${pw.err ? `<div class="pyerr">${esc(pw.err)}</div>` : ""}
         <div class="row" style="justify-content:flex-end"><button class="btn" data-act="pwreset">${I.reset}Reset</button></div>
       </div>
@@ -2248,6 +2258,36 @@ function runPython() {
     })
     .finally(() => { running = false; commit(); });
 }
+
+// Python syntax highlighting for the editor.
+const PY_RE = /(#[^\n]*)|("(?:[^"\\\n]|\\.)*"?|'(?:[^'\\\n]|\\.)*'?)|\b(def|return|if|elif|else|for|while|in|not|and|or|is|import|from|as|pass|break|continue|class|lambda|try|except|finally|with|global|del|assert|raise)\b|\b(True|False|None|\d+(?:\.\d+)?)\b|\b(len|print|range|int|str|float|input|bool|list|abs|min|max|sum|show_warning)\b(?=\()|\b([A-Za-z_]\w*)(?=\()/g;
+function highlightPy(code) {
+  let out = "", last = 0, m, afterDef = false;
+  PY_RE.lastIndex = 0;
+  while ((m = PY_RE.exec(code))) {
+    out += esc(code.slice(last, m.index));
+    const t = esc(m[0]);
+    if (m[1]) out += `<span class="c">${t.replace(/\bTODO\b/, "<b>TODO</b>")}</span>`;
+    else if (m[2]) out += `<span class="s">${t}</span>`;
+    else if (m[3]) out += `<span class="k">${t}</span>`;
+    else if (m[4]) out += `<span class="n">${t}</span>`;
+    else if (m[5]) out += `<span class="b">${t}</span>`;
+    else out += afterDef ? `<span class="f">${t}</span>` : t;
+    afterDef = m[3] === "def";
+    last = m.index + m[0].length;
+  }
+  // A trailing newline keeps the copy as tall as the textarea's last line.
+  return out + esc(code.slice(last)) + "\n";
+}
+function syncHighlight() {
+  const pre = $app.querySelector(".hl");
+  const ta = $app.querySelector("textarea.code");
+  if (!pre || !ta) return;
+  pre.innerHTML = highlightPy(ta.value);
+  pre.scrollTop = ta.scrollTop;
+  pre.scrollLeft = ta.scrollLeft;
+}
+document.addEventListener("scroll", (e) => { if (e.target.classList && e.target.classList.contains("code")) syncHighlight(); }, true);
 
 // ---------- Phase 6: Challenge ----------
 const BOARD = { w: 720, h: 440, inputs: { A: [56, 140], B: [56, 320] }, out: { name: "Q", x: 670, y: 230 } };
@@ -2593,6 +2633,7 @@ function render(force) {
     $app.querySelectorAll("textarea[data-key]").forEach((t) => { if (scroll[t.dataset.key] != null) t.scrollTop = scroll[t.dataset.key]; });
   }
   syncValues();
+  syncHighlight();
   renderNav();
   fit();
 }
