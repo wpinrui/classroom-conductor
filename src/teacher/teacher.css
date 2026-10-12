@@ -2,7 +2,8 @@
 
 .stage .controls {
   position: absolute;
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   top: var(--space-4);
@@ -22,6 +23,7 @@
 /* The panel scrolls when its contents outgrow it, rather than squeezing them. */
 .stage .controls > * {
   flex-shrink: 0;
+  min-width: 0;
 }
 
 .stage .controls button {
@@ -40,6 +42,7 @@
 
 .presence {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-1);
 }
@@ -83,8 +86,14 @@
 
 .mode-group {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-2);
+}
+
+.mode-group button {
+  min-width: 0;
+  padding-inline: var(--space-2);
+  overflow-wrap: anywhere;
 }
 
 button[data-mode="focus"][aria-pressed="true"],
@@ -144,6 +153,8 @@ button[aria-busy="true"]::after {
 
 .stepper output {
   flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
   text-align: center;
   font-weight: var(--font-weight-strong);
 }
