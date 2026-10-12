@@ -262,6 +262,25 @@ describe("student work", () => {
     );
   });
 
+  it("teachers set timers and only shared ones reach students", async () => {
+    await assertSucceeds(
+      update(ref(teacher(), S), {
+        "control/timer": { endsAt: 5 },
+        teacherTimer: { left: 60000 },
+      }),
+    );
+    await assertSucceeds(get(ref(student(), `${S}/control/timer`)));
+    await assertFails(get(ref(student(), `${S}/teacherTimer`)));
+    await assertFails(set(ref(student(), `${S}/control/timer`), { endsAt: 9 }));
+    await assertFails(
+      set(ref(teacher(), `${S}/control/timer`), { endsAt: 5, left: 1 }),
+    );
+    await assertFails(set(ref(teacher(), `${S}/teacherTimer`), { left: -1 }));
+    await assertFails(
+      set(ref(teacher(), `${S}/teacherTimer`), { endsAt: "soon" }),
+    );
+  });
+
   it("only group members write group state", async () => {
     await assertSucceeds(
       set(ref(student(), `${S}/groups/g1`), {

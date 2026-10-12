@@ -6,6 +6,7 @@ import {
   useSessionApplet,
   useTeacherState,
 } from "../hooks/session";
+import { Countdown } from "../timer/Countdown";
 import { Edge, Frozen, Loading } from "./Cues";
 import { GroupView } from "./GroupView";
 import { OwnApplet, type OwnProps, type StageProps } from "./OwnApplet";
@@ -88,6 +89,7 @@ export function StudentStage({ session, uid, me }: Omit<StageProps, "html">) {
         </div>
       </TeacherStateContext.Provider>
       {mode === "freeze" && <Frozen />}
+      {control.timer && mode !== "focus" && <Countdown timer={control.timer} />}
       {mode === "focus" && <div className="focus" />}
       {mode !== "focus" && <Chat session={session} uid={uid} />}
     </main>

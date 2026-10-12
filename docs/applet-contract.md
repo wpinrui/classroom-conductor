@@ -63,5 +63,23 @@ Rules:
   state back if the applet tries.
 - Ctrl+. and Cmd+. are reserved for the teacher's controls.
 
+## 3. Class tools
+
+An applet can script the class tools. Only the teacher's own applet is heard.
+The same calls from a student's applet do nothing. The teacher can open,
+change or close any tool from the controls at any time, so the teacher always
+wins.
+
+```js
+// Countdown everyone sees, here five minutes.
+conductor.timer(300);
+// Countdown only the teacher sees.
+conductor.timer(300, { shared: false });
+// Cancel the countdown.
+conductor.timer(null);
+```
+
+A new timer replaces the running one.
+
 See `examples/counter.html` for a complete applet.
 `docs/applet-authoring.md` explains every rule and adds pedagogy.

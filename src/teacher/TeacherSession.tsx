@@ -7,6 +7,8 @@ import { writeTeacherState } from "../firebase/client";
 import type { Session, StoredState } from "../firebase/types";
 import { useSession, useThrottledWriter } from "../hooks/session";
 import { PulsePanel } from "../pulse/Pulse";
+import { Countdown } from "../timer/Countdown";
+import { scriptTimer } from "../timer/timer";
 import { Controls } from "./Controls";
 import { Wheel } from "./Wheel";
 
@@ -41,7 +43,10 @@ export function TeacherSession() {
           onUpdate={write}
           onShortcut={() => setControlsOpen((o) => !o)}
           onFilters={setFilters}
+          onTimer={(seconds, shared) => scriptTimer(session, seconds, shared)}
         />
+        {data.control.timer && <Countdown timer={data.control.timer} />}
+        {data.teacherTimer && <Countdown timer={data.teacherTimer} private />}
         {controlsOpen && (
           <Controls
             session={session}
@@ -88,11 +93,13 @@ function TeacherApplet({
   onUpdate,
   onShortcut,
   onFilters,
+  onTimer,
 }: {
   data: Session;
   onUpdate: (s: StoredState) => void;
   onShortcut: () => void;
   onFilters: (f: WheelFilter[]) => void;
+  onTimer: (seconds: unknown, shared: unknown) => void;
 }) {
   const [initial] = useState(data.teacherState ?? null);
   const students = useClass(data);
@@ -105,6 +112,7 @@ function TeacherApplet({
       owner="teacher"
       students={students}
       onFilters={onFilters}
+      onTimer={onTimer}
     />
   );
 }

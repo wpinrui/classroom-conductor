@@ -47,7 +47,9 @@ export type AppletMessage =
   /** Replaces the filters the name wheel offers. Only the teacher's frame is heard. */
   | { cc: "filters"; filters: WheelFilter[] }
   /** The controls shortcut, pressed while the applet has focus. */
-  | { cc: "shortcut" };
+  | { cc: "shortcut" }
+  /** Starts a countdown, or cancels it when seconds is null. Shared unless shared is false. Only the teacher's frame is heard. */
+  | { cc: "timer"; seconds: number | null; shared: boolean };
 
 /** Host to applet. maxPhase null lifts the limit. */
 export type HostMessage =
