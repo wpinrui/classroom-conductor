@@ -342,6 +342,7 @@ The input is an object keyed by student id. Each entry is `{ name, phase, state 
 
 - Labels are not needless text. A number, stat or control whose meaning is not obvious at a glance gets a short label.
 - Never use the native `title` attribute for tooltips. Build a real tooltip if one is needed.
+- Typeset maths with an inlined library such as KaTeX, fonts included. Native MathML relies on the machine's maths font, and a font without stretch data shrinks a long bar to a dash.
 - Use the phases as the navigation. One control forward and one back is usually enough.
 
 ## 9. Pedagogy
