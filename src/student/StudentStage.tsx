@@ -7,7 +7,7 @@ import {
   useTeacherState,
 } from "../hooks/session";
 import { Countdown } from "../timer/Countdown";
-import { Edge, Frozen, Loading, NamePill } from "./Cues";
+import { Edge, Frozen, Loading, ModePill } from "./Cues";
 import { GroupView } from "./GroupView";
 import { OwnApplet, type OwnProps, type StageProps } from "./OwnApplet";
 import "./student.css";
@@ -26,7 +26,7 @@ export function DemoView({ session, html }: StageProps) {
         owner="teacher"
       />
       <Edge kind="watch" />
-      <NamePill>Teacher</NamePill>
+      <ModePill mode="Demo" who="Teacher" />
     </>
   );
 }
@@ -38,7 +38,7 @@ function RevealView({ session, html }: StageProps) {
     <>
       <AppletFrame html={html} state={control?.reveal} interactive={false} />
       <Edge kind="watch" />
-      <NamePill>Teacher</NamePill>
+      <ModePill mode="Reveal" who="Teacher" />
     </>
   );
 }
@@ -61,6 +61,15 @@ const views: Partial<Record<Mode, (p: StageProps) => React.ReactNode>> = {
   anonymousSpotlight: AnonymousSpotlightView,
   gallery: GalleryView,
   group: GroupView,
+};
+
+/** Modes whose views do not label themselves. */
+const SELF_LABEL: Partial<Record<Mode, string>> = {
+  independent: "Independent",
+  paced: "Paced",
+  freeze: "Freeze",
+  gallery: "Gallery",
+  group: "Group",
 };
 
 export function StudentStage({ session, uid, me }: Omit<StageProps, "html">) {
@@ -91,6 +100,7 @@ export function StudentStage({ session, uid, me }: Omit<StageProps, "html">) {
         </div>
       </TeacherStateContext.Provider>
       {mode === "freeze" && <Frozen />}
+      {SELF_LABEL[mode] && <ModePill mode={SELF_LABEL[mode]} />}
       {control.timer && mode !== "focus" && <Countdown timer={control.timer} />}
       {mode === "focus" && <div className="focus" />}
       {mode !== "focus" && applet.manifest.instructions !== undefined && (

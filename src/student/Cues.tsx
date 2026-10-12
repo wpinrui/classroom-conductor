@@ -12,29 +12,47 @@ export function Loading() {
   );
 }
 
-/** Freeze: a dim scrim with a lock over the student's own applet. */
+/** Freeze: a dim scrim over the student's own applet. The mode pill carries the lock. */
 export function Frozen() {
+  return <div className="freeze-scrim" />;
+}
+
+function LockIcon() {
   return (
-    <>
-      <div className="freeze-scrim" />
-      <svg
-        className="freeze-lock"
-        viewBox="0 0 24 24"
-        aria-hidden="true"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <rect x="5" y="11" width="14" height="10" rx="2" />
-        <path d="M8 11V7a4 4 0 0 1 8 0v4" />
-      </svg>
-    </>
+    <svg
+      className="pill-icon"
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <rect x="5" y="11" width="14" height="10" rx="2" />
+      <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+    </svg>
   );
 }
 
-/** Whose screen the student is looking at, whenever it is not their own applet. */
-export function NamePill({ children }: { children: React.ReactNode }) {
-  return <div className="name-pill">{children}</div>;
+/**
+ * The class mode, and whose screen this is when it is not the student's own.
+ * Live marks the student whose screen the class is watching.
+ */
+export function ModePill({
+  mode,
+  who,
+  live,
+}: {
+  mode: string;
+  who?: string;
+  live?: boolean;
+}) {
+  return (
+    <div className="name-pill" data-live={live || undefined}>
+      {mode === "Freeze" && <LockIcon />}
+      <span className="pill-mode">{mode}</span>
+      {who && <span className="pill-who">{who}</span>}
+    </div>
+  );
 }

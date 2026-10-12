@@ -1,8 +1,16 @@
 import type { Control, Mode, Session } from "../firebase/types";
 
-/** Control fields a mode needs, filled in when it is first entered. */
-export function defaultsFor(mode: Mode, data: Session): Partial<Control> {
+const SPOTLIGHTS: Mode[] = ["spotlight", "anonymousSpotlight"];
+
+/** Control fields a mode needs, filled in when it is first entered. A null field is cleared. */
+export function defaultsFor(
+  mode: Mode,
+  data: Session,
+): { [K in keyof Control]?: Control[K] | null } {
   const c = data.control;
+  // Spotlight starts with nobody on screen. The teacher picks who.
+  if (SPOTLIGHTS.includes(mode) && !SPOTLIGHTS.includes(c.mode))
+    return { spotlight: null };
   if (mode === "paced" && c.pacedPhase === undefined)
     return { pacedPhase: data.teacherState?.phase ?? 0 };
   if (mode === "reveal" && !c.reveal && data.teacherState)
