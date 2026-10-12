@@ -209,7 +209,8 @@ table.tt { border-collapse: separate; border-spacing: 0; background: var(--card)
 .dots button.extra { border-style: dashed; }
 .stat { display: inline-flex; align-items: baseline; gap: 8px; }
 .stat b { font-size: 34px; font-variant-numeric: tabular-nums; }
-.stat span { font-size: 17px; color: var(--soft); }
+.stat > span { font-size: 17px; color: var(--soft); }
+.of { font-weight: 400; color: var(--soft); }
 
 /* Circuits */
 svg.circ { display: block; }
@@ -1806,6 +1807,9 @@ function setPath(obj, path, val) {
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const isTeacher = () => ctx.role === "teacher";
 const live = () => isTeacher() && !!ctx.students;
+// A count out of the class: online students, never fewer than the count itself (someone may answer, then drop off).
+const classSize = () => Object.values(ctx.students || {}).filter((s) => s.online).length;
+const outOf = (n) => `${n}<span class="of">/${Math.max(n, classSize())}</span>`;
 // The teacher's state as seen from this frame.
 function T() {
   if (isTeacher() || !ctx.teacher || !ctx.teacher.state) return state;
@@ -2225,7 +2229,7 @@ function viewPredict() {
              <button class="btn" data-act="spin" data-f="True" ${live() && !v.t.length ? "disabled" : ""}>${I.wheel}True</button>
              <button class="btn" data-act="spin" data-f="False" ${live() && !v.f.length ? "disabled" : ""}>${I.wheel}False</button>
            </div>`
-        : `<div class="row">${v ? `<span class="stat"><b>${v.t.length + v.f.length}</b><span>answered</span></span>` : ""}<button class="btn primary" data-act="reveal">${I.eye}Reveal</button></div>`}
+        : `<div class="row">${v ? `<span class="stat"><b>${outOf(v.t.length + v.f.length)}</b><span>answered</span></span>` : ""}<button class="btn primary" data-act="reveal">${I.eye}Reveal</button></div>`}
     </div>`;
   }
   const mine = state.predict.votes[e] || "";
@@ -2384,7 +2388,7 @@ function viewNand() {
       ${q}
       <div class="row">
         <div class="seg"><button class="${state.nand.mode === "type" ? "on" : ""}" data-act="nandmode" data-m="type">Type</button><button class="${state.nand.mode === "pick" ? "on" : ""}" data-act="nandmode" data-m="pick">1 or 2</button></div>
-        ${live() ? `<span class="stat"><b>${answered}</b><span>answered</span></span>` : ""}
+        ${live() ? `<span class="stat"><b>${outOf(answered)}</b><span>answered</span></span>` : ""}
         <button class="btn ${state.nand.shown ? "on" : ""}" data-act="nandshow">${I.eye}Answers</button>
         <button class="btn ${state.nand.table ? "on" : ""}" data-act="nandtable" aria-label="Truth table">${I.table}</button>
       </div>
@@ -2523,7 +2527,7 @@ function viewCirc() {
   let count = "";
   if (isTeacher() && live()) {
     const n = Object.values(ctx.students).filter((s) => s.state && s.state.circ && circSolved(merge(DEFAULTS.circ, s.state.circ))).length;
-    count = `<div class="row"><button class="btn ${c.showCount ? "on" : ""}" data-act="circcount" aria-label="Solved count">${I.eye}${c.showCount ? `<b>${n}</b>` : ""}</button>${c.showCount ? `<span class="muted small">solved</span>` : ""}</div>`;
+    count = `<div class="row"><button class="btn ${c.showCount ? "on" : ""}" data-act="circcount" aria-label="Solved count">${I.eye}${c.showCount ? `<b>${outOf(n)}</b>` : ""}</button>${c.showCount ? `<span class="muted small">solved</span>` : ""}</div>`;
   }
   return `<div class="stage">
     <div class="builder ${solved ? "solved" : ""}">
@@ -2723,7 +2727,7 @@ function viewPracTeacher() {
       const [r, law] = k.split(":");
       return r === "order" ? "Reordered without commutative" : `${LAWNAME[law] || "Identity"} chosen wrongly`;
     };
-    return `<tr><td style="font-size:28px">${q.extra ? "★ " : ""}${alg(q.s)}</td><td class="n">${fin}</td><td class="small">${top.map(([k, n]) => `<div>${esc(desc(k))} <b>${n}</b></div>`).join("")}</td></tr>`;
+    return `<tr><td style="font-size:28px">${q.extra ? "★ " : ""}${alg(q.s)}</td><td class="n">${outOf(fin)}</td><td class="small">${top.map(([k, n]) => `<div>${esc(desc(k))} <b>${n}</b></div>`).join("")}</td></tr>`;
   }).join("");
   return `<div class="stage"><div class="card" style="width:100%;max-width:1100px"><table class="sum"><tr><th></th><th style="text-align:right">Finished</th><th>Common mistakes</th></tr>${rows}</table></div></div>`;
 }
@@ -2790,7 +2794,7 @@ function viewConc() {
       if (state.conc.shown) summary = `<div class="card" style="width:820px"><table class="sum">${[...groups.values()].sort((a, b) => b.n - a.n).map((g) => `<tr><td style="font-size:34px">${algAst(g.ast)}</td><td class="n">${g.n}</td><td class="mark ${g.mark}">${sym[g.mark]}</td></tr>`).join("")}</table></div>`;
     }
     return `<div class="stage">${seg}<div class="big">${alg(EXIT_Q)}</div>
-      <div class="row">${live() ? `<span class="stat"><b>${answered}</b><span>submitted</span></span>` : ""}<button class="btn ${state.conc.shown ? "on" : ""}" data-act="cshow">${I.eye}Answers</button></div>
+      <div class="row">${live() ? `<span class="stat"><b>${outOf(answered)}</b><span>submitted</span></span>` : ""}<button class="btn ${state.conc.shown ? "on" : ""}" data-act="cshow">${I.eye}Answers</button></div>
       ${summary}</div>`;
   }
   if (!tc.exitOpen) return `<div class="stage" style="margin-top:40px">${cardsHTML(tc.flipped, false)}</div>`;
