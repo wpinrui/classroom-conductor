@@ -150,6 +150,7 @@ host.connect({
 
 - Send only what you mean to change. Every option is optional, and a missing one leaves the wheel as it is.
 - Call on a teacher action or once on load. Never call on every class update, because the teacher's own changes would keep being undone.
+- Treat every call as a suggestion. The teacher can close the wheel, change its pool or flip No repeats at any time. Once the teacher flips No repeats, `replacement` from the applet is ignored for the rest of the session.
 
 **Recommended**
 

@@ -62,6 +62,8 @@ export interface Control {
 export interface WheelSettings {
   /** False takes each drawn student out of the pool. Absent means true. */
   replacement?: boolean;
+  /** True once the teacher has set replacement. The applet can no longer change it. */
+  teacherSet?: boolean;
   /** Students drawn while replacement was off. */
   drawn?: Record<string, true>;
 }
