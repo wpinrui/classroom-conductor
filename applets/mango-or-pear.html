@@ -145,7 +145,7 @@
         { id: "d6", text: "I have an apple and a pear.", fruit: "🍎🍐" },
       ];
 
-      const host = window.conductor ?? { connect() {}, update() {}, filters() {}, tool() {} };
+      const host = window.conductor ?? { connect() {}, update() {}, filters() {}, wheel() {} };
       const $ = (id) => document.getElementById(id);
       const obj = (v) => (v && typeof v === "object" && !Array.isArray(v) ? v : {});
 
@@ -324,7 +324,7 @@
 
       // Spins the class name wheel over the students who gave that answer.
       for (const b of document.querySelectorAll(".call")) {
-        b.onclick = () => host.tool?.("wheel", { filter: b.dataset.filter, spin: true });
+        b.onclick = () => host.wheel?.({ filter: b.dataset.filter, spin: true });
       }
 
       $("reveal").onclick = () => {
@@ -366,7 +366,7 @@
               // A new lesson starts with the default examples, so save them.
               host.update(state, phase);
               // Each student is called on at most once a lesson. The teacher can switch this off on the wheel.
-              host.tool?.("wheel", { replacement: false });
+              host.wheel?.({ replacement: false });
             }
           }
           syncClass();

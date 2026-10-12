@@ -65,20 +65,30 @@ Rules:
 
 ## 3. Class tools
 
-The teacher's frame can drive the Conductor's class tools. The teacher can still open, change or close any of them from the controls, and the teacher's change wins.
+An applet can script the class tools. Only the teacher's own applet is heard.
+The same calls from a student's applet do nothing. The teacher can open,
+change or close any tool from the controls at any time, so the teacher always
+wins.
 
 ```js
-conductor.tool(name, options);
+// Countdown everyone sees, here five minutes.
+conductor.timer(300);
+// Countdown only the teacher sees.
+conductor.timer(300, { shared: false });
+// Cancel the countdown.
+conductor.timer(null);
 ```
 
-Only the teacher's own frame is heard. Every field in `options` is optional and changes only what it names.
+A new timer replaces the running one.
 
 ### Name wheel
 
 ```js
-conductor.tool("wheel", { filter: "Said yes", spin: true });
-conductor.tool("wheel", { replacement: false });
+conductor.wheel({ filter: "Said yes", spin: true });
+conductor.wheel({ replacement: false });
 ```
+
+Every option is optional and changes only what it names.
 
 | Option | Effect |
 | --- | --- |

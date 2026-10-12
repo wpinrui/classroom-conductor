@@ -1,0 +1,82 @@
+/* Countdown pill and its controls. Colours and type come from tokens. See docs/design.md. */
+
+.countdown {
+  position: absolute;
+  top: var(--space-4);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: var(--z-chrome);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-4);
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-overlay);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-strong);
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+
+/* The teacher's private timer: small, muted and flat so it stays out of the way. */
+.countdown[data-private] {
+  padding: var(--space-1) var(--space-3);
+  border-color: transparent;
+  box-shadow: none;
+  font-size: var(--font-size-caption);
+  color: var(--color-text-muted);
+  opacity: 0.8;
+}
+
+.countdown[data-paused] {
+  color: var(--color-text-muted);
+}
+
+/* At zero the pill turns warning and breathes a few times, then holds. */
+.countdown[data-done] {
+  color: var(--color-warning);
+  border-color: var(--color-warning);
+  opacity: 1;
+  animation: countdown-done 1s ease-in-out 6 alternate;
+}
+
+@keyframes countdown-done {
+  to {
+    opacity: 0.4;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .countdown[data-done] {
+    animation: none;
+  }
+}
+
+.timer-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-2);
+}
+
+.timer-controls input {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+}
+
+.timer-row > button:not(.icon-button) {
+  flex: 1;
+}
+
+.timer-cancel:hover {
+  color: var(--color-danger);
+  border-color: var(--color-danger);
+}
+
+.timer-presets {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-2);
+}

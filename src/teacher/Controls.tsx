@@ -10,6 +10,7 @@ import {
 } from "../firebase/types";
 import { PulseButton } from "../pulse/Pulse";
 import { routes } from "../routes";
+import { TimerControls } from "../timer/TimerControls";
 import { Groups } from "./Groups";
 import { ChatIcon, GridIcon, PersonIcon, WheelIcon } from "./icons";
 import { Reveal } from "./Reveal";
@@ -177,6 +178,8 @@ export function Controls({
           </button>
           <PulseButton session={session} />
         </div>
+
+        <TimerControls session={session} data={data} />
 
         <Stepper
           label={

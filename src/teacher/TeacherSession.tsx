@@ -11,6 +11,8 @@ import { setWheel, writeTeacherState } from "../firebase/client";
 import type { Session, StoredState } from "../firebase/types";
 import { useSession, useThrottledWriter } from "../hooks/session";
 import { PulsePanel } from "../pulse/Pulse";
+import { Countdown } from "../timer/Countdown";
+import { scriptTimer } from "../timer/timer";
 import { Controls } from "./Controls";
 import { Wheel, type WheelCommand } from "./Wheel";
 
@@ -24,9 +26,9 @@ export function TeacherSession() {
   const [wheelCommand, setWheelCommand] = useState<WheelCommand | null>(null);
   const commands = useRef(0);
 
-  /** An applet drives a class tool. The teacher can still close or change it from the controls. */
-  const onTool = (tool: string, raw: unknown) => {
-    if (tool !== "wheel" || typeof raw !== "object" || raw === null) return;
+  /** The applet drives the name wheel. The teacher can still close or change it from the controls. */
+  const onWheel = (raw: unknown) => {
+    if (typeof raw !== "object" || raw === null) return;
     const o = raw as WheelOptions;
     if (typeof o.replacement === "boolean")
       setWheel(session, { replacement: o.replacement });
@@ -60,8 +62,11 @@ export function TeacherSession() {
           onUpdate={write}
           onShortcut={() => setControlsOpen((o) => !o)}
           onFilters={setFilters}
-          onTool={onTool}
+          onTimer={(seconds, shared) => scriptTimer(session, seconds, shared)}
+          onWheel={onWheel}
         />
+        {data.control.timer && <Countdown timer={data.control.timer} />}
+        {data.teacherTimer && <Countdown timer={data.teacherTimer} private />}
         {controlsOpen && (
           <Controls
             session={session}
@@ -111,13 +116,15 @@ function TeacherApplet({
   onUpdate,
   onShortcut,
   onFilters,
-  onTool,
+  onTimer,
+  onWheel,
 }: {
   data: Session;
   onUpdate: (s: StoredState) => void;
   onShortcut: () => void;
   onFilters: (f: WheelFilter[]) => void;
-  onTool: (tool: string, options: unknown) => void;
+  onTimer: (seconds: unknown, shared: unknown) => void;
+  onWheel: (options: unknown) => void;
 }) {
   const [initial] = useState(data.teacherState ?? null);
   const students = useClass(data);
@@ -130,7 +137,8 @@ function TeacherApplet({
       owner="teacher"
       students={students}
       onFilters={onFilters}
-      onTool={onTool}
+      onTimer={onTimer}
+      onWheel={onWheel}
     />
   );
 }

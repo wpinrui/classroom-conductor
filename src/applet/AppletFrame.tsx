@@ -41,8 +41,10 @@ interface Props {
   students?: Record<string, ClassMember>;
   /** Called with the name wheel filters the applet publishes. */
   onFilters?: (filters: WheelFilter[]) => void;
-  /** Called when the applet drives a class tool. */
-  onTool?: (tool: string, options: unknown) => void;
+  /** Called when the applet drives the name wheel. Only the teacher's frame passes it. */
+  onWheel?: (options: unknown) => void;
+  /** Called when the applet scripts a countdown. Only the teacher's frame passes it. */
+  onTimer?: (seconds: unknown, shared: unknown) => void;
 }
 
 type Known = { json: string; phase: number };
@@ -59,7 +61,8 @@ export function AppletFrame({
   owner = "student",
   students,
   onFilters,
-  onTool,
+  onWheel,
+  onTimer,
 }: Props) {
   const teacherState = useContext(TeacherStateContext);
   const teacher = owner === "student" ? teacherState : null;
@@ -87,7 +90,8 @@ export function AppletFrame({
     maxPhase,
     onShortcut,
     onFilters,
-    onTool,
+    onWheel,
+    onTimer,
     contextJson,
   });
   latest.current = {
@@ -96,7 +100,8 @@ export function AppletFrame({
     maxPhase,
     onShortcut,
     onFilters,
-    onTool,
+    onWheel,
+    onTimer,
     contextJson,
   };
   const srcDoc = useMemo(() => withBridge(html), [html]);
@@ -131,9 +136,10 @@ export function AppletFrame({
       } else if (m?.cc === "filters") {
         if (Array.isArray(m.filters))
           latest.current.onFilters?.(m.filters.filter(isFilter));
-      } else if (m?.cc === "tool") {
-        if (typeof m.tool === "string")
-          latest.current.onTool?.(m.tool, m.options);
+      } else if (m?.cc === "timer") {
+        latest.current.onTimer?.(m.seconds, m.shared);
+      } else if (m?.cc === "wheel") {
+        latest.current.onWheel?.(m.options);
       } else if (m?.cc === "connect") {
         connected.current = true;
         post({ cc: "phaseLimit", maxPhase });

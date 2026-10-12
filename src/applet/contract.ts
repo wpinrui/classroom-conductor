@@ -40,7 +40,7 @@ export interface WheelFilter {
   students: string[];
 }
 
-/** Options for conductor.tool("wheel", options). Each field is optional and changes only what it names. */
+/** Options for conductor.wheel(options). Each field is optional and changes only what it names. */
 export interface WheelOptions {
   /** true opens the wheel and false closes it. */
   open?: boolean;
@@ -58,10 +58,12 @@ export type AppletMessage =
   | { cc: "update"; state: unknown; phase: number; seq: number }
   /** Replaces the filters the name wheel offers. Only the teacher's frame is heard. */
   | { cc: "filters"; filters: WheelFilter[] }
-  /** Drives a class tool, such as the name wheel. Only the teacher's frame is heard. */
-  | { cc: "tool"; tool: string; options: unknown }
+  /** Drives the name wheel with WheelOptions. Only the teacher's frame is heard. */
+  | { cc: "wheel"; options: unknown }
   /** The controls shortcut, pressed while the applet has focus. */
-  | { cc: "shortcut" };
+  | { cc: "shortcut" }
+  /** Starts a countdown, or cancels it when seconds is null. Shared unless shared is false. Only the teacher's frame is heard. */
+  | { cc: "timer"; seconds: number | null; shared: boolean };
 
 /** Host to applet. maxPhase null lifts the limit. */
 export type HostMessage =

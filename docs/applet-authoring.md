@@ -11,7 +11,7 @@ Every rule is marked as one of two kinds.
 
 Read `examples/number-line.html` first. It is the smallest applet that does everything right.
 `applets/python-for-loops.html` is a full lesson built the same way.
-`applets/mango-or-pear.html` shows the context, the name wheel filters and a scripted class tool.
+`applets/mango-or-pear.html` shows the context, the name wheel filters and a scripted wheel.
 
 ## 1. The file
 
@@ -102,7 +102,20 @@ host.update(state, phase);
 - Treat a missing field as its empty value instead of trusting `null`. `examples/number-line.html` reads a missing `x` as unplaced.
 - Disable the next phase control when the phase limit forbids it, so a student never presses a button that silently fails.
 
-## 4. Context, the name wheel and class tools
+**Class tools**
+
+The applet can drive the class tools listed in `docs/applet-contract.md`. A typical use is a timer that starts when the teacher reaches a phase.
+
+```js
+if (phase === 2) host.timer?.(300); // five minutes for the Make task
+```
+
+- Only calls from the teacher's applet take effect. Students run the same file, so the same line is harmless there.
+- Guard each call with `?.`. The fallback host has no tools, so the file still opens on its own.
+- The teacher can override any scripted tool. Script a sensible default, never a hard requirement.
+- Call a tool on a change you made, not inside `setState`. The teacher's applet replays its state on reload, and calling from `setState` would restart the timer.
+
+## 4. Context and the name wheel
 
 An applet cannot read the database, so the host hands it what it needs to see beyond its own state.
 
@@ -129,21 +142,19 @@ host.connect({
 - Publish nothing that would leak a hidden result. The wheel shows how many students each filter holds. `applets/mango-or-pear.html` publishes its True and False filters only after the teacher reveals the counts.
 - Keep per question data keyed by a stable id that the teacher's state assigns. A student's answer then stays attached to its question when the teacher moves on.
 
-### Class tools
+### Scripting the wheel
 
-`conductor.tool(name, options)` lets the applet drive a Conductor class tool from the teacher's frame. `docs/applet-contract.md` lists each tool's options.
+`conductor.wheel(options)` drives the name wheel from the teacher's frame. `docs/applet-contract.md` lists the options.
 
 **Required**
 
-- Call `tool` from the teacher's own frame only, with `role === "teacher"`. The host ignores every other frame.
-- Send only what you mean to change. Every option is optional, and a missing one leaves the tool as it is.
-- Never fight the teacher. A tool the teacher closed or changed stays that way until the applet calls again, so call only on a teacher action or once on load. Never call on a timer or on every class update.
-- Guard the call with `host.tool?.(...)`, since an older host or the fallback may not have it.
+- Send only what you mean to change. Every option is optional, and a missing one leaves the wheel as it is.
+- Call on a teacher action or once on load. Never call on every class update, because the teacher's own changes would keep being undone.
 
 **Recommended**
 
-- Put a tool's call on the thing it acts on. The mango or pear applet puts a wheel button on each revealed bar, which spins over the students who gave that answer.
-- Set session settings once, when the teacher's frame first gets its context. The mango or pear applet turns the wheel's replacement off there, so each student is called on at most once a lesson.
+- Put the call on the thing it acts on. The mango or pear applet puts a wheel button on each revealed bar, which spins over the students who gave that answer.
+- Set session settings once, when the teacher's frame first gets its context. The mango or pear applet turns replacement off there, so each student is called on at most once a lesson.
 
 ## 5. The interface
 
