@@ -347,6 +347,11 @@ button.tcard { cursor: pointer; }
 table.tt.mini th, table.tt.mini td { padding: 4px 14px; font-size: 20px; height: auto; min-width: 0; }
 .tt td.wrong { color: var(--bad); }
 
+/* Tooltips: text in data-tip, never the native title attribute. */
+[data-tip] { position: relative; }
+[data-tip]::after { content: attr(data-tip); position: absolute; top: calc(100% + 8px); left: 50%; translate: -50% 0; z-index: 20; padding: 6px 10px; border-radius: 8px; background: var(--ink); color: #fff; font: 600 15px/1.3 system-ui, sans-serif; white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity .15s; }
+[data-tip]:hover::after, [data-tip]:focus-visible::after { opacity: 1; transition-delay: .3s; }
+
 /* Task line */
 .task { max-width: 1000px; text-align: center; margin-bottom: 20px; }
 .task b { display: block; font-size: 30px; font-weight: 600; line-height: 1.3; }
@@ -2314,7 +2319,7 @@ function viewTT() {
     <div style="visibility:${rv ? "visible" : "hidden"}">${circuitSVG(NOR_GATE, false)}</div>
     <div class="row" style="flex-wrap:nowrap;align-items:center">
       <table class="tt">${"<tr>" + head + "</tr>" + body}</table>
-      <button class="btn icon" data-act="ttadd" aria-label="Add column">${I.plus}</button>
+      <button class="btn icon" data-act="ttadd" aria-label="Add column" data-tip="Add column for intermediate working">${I.plus}</button>
     </div>
     ${isTeacher() ? `<div class="row"><button class="btn ${rv ? "on" : ""}" data-act="ttreveal">${I.eye}${rv ? "Hide" : "Reveal"}</button></div>` : ""}
   </div>`;
@@ -2384,7 +2389,7 @@ function viewNor() {
     </div>
     <div class="row" style="flex-wrap:nowrap;align-items:center">
       <table class="tt">${"<tr>" + head + "</tr>" + body}</table>
-      ${ed ? `<button class="btn icon" data-act="noradd" aria-label="Add column">${I.plus}</button>` : ""}
+      ${ed ? `<button class="btn icon" data-act="noradd" aria-label="Add column" data-tip="Add column for intermediate working">${I.plus}</button>` : ""}
     </div>
     ${T().nor.theorem ? `<div class="theorem">${typeset(String.raw`\overline{A + B} = \overline{A} \cdot \overline{B}`)}</div>` : ""}
     ${ed ? `<div class="row"><button class="btn ${state.nor.theorem ? "on" : ""}" data-act="northeorem">${I.eye}Theorem</button></div>` : ""}
@@ -2908,7 +2913,7 @@ function viewConc() {
   return `<div class="stage">
     <div class="big">${alg(EXIT_Q)}</div>
     <div class="card prac">
-      <div class="lines">${lines}<div><button class="btn" data-act="exadd">${I.plus}</button></div></div>
+      <div class="lines">${lines}<div><button class="btn" data-act="exadd" aria-label="Add a line of working" data-tip="Add a line of working">${I.plus}</button></div></div>
       <div class="draft" style="border-style:solid;border-color:var(--accent)">${ansHtml}${fb}</div>
     </div>
   </div>`;
