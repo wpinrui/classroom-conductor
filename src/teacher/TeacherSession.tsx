@@ -13,7 +13,7 @@ import { useSession, useThrottledWriter } from "../hooks/session";
 import { PulsePanel } from "../pulse/Pulse";
 import { Countdown } from "../timer/Countdown";
 import { scriptTimer } from "../timer/timer";
-import { Controls } from "./Controls";
+import { Controls, MODE_GROUPS } from "./Controls";
 import { allowedModes, defaultsFor, teacherPhase } from "./modes";
 import { Wheel, type WheelCommand } from "./Wheel";
 
@@ -150,13 +150,20 @@ export function TeacherSession() {
               state={data.states?.[target] ?? null}
               interactive={false}
             />
-            {data.control.mode === "spotlight" && (
-              <div className="name-pill">{data.students[target].name}</div>
-            )}
           </div>
         )}
-        {data.control.timer && <Countdown timer={data.control.timer} />}
-        {data.teacherTimer && <Countdown timer={data.teacherTimer} private />}
+        <div className="status-bar">
+          <output className="status" aria-label="Class mode">
+            <span>
+              {MODE_GROUPS.flat().find(([m]) => m === data.control.mode)?.[1]}
+            </span>
+            {target && data.students?.[target] && (
+              <b>{data.students[target].name}</b>
+            )}
+          </output>
+          {data.control.timer && <Countdown timer={data.control.timer} />}
+          {data.teacherTimer && <Countdown timer={data.teacherTimer} private />}
+        </div>
         {controlsOpen && (
           <Controls
             session={session}

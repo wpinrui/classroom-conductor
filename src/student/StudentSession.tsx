@@ -16,8 +16,7 @@ export function StudentSession() {
   const joined = Boolean(user && me && live);
   usePresenceTracking(joined ? session : null);
 
-  if (user === undefined || me === undefined || live === undefined)
-    return null;
+  if (user === undefined || me === undefined || live === undefined) return null;
   if (!user || !me || !live) return <Navigate to={routes.join} replace />;
   return <StudentStage session={session} uid={user.uid} me={me} />;
 }

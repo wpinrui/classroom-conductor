@@ -15,7 +15,7 @@ import { Thumbnails } from "./Thumbnails";
 import "./teacher.css";
 
 /** Watch, Work and Stop groups, in switcher and number-key order. */
-const MODE_GROUPS: [Mode, string][][] = [
+export const MODE_GROUPS: [Mode, string][][] = [
   [
     ["demo", "Demo"],
     ["reveal", "Reveal"],
@@ -241,7 +241,13 @@ function Paced({ session, data }: { session: string; data: Session }) {
 }
 
 /** Every student by name. Tapping one spotlights them, tapping them again ends the spotlight. */
-function SpotlightPicker({ session, data }: { session: string; data: Session }) {
+function SpotlightPicker({
+  session,
+  data,
+}: {
+  session: string;
+  data: Session;
+}) {
   const current = data.control.spotlight;
   const students = Object.entries(data.students ?? {}).sort(([, a], [, b]) =>
     a.name.localeCompare(b.name),

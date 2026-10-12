@@ -7,11 +7,16 @@ import {
   useTeacherState,
 } from "../hooks/session";
 import { Countdown } from "../timer/Countdown";
-import { Edge, Frozen, Loading, ModePill } from "./Cues";
+import { Edge, Frozen, Loading, LockIcon, Status } from "./Cues";
 import { GroupView } from "./GroupView";
 import { OwnApplet, type OwnProps, type StageProps } from "./OwnApplet";
 import "./student.css";
-import { AnonymousSpotlightView, GalleryView, SpotlightView } from "./Watch";
+import {
+  AnonymousSpotlightView,
+  GalleryView,
+  SpotlightView,
+  useName,
+} from "./Watch";
 
 /** Demo: the teacher's applet, live and view-only. */
 export function DemoView({ session, html }: StageProps) {
@@ -26,7 +31,6 @@ export function DemoView({ session, html }: StageProps) {
         owner="teacher"
       />
       <Edge kind="watch" />
-      <ModePill mode="Demo" who="Teacher" />
     </>
   );
 }
@@ -38,7 +42,6 @@ function RevealView({ session, html }: StageProps) {
     <>
       <AppletFrame html={html} state={control?.reveal} interactive={false} />
       <Edge kind="watch" />
-      <ModePill mode="Reveal" who="Teacher" />
     </>
   );
 }
@@ -63,14 +66,62 @@ const views: Partial<Record<Mode, (p: StageProps) => React.ReactNode>> = {
   group: GroupView,
 };
 
-/** Modes whose views do not label themselves. */
-const SELF_LABEL: Partial<Record<Mode, string>> = {
-  independent: "Independent",
-  paced: "Paced",
-  freeze: "Freeze",
-  gallery: "Gallery",
-  group: "Group",
-};
+/** Tells the student whose screen they see, or that the class sees theirs. Nothing on their own work. */
+function StudentStatus({
+  session,
+  uid,
+  control,
+}: {
+  session: string;
+  uid: string;
+  control: Control;
+}) {
+  const { mode, spotlight = null } = control;
+  const spotlighting = mode === "spotlight" || mode === "anonymousSpotlight";
+  const name = useName(
+    session,
+    mode === "spotlight" && spotlight !== uid ? spotlight : null,
+  );
+  if (mode === "demo" || mode === "reveal")
+    return (
+      <Status tone="watch">
+        <span>
+          Viewing the <b>teacher's</b> screen
+        </span>
+      </Status>
+    );
+  if (spotlighting && spotlight === uid)
+    return (
+      <Status tone="live">
+        <b>You're on screen</b>
+      </Status>
+    );
+  if (spotlighting && spotlight) {
+    if (mode === "anonymousSpotlight")
+      return (
+        <Status tone="watch">
+          <span>
+            Viewing a <b>classmate's</b> screen
+          </span>
+        </Status>
+      );
+    return name ? (
+      <Status tone="watch">
+        <span>
+          Viewing <b>{name}'s</b> screen
+        </span>
+      </Status>
+    ) : null;
+  }
+  if (mode === "freeze")
+    return (
+      <Status>
+        <LockIcon />
+        <span>Locked</span>
+      </Status>
+    );
+  return null;
+}
 
 export function StudentStage({ session, uid, me }: Omit<StageProps, "html">) {
   const control = useControl(session);
@@ -100,8 +151,12 @@ export function StudentStage({ session, uid, me }: Omit<StageProps, "html">) {
         </div>
       </TeacherStateContext.Provider>
       {mode === "freeze" && <Frozen />}
-      {SELF_LABEL[mode] && <ModePill mode={SELF_LABEL[mode]} />}
-      {control.timer && mode !== "focus" && <Countdown timer={control.timer} />}
+      {mode !== "focus" && (
+        <div className="status-bar">
+          <StudentStatus session={session} uid={uid} control={control} />
+          {control.timer && <Countdown timer={control.timer} />}
+        </div>
+      )}
       {mode === "focus" && <div className="focus" />}
       {mode !== "focus" && applet.manifest.instructions !== undefined && (
         <Chat session={session} uid={uid} />
