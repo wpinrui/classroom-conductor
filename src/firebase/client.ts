@@ -108,7 +108,9 @@ export async function startSession(
   const teacher = uid();
   const snap = await get(ref(db, paths.applet(teacher, appletId)));
   if (!snap.exists()) throw new Error("Applet not found");
-  const applet = snap.val() as LibraryApplet;
+  const stored = snap.val() as LibraryApplet;
+  // Re-read the manifest, so an applet saved by an older version of this app gains newer fields.
+  const applet = { ...stored, manifest: parseManifest(stored.html) };
   const session = push(ref(db, "sessions")).key as string;
   const namelist = namelistOf(applet.manifest);
   const data: Session = {
@@ -117,7 +119,7 @@ export async function startSession(
     createdAt: Date.now(),
     applet: { name: applet.name, html: applet.html, manifest: applet.manifest },
     ...(namelist ? { namelist } : {}),
-    control: { mode: "demo" },
+    control: { mode: applet.manifest.modes?.[0]?.[0] ?? "demo" },
   };
   // Retry on the rare code collision: the codes rule refuses to overwrite.
   for (let attempt = 0; ; attempt++) {
