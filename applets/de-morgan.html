@@ -48,7 +48,8 @@
     {"label": "Pick a False voter", "wheel": {"filter": "False", "spin": true}},
     {"label": "Truth Table", "phase": 2, "mode": "independent"},
     {"label": "Start 1 minute timer", "timer": 60},
-    {"label": "Reveal NOR", "mode": "independent", "cue": "nor"},
+    {"label": "Show completed table", "mode": "independent", "cue": "answer"},
+    {"label": "Reveal NOR", "cue": "nor"},
     {"label": "NOR half", "phase": 3, "mode": "independent"},
     {"label": "Fill column 1", "cue": "fill 1"},
     {"label": "Fill column 2", "cue": "fill 2"},
@@ -1802,7 +1803,7 @@ const DEFAULTS = {
   me: "",
   warm: { round: -1, q: -1, deal: 1, shown: false },
   predict: { ex: 0, shown: {}, counts: {}, votes: {}, hide: false },
-  tt: { cols: [], target: "----", reveal: false, dimT: false },
+  tt: { cols: [], target: "----", reveal: false, answer: false, dimT: false },
   // The NOR column was found in the truth table phase, so it arrives filled in.
   nor: { cols: [], t: "1000", o1: "----", o2: "----", dimOut: {}, theorem: false },
   nand: { step: 0, mode: "type", shown: false, table: false, cells: { ...BLANK_TABLE }, text: "", done: false, bad: false, pick: "" },
@@ -2300,18 +2301,20 @@ const BASKET_HEAD = `<th class="fruithead">Basket</th>`;
 const NOR_GATE = { w: 560, h: 210, inputs: { M: [50, 55], P: [50, 145] }, out: { name: "", x: 520, y: 100 }, gates: { g: { type: "NOR", x: 240, y: 70, label: "NOR" } }, wires: { "g:0": "M", "g:1": "P", Q: "g" } };
 function viewTT() {
   const rv = !!T().tt.reveal;
+  // The correct NOR column shows with the gate, or on its own before the gate.
+  const ans = rv || !!T().tt.answer;
   const tt = state.tt;
   let head = `${BASKET_HEAD}<th>${alg("M")}</th><th>${alg("P")}</th>`;
   tt.cols.forEach((c, ci) => {
     const path = `tt.cols.${ci}`;
     head += `<th class="${dimCls(c.dim)}">${exInput(path, c, ["M", "P"], { cls: "" })}<span class="hacts"><button class="x" data-act="ttdel" data-i="${ci}" aria-label="Remove column">${I.trash}</button>${c.done ? fillBtn(`${path}.vals`, c.text, ["M", "P"]) : ""}${dimBtn(`${path}.dim`, c.dim)}</span></th>`;
   });
-  head += `<th class="target ${dimCls(tt.dimT)}">${alg("NOT (M OR P)")}<span class="hacts">${rv ? "" : fillBtn("tt.target", "NOT (M OR P)", ["M", "P"])}${dimBtn("tt.dimT", tt.dimT)}</span></th>`;
+  head += `<th class="target ${dimCls(tt.dimT)}">${alg("NOT (M OR P)")}<span class="hacts">${ans ? "" : fillBtn("tt.target", "NOT (M OR P)", ["M", "P"])}${dimBtn("tt.dimT", tt.dimT)}</span></th>`;
   let body = "";
   ROWS.forEach(([m, p], ri) => {
     body += `<tr>${basketCell(m, p)}<td class="in">${m}</td><td class="in">${p}</td>`;
     tt.cols.forEach((c, ci) => { body += `<td class="cell ${dimCls(c.dim)}" data-act="ttcell" data-c="${ci}" data-r="${ri}">${showCell(pad4(c.vals)[ri])}</td>`; });
-    body += rv
+    body += ans
       ? `<td class="cell ro target match ${dimCls(tt.dimT)}">${"1000"[ri]}</td></tr>`
       : `<td class="cell target ${dimCls(tt.dimT)}" data-act="ttcell" data-c="t" data-r="${ri}">${showCell(pad4(tt.target)[ri])}</td></tr>`;
   });
@@ -2321,7 +2324,7 @@ function viewTT() {
       <table class="tt">${"<tr>" + head + "</tr>" + body}</table>
       <button class="btn icon" data-act="ttadd" aria-label="Add column" data-tip="Add column for intermediate working">${I.plus}</button>
     </div>
-    ${isTeacher() ? `<div class="row"><button class="btn ${rv ? "on" : ""}" data-act="ttreveal">${I.eye}${rv ? "Hide" : "Reveal"}</button></div>` : ""}
+    ${isTeacher() ? `<div class="row"><button class="btn ${state.tt.answer ? "on" : ""}" data-act="ttanswer">${I.eye}Answer</button><button class="btn ${rv ? "on" : ""}" data-act="ttreveal">${I.eye}NOR gate</button></div>` : ""}
   </div>`;
 }
 
@@ -3067,7 +3070,7 @@ function setPhase(p) {
 function resetPresentation(p) {
   if (p === 0) Object.assign(state.warm, { round: -1, q: -1, shown: false });
   if (p === 1) Object.assign(state.predict, { ex: 0, shown: {}, hide: false });
-  if (p === 2) state.tt.reveal = false;
+  if (p === 2) Object.assign(state.tt, { reveal: false, answer: false });
   if (p === 3) Object.assign(state.nor, { t: "1000", o1: "----", o2: "----", theorem: false });
   if (p === 4) Object.assign(state.nand, { step: 0, mode: "type", shown: false, table: false });
   if (p === 6) state.circ.showCount = false;
@@ -3090,6 +3093,7 @@ function applyCue(name, fresh) {
       if (live()) { const v = votesFor(e); state.predict.counts[e] = { t: v.t.length, f: v.f.length }; }
       break;
     }
+    case "answer": state.tt.answer = true; break;
     case "nor": state.tt.reveal = true; break;
     case "theorem": state.nor.theorem = true; break;
     case "fill": {
@@ -3172,6 +3176,7 @@ const ACT = {
     else { const c = state.tt.cols[+el.dataset.c]; c.vals = setChar(pad4(c.vals), r, cyc(pad4(c.vals)[r])); }
     commit();
   },
+  ttanswer() { state.tt.answer = !state.tt.answer; commit(); },
   ttreveal() { state.tt.reveal = !state.tt.reveal; commit(); },
   northeorem() { state.nor.theorem = !state.nor.theorem; commit(); },
   dimcol(el) { setPath(state, el.dataset.path, !getPath(state, el.dataset.path)); commit(); },
