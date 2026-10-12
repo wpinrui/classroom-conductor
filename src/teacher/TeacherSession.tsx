@@ -103,6 +103,32 @@ export function TeacherSession() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  // Clicking the lesson itself tucks the controls away. Ctrl+. brings them back.
+  useEffect(() => {
+    if (!controlsOpen) return;
+    const inFrame = () => document.activeElement instanceof HTMLIFrameElement;
+    // Reopened from inside the applet: release its focus so the next click in it registers.
+    if (inFrame()) (document.activeElement as HTMLElement).blur();
+    const onBlur = () =>
+      setTimeout(() => {
+        if (inFrame()) setControlsOpen(false);
+      });
+    const onDown = (e: PointerEvent) => {
+      const t = e.target;
+      if (
+        t instanceof Element &&
+        (t.matches("main.stage, iframe") || t.closest(".teacher-spotlight"))
+      )
+        setControlsOpen(false);
+    };
+    window.addEventListener("blur", onBlur);
+    window.addEventListener("pointerdown", onDown);
+    return () => {
+      window.removeEventListener("blur", onBlur);
+      window.removeEventListener("pointerdown", onDown);
+    };
+  }, [controlsOpen]);
+
   // When the applet narrows the modes per phase, leave a mode the current phase does not allow.
   const allowed = data ? allowedModes(data) : null;
   const mode = data?.control.mode;
