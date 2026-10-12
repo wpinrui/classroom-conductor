@@ -2,14 +2,14 @@
   "rules": {
     "teachers": {
       "$uid": {
-        ".read": "auth != null && auth.uid === $uid && auth.token.firebase.sign_in_provider !== 'anonymous'",
-        ".write": "auth != null && auth.uid === $uid && auth.token.firebase.sign_in_provider !== 'anonymous'"
+        ".read": "auth != null && auth.uid === $uid && auth.token.email_verified === true && auth.token.email.matches(/^(wongpinrui@gmail\\.com)$/)",
+        ".write": "auth != null && auth.uid === $uid && auth.token.email_verified === true && auth.token.email.matches(/^(wongpinrui@gmail\\.com)$/)"
       }
     },
     "codes": {
       "$code": {
         ".read": "auth != null",
-        ".write": "auth != null && auth.token.firebase.sign_in_provider !== 'anonymous' && (data.exists() ? data.child('teacher').val() === auth.uid && !newData.exists() : newData.child('teacher').val() === auth.uid)",
+        ".write": "auth != null && auth.token.email_verified === true && auth.token.email.matches(/^(wongpinrui@gmail\\.com)$/) && (data.exists() ? data.child('teacher').val() === auth.uid && !newData.exists() : newData.child('teacher').val() === auth.uid)",
         ".validate": "$code.matches(/^[A-Z0-9]{4,8}$/) && newData.hasChildren(['teacher', 'session'])"
       }
     },
@@ -22,7 +22,7 @@
     "sessions": {
       "$sid": {
         ".read": "auth != null && data.child('teacher').val() === auth.uid",
-        ".write": "auth != null && auth.token.firebase.sign_in_provider !== 'anonymous' && (data.exists() ? data.child('teacher').val() === auth.uid : newData.child('teacher').val() === auth.uid)",
+        ".write": "auth != null && auth.token.email_verified === true && auth.token.email.matches(/^(wongpinrui@gmail\\.com)$/) && (data.exists() ? data.child('teacher').val() === auth.uid : newData.child('teacher').val() === auth.uid)",
         "applet": {
           ".read": "auth != null && root.child('sessions').child($sid).child('students').child(auth.uid).exists()"
         },

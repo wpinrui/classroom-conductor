@@ -54,10 +54,25 @@ export const signInTeacher = () =>
     ? signInWithCredential(
         auth,
         GoogleAuthProvider.credential(
-          JSON.stringify({ sub: "teacher", email: "teacher@example.com" }),
+          JSON.stringify({
+            sub: "teacher",
+            email: "wongpinrui@gmail.com",
+            email_verified: true,
+          }),
         ),
       )
-    : signInWithPopup(auth, new GoogleAuthProvider());
+    : signInWithPopup(
+        auth,
+        new GoogleAuthProvider().setCustomParameters({
+          prompt: "select_account",
+        }),
+      );
+/** Teacher rights live in database.rules.json, so a readable library means the account is allowlisted. */
+export const isTeacher = (u: string) =>
+  get(ref(db, `teachers/${u}`)).then(
+    () => true,
+    () => false,
+  );
 export const signInStudent = () => signInAnonymously(auth);
 export const signOutUser = () => signOut(auth);
 
