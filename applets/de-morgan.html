@@ -126,7 +126,9 @@ table.tt { border-collapse: separate; border-spacing: 0; background: var(--card)
 .decal.nf img { display: none; }
 .decal.nf .fb { display: block; }
 .decal.nf { border: 0; background: var(--c); }
-.decal .name { position: absolute; bottom: 14px; left: 0; right: 0; text-align: center; font-size: 30px; font-weight: 700; line-height: 1; }
+.decal.named { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; }
+.decal.named .em { font-size: 124px; line-height: 1; }
+.decal .name { font-size: 30px; font-weight: 700; line-height: 1; }
 #board { touch-action: none; }
 
 /* Predict */
@@ -1915,7 +1917,7 @@ function decals(round, deal, me) {
   return shuffled(r, items).map((e) => ({ emoji: e }));
 }
 function decalHTML(d) {
-  if (d.emoji) return `<div class="decal">${d.emoji}${FRUIT_NAMES[d.emoji] ? `<span class="name">${FRUIT_NAMES[d.emoji]}</span>` : ""}</div>`;
+  if (d.emoji) return FRUIT_NAMES[d.emoji] ? `<div class="decal named"><span class="em">${d.emoji}</span><span class="name">${FRUIT_NAMES[d.emoji]}</span></div>` : `<div class="decal">${d.emoji}</div>`;
   const [id, name] = d.poke;
   return `<div class="decal" style="--c:${POKE_BG[d.col]}"><img alt="" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png" onerror="this.parentNode.classList.add('nf')"><div class="fb">${name}</div></div>`;
 }
