@@ -82,6 +82,7 @@ Declare the manifest in a JSON script tag, anywhere in the file:
 | `pulsePrompt` | Optional string. |
 | `namelist` | Optional list of strings. |
 | `preparedStates` | Optional list of `{ name, state, phase }`. `name` is a string. `state` must be present. `phase` is an integer from 0 to the number of phases minus 1. |
+| `handoff` | Optional boolean. |
 | `modes` | Optional list with exactly one entry per phase. Each entry is a non-empty list of mode ids: `independent`, `demo`, `spotlight`, `anonymousSpotlight`, `gallery`, `group`, `paced`, `freeze`, `focus`, `reveal`. |
 
 **What each field does**
@@ -100,6 +101,7 @@ Declare the manifest in a JSON script tag, anywhere in the file:
 - A scripted spotlight in a phase that does not allow Spotlight is undone straight away.
 - Handoff is offered only during Demo, so a phase that does not allow Demo never shows it.
 - Leave `modes` out to offer every mode in every phase.
+- `handoff: false` hides the Handoff button. Leave it out to offer Handoff during Demo.
 
 ## 4. The runtime
 
@@ -140,6 +142,7 @@ Every handler except `setState` is optional. `setContext` arrives before the fir
 - `setState` can arrive at any time. In Group mode another student's edit lands while this student is typing. Never reset a text field whose value already matches the state, or the caret jumps.
 - Merge every incoming state over your defaults, so a state with missing fields still renders.
 - The state as JSON text must stay under 2,000,000 characters, or the database rejects it.
+- `$done` is reserved. Set it to `true` when the student has reached what their current phase asks for, and to `false` otherwise. Their thumbnail border turns green while it is `true`. Leave it out in phases with no single goal.
 
 **Recommended**
 

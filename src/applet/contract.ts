@@ -29,6 +29,8 @@ export interface Manifest {
   preparedStates?: PreparedState[];
   /** One list per phase of the modes that phase allows. The first is the phase's default. Absent allows every mode. */
   modes?: Mode[][];
+  /** False hides the Handoff button. Absent offers it during Demo. */
+  handoff?: boolean;
 }
 
 /** One student as the teacher's applet sees them. */

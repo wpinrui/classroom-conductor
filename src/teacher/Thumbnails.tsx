@@ -10,6 +10,16 @@ const FRAME_WIDTH = 1280;
 const MIN_DRAWER_PX = 120;
 
 /** Bottom drawer of live, view-only student screens. It is also the Spotlight and Gallery picker. */
+/** The applet sets $done in a student's state once they reach what their phase asks for. */
+function isDone(json: string | undefined): boolean {
+  if (!json) return false;
+  try {
+    return JSON.parse(json)?.$done === true;
+  } catch {
+    return false;
+  }
+}
+
 export function Thumbnails({
   session,
   data,
@@ -76,6 +86,7 @@ export function Thumbnails({
             key={uid}
             className="thumb"
             data-offline={!data.presence?.[uid] || undefined}
+            data-done={isDone(data.states?.[uid]?.json) || undefined}
             data-selected={
               (spotlighting
                 ? spotlight === uid
