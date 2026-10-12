@@ -65,3 +65,10 @@ export const CheckIcon = () => (
     <path d="m5 12 5 5 9-10" />
   </Svg>
 );
+
+export const WheelIcon = () => (
+  <Svg>
+    <circle cx="12" cy="13" r="8" />
+    <path d="M12 13V5M12 13l6.9 4M12 13l-6.9 4M10 2h4l-2 3z" />
+  </Svg>
+);

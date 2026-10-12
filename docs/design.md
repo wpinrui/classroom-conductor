@@ -72,7 +72,7 @@ The teacher's own applet fills the viewport. The controls panel floats on the ri
 Panel order, top to bottom, with `--space-6` between groups:
 
 1. **Join code.** Display size, mono, accent. It is the largest thing on the panel.
-2. **Presence.** One stat: online over joined, `--font-size-xl`, with a person icon as its label. A success dot when everyone joined is online.
+2. **Presence.** One stat: online over joined, `--font-size-xl`, with a person icon as its label. A success dot when everyone joined is online. Quiet icon buttons follow it on the right: student screens, name wheel and chat.
 3. **Mode switcher.** See below.
 4. **Mode detail.** Only the controls the active mode needs. Paced shows a phase stepper (−, phase number, +). Reveal shows a source picker: the teacher's current state or each prepared state by name. Group shows the group size stepper and a Shuffle action. Spotlight and Gallery have no detail here. Their picker is the thumbnail grid.
 5. **Actions.** Handoff (primary, `--font-size-lg`). Pulse (default). Both full width.
@@ -108,6 +108,18 @@ A tile is the student's live applet, scaled down and non-interactive, on `--colo
 | hover | raised border, with Spotlight and Pulse icon buttons in the top right corner |
 
 In Spotlight and Anonymous, clicking a tile spotlights that student. In Gallery, clicking toggles the student in and out of the gallery. In any other mode, clicking a tile opens that student's Pulse if one exists.
+
+### Name wheel
+
+A sheet over the stage, from `--space-4` inside the left edge to `--space-4` left of the controls panel. It stays open when the panel is hidden, so the teacher can project it alone. Surface, border and overlay shadow, like the Pulse sheet. A quiet ✕ sits top right, and Esc also closes it.
+
+- **Pools.** A row of chips at the top, centred: Everyone, then each filter the applet publishes, in its order. Each chip shows its name in weight 600 and its count in caption size, muted. The chosen chip is the selected state. The row is hidden when the applet publishes no filters. Every pool holds online students only.
+- **Wheel.** A disc that fills the rest of the sheet. One slice per student, sorted by name, in three neutral tones (`--color-wheel-0` to `--color-wheel-2`) so no two neighbours match. Names run along the slice's radius in weight 600 and turn round on the left half so none reads upside down. A 1.5 unit `--color-border` rim. An accent pointer at the top.
+- **Spin.** A round primary button, 5.5rem, on the hub. It spins at least five full turns over `--duration-spin` with `--ease-spin`, and lands at a random point inside the chosen slice. The same student never comes up twice running while anyone else is in the pool. Chips and Spin are disabled mid-spin.
+- **Result.** The winning slice turns accent with on-accent text. The name appears under the wheel at display size, weight 700, accent. It stays until the next spin or until the pool changes.
+- An empty pool shows a bare `--color-bg` disc and a disabled Spin.
+
+Reduced motion zeroes `--duration-spin`, so the result shows at once.
 
 ### Pulse sheet
 

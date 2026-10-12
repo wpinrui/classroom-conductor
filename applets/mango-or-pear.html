@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <script type="application/json" id="conductor-manifest">
+      {
+        "title": "Mango or pear",
+        "phases": ["Answer"],
+        "instructions": "The class is judging the statement \"I do not have a mango or a pear.\" The teacher shows one example at a time, such as \"I have an apple.\", and each student answers True or False for it. The statement is true only when the speaker has neither a mango nor a pear. A common misconception reads it as \"I do not have a mango, or I do not have a pear\", which makes \"I have a mango.\" look true. Never give the answer to an example outright. Ask one guiding question at a time, such as asking the student to check the mango and the pear separately. Keep replies under 60 words.",
+        "pulsePrompt": "Each state has answers, an object keyed by example id. Each entry is { text, value }, where text is the example the teacher showed and value is true when the student answered True. The statement is \"I do not have a mango or a pear\", which is true only when the example has neither a mango nor a pear. For each example in the input, give the number of True and False answers and say which answer is correct. Then list students who answered an example with a mango or a pear as True, since they likely read the statement as \"not mango, or not pear\". Use counts, not percentages. Keep it short. For a single student, list their answers and say whether they show that misconception."
+      }
+    </script>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #0d1117;
+        --surface: #161b22;
+        --raised: #21262d;
+        --border: #30363d;
+        --text: #e6edf3;
+        --muted: #9ba7b4;
+        --accent: #4493f8;
+        --on-accent: #0d1117;
+        --true: #4493f8;
+        --true-subtle: #1e3148;
+        --false: #d29922;
+        --false-subtle: #3a2e14;
+        --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      }
+      *, *::before, *::after { box-sizing: border-box; }
+      html { font-size: 16px; }
+      body { margin: 0; min-height: 100vh; background: var(--bg); color: var(--text); font-family: var(--sans); line-height: 1.5; }
+      button, input { font: inherit; color: inherit; border-radius: 8px; border: 1px solid var(--border); background: var(--raised); }
+      button { cursor: pointer; font-weight: 600; transition: background-color 120ms, border-color 120ms, color 120ms, opacity 120ms; }
+      button:hover:not(:disabled) { border-color: var(--muted); }
+      button:disabled { cursor: default; }
+      :is(button, input):focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+      input:focus { border-color: var(--accent); outline: none; }
+      input::placeholder { color: var(--muted); }
+
+      .app { min-height: 100vh; display: grid; grid-template-columns: 1fr; }
+      .app[data-role="teacher"] { grid-template-columns: 18rem 1fr; }
+
+      /* Example list, teacher only. */
+      .rail { display: none; flex-direction: column; gap: 0.5rem; padding: 1.5rem 1rem; background: var(--surface); border-right: 1px solid var(--border); min-height: 100vh; }
+      .app[data-role="teacher"] .rail { display: flex; }
+      .examples { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.5rem; }
+      .ex { position: relative; }
+      .ex-pick { width: 100%; text-align: left; padding: 0.625rem 2.25rem 0.625rem 0.75rem; display: grid; gap: 0.25rem; font-weight: 600; }
+      .ex-pick[aria-pressed="true"] { background: var(--true-subtle); border-color: var(--accent); }
+      .ex-fruit { font-size: 1.25rem; line-height: 1; }
+      .ex-tally { display: flex; gap: 0.75rem; font-size: 0.875rem; font-weight: 600; }
+      .ex-tally .t { color: var(--true); }
+      .ex-tally .f { color: var(--false); }
+      .ex-del { position: absolute; top: 0.375rem; right: 0.375rem; width: 1.75rem; height: 1.75rem; padding: 0; background: transparent; border-color: transparent; color: var(--muted); opacity: 0; }
+      .ex:hover .ex-del, .ex-del:focus-visible { opacity: 1; }
+      .ex-del:hover:not(:disabled) { color: var(--text); border-color: transparent; background: var(--raised); }
+      .add { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
+      .add input { flex: 1; min-width: 0; padding: 0.625rem 0.75rem; }
+      .add button { width: 2.75rem; font-size: 1.25rem; padding: 0; }
+
+      /* Stage */
+      .main { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2.5rem; padding: 3rem 2rem; min-height: 100vh; }
+      .statement { margin: 0; font-size: 1.5rem; font-weight: 600; color: var(--muted); text-align: center; }
+      .statement b { color: var(--text); font-weight: 700; }
+      .example { display: grid; justify-items: center; gap: 1rem; text-align: center; }
+      .fruit { font-size: 5rem; line-height: 1; letter-spacing: 0.1em; }
+      .text { margin: 0; font-size: 3rem; font-weight: 700; line-height: 1.15; max-width: 22ch; overflow-wrap: anywhere; }
+      .empty .statement { font-size: 2.5rem; color: var(--text); }
+
+      .answers { display: flex; gap: 1.5rem; }
+      .answer { min-width: 13rem; min-height: 6rem; font-size: 2rem; padding: 0 2rem; border-width: 2px; }
+      .answer[data-v="true"][aria-pressed="true"] { background: var(--true); border-color: var(--true); color: var(--on-accent); }
+      .answer[data-v="false"][aria-pressed="true"] { background: var(--false); border-color: var(--false); color: var(--on-accent); }
+      .answers[data-locked] .answer[aria-pressed="false"] { opacity: 0.35; }
+
+      .tally { width: min(28rem, 100%); display: grid; gap: 1rem; }
+      .bar { display: grid; grid-template-columns: 5rem 1fr 3rem; align-items: center; gap: 1rem; font-size: 1.5rem; font-weight: 700; }
+      .bar-track { height: 3rem; border-radius: 8px; background: var(--surface); overflow: hidden; }
+      .bar-fill { height: 100%; width: 0; border-radius: 8px; transition: width 600ms cubic-bezier(0.2, 0, 0, 1); }
+      .bar[data-v="true"] { color: var(--true); }
+      .bar[data-v="false"] { color: var(--false); }
+      .bar[data-v="true"] .bar-fill { background: var(--true); }
+      .bar[data-v="false"] .bar-fill { background: var(--false); }
+      .bar-n { text-align: right; font-variant-numeric: tabular-nums; }
+      .bar[data-mine] .bar-label { text-decoration: underline; text-underline-offset: 0.3em; text-decoration-thickness: 3px; }
+
+      .teach { display: flex; align-items: center; gap: 1.5rem; }
+      .count { display: flex; align-items: center; gap: 0.5rem; font-size: 1.5rem; font-weight: 600; color: var(--muted); font-variant-numeric: tabular-nums; }
+      .count svg { width: 1.5rem; height: 1.5rem; }
+      .reveal { min-height: 3.5rem; padding: 0 2rem; font-size: 1.25rem; background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+      .reveal[aria-pressed="true"] { background: var(--raised); border-color: var(--border); color: var(--text); }
+
+      @media (prefers-reduced-motion: reduce) { button, .bar-fill { transition: none; } }
+      /* Last, so it beats every display rule above at equal specificity. */
+      [hidden] { display: none; }
+    </style>
+  </head>
+  <body>
+    <div class="app" id="app">
+      <aside class="rail">
+        <ul class="examples" id="examples"></ul>
+        <form class="add" id="add">
+          <input id="new" aria-label="New example" placeholder="I have…" autocomplete="off" />
+          <button type="submit" aria-label="Add example">+</button>
+        </form>
+      </aside>
+      <main class="main" id="main">
+        <p class="statement">I do <b>not</b> have a mango <b>or</b> a pear.</p>
+        <div class="example" id="example" hidden>
+          <div class="fruit" id="fruit"></div>
+          <p class="text" id="text"></p>
+        </div>
+        <div class="answers" id="answers" hidden>
+          <button type="button" class="answer" data-v="true">True</button>
+          <button type="button" class="answer" data-v="false">False</button>
+        </div>
+        <div class="tally" id="tally" hidden>
+          <div class="bar" data-v="true"><span class="bar-label">True</span><div class="bar-track"><div class="bar-fill"></div></div><span class="bar-n"></span></div>
+          <div class="bar" data-v="false"><span class="bar-label">False</span><div class="bar-track"><div class="bar-fill"></div></div><span class="bar-n"></span></div>
+        </div>
+        <div class="teach" id="teach" hidden>
+          <span class="count" id="count" role="img" aria-label="Answered">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10" /></svg>
+            <span id="count-n"></span>
+          </span>
+          <button type="button" class="reveal" id="reveal">Reveal</button>
+        </div>
+      </main>
+    </div>
+    <script>
+      const DEFAULTS = [
+        { id: "d1", text: "I have a mango.", fruit: "🥭" },
+        { id: "d2", text: "I have a pear.", fruit: "🍐" },
+        { id: "d3", text: "I have a mango and a pear.", fruit: "🥭🍐" },
+        { id: "d4", text: "I have an apple.", fruit: "🍎" },
+        { id: "d5", text: "I have nothing." },
+        { id: "d6", text: "I have an apple and a pear.", fruit: "🍎🍐" },
+      ];
+
+      const host = window.conductor ?? { connect() {}, update() {}, filters() {} };
+      const $ = (id) => document.getElementById(id);
+      const obj = (v) => (v && typeof v === "object" && !Array.isArray(v) ? v : {});
+
+      // The teacher's state holds the examples. A student's state holds their answers.
+      let state = {};
+      let phase = 0;
+      let context = { role: "student", teacher: null, students: null };
+      let sentFilters = "";
+
+      function normalizeTeacher(s) {
+        const t = obj(s);
+        const examples = Array.isArray(t.examples) ? t.examples.filter((e) => e && typeof e.text === "string" && e.id) : DEFAULTS;
+        return { examples, current: typeof t.current === "string" ? t.current : "", revealed: obj(t.revealed), tally: obj(t.tally) };
+      }
+      function normalizeStudent(s) {
+        return { answers: obj(obj(s).answers) };
+      }
+      const isTeacher = () => context.role === "teacher";
+      const lesson = () => (isTeacher() ? state : normalizeTeacher(context.teacher?.state));
+      const currentOf = (l) => l.examples.find((e) => e.id === l.current) ?? null;
+
+      /** True and False counts for one example, from the class or from the given students. */
+      function count(id, students = Object.values(context.students ?? {})) {
+        const out = { t: 0, f: 0 };
+        for (const s of students) {
+          const a = obj(obj(s.state).answers)[id];
+          if (a && a.value === true) out.t += 1;
+          else if (a && a.value === false) out.f += 1;
+        }
+        return out;
+      }
+
+      /** Live teacher frame only: refresh the stored tallies and the wheel filters. */
+      function syncClass() {
+        if (!isTeacher() || !context.students) return;
+        const tally = {};
+        for (const id of Object.keys(state.revealed)) tally[id] = count(id);
+        if (JSON.stringify(tally) !== JSON.stringify(state.tally)) {
+          state = { ...state, tally };
+          host.update(state, phase);
+        }
+        const ex = currentOf(state);
+        const filters = [];
+        if (ex && state.revealed[ex.id]) {
+          for (const [name, value] of [["True", true], ["False", false]]) {
+            const students = Object.entries(context.students)
+              .filter(([, s]) => obj(obj(s.state).answers)[ex.id]?.value === value)
+              .map(([uid]) => uid);
+            filters.push({ name, students });
+          }
+        }
+        const json = JSON.stringify(filters);
+        if (json !== sentFilters && host.filters) {
+          sentFilters = json;
+          host.filters(filters);
+        }
+      }
+
+      function change() {
+        syncClass();
+        render();
+        host.update(state, phase);
+      }
+
+      function renderRail(l) {
+        const list = $("examples");
+        list.replaceChildren(
+          ...l.examples.map((e) => {
+            const li = document.createElement("li");
+            li.className = "ex";
+            const pick = document.createElement("button");
+            pick.type = "button";
+            pick.className = "ex-pick";
+            pick.setAttribute("aria-pressed", String(e.id === l.current));
+            if (e.fruit) {
+              const f = document.createElement("span");
+              f.className = "ex-fruit";
+              f.textContent = e.fruit;
+              pick.append(f);
+            }
+            pick.append(e.text);
+            const t = l.tally[e.id];
+            if (l.revealed[e.id] && t) {
+              const row = document.createElement("span");
+              row.className = "ex-tally";
+              row.innerHTML = `<span class="t" aria-label="True"></span><span class="f" aria-label="False"></span>`;
+              row.children[0].textContent = `T ${t.t}`;
+              row.children[1].textContent = `F ${t.f}`;
+              pick.append(row);
+            }
+            pick.onclick = () => {
+              state = { ...state, current: e.id };
+              change();
+            };
+            const del = document.createElement("button");
+            del.type = "button";
+            del.className = "ex-del";
+            del.setAttribute("aria-label", "Remove");
+            del.textContent = "✕";
+            del.onclick = () => {
+              const revealed = { ...state.revealed };
+              delete revealed[e.id];
+              state = {
+                ...state,
+                examples: state.examples.filter((x) => x.id !== e.id),
+                current: state.current === e.id ? "" : state.current,
+                revealed,
+              };
+              change();
+            };
+            li.append(pick, del);
+            return li;
+          }),
+        );
+      }
+
+      function render() {
+        const teacher = isTeacher();
+        const l = lesson();
+        const ex = currentOf(l);
+        const shown = !!ex && !!l.revealed[ex.id];
+        $("app").dataset.role = teacher ? "teacher" : "student";
+        if (teacher) renderRail(l);
+        $("main").classList.toggle("empty", !ex);
+        $("example").hidden = !ex;
+        if (ex) {
+          $("fruit").hidden = !ex.fruit;
+          $("fruit").textContent = ex.fruit ?? "";
+          $("text").textContent = ex.text;
+        }
+
+        const mine = ex && !teacher ? state.answers[ex.id] : undefined;
+        $("answers").hidden = !ex || teacher;
+        if (shown) $("answers").dataset.locked = "";
+        else delete $("answers").dataset.locked;
+        for (const b of $("answers").children) {
+          b.setAttribute("aria-pressed", String(mine?.value === (b.dataset.v === "true")));
+          b.disabled = shown;
+        }
+
+        const t = ex && l.tally[ex.id];
+        $("tally").hidden = !shown || !t;
+        if (shown && t) {
+          const total = Math.max(t.t + t.f, 1);
+          for (const bar of $("tally").children) {
+            const v = bar.dataset.v === "true";
+            const n = v ? t.t : t.f;
+            bar.querySelector(".bar-fill").style.width = `${(n / total) * 100}%`;
+            bar.querySelector(".bar-n").textContent = n;
+            if (mine && mine.value === v) bar.dataset.mine = "";
+            else delete bar.dataset.mine;
+          }
+        }
+
+        // Answered count and Reveal need the live class, so only the teacher's own frame shows them.
+        const live = teacher && !!context.students;
+        $("teach").hidden = !live || !ex;
+        if (live && ex) {
+          const online = Object.values(context.students).filter((s) => s.online);
+          const c = count(ex.id, online);
+          $("count-n").textContent = `${c.t + c.f}/${online.length}`;
+          $("reveal").setAttribute("aria-pressed", String(shown));
+          $("reveal").textContent = shown ? "Hide" : "Reveal";
+        }
+      }
+
+      for (const b of $("answers").children) {
+        b.onclick = () => {
+          const ex = currentOf(lesson());
+          if (isTeacher() || !ex || lesson().revealed[ex.id]) return;
+          state = { answers: { ...state.answers, [ex.id]: { text: ex.text, value: b.dataset.v === "true" } } };
+          change();
+        };
+      }
+
+      $("reveal").onclick = () => {
+        const ex = currentOf(state);
+        if (!ex) return;
+        const revealed = { ...state.revealed };
+        if (revealed[ex.id]) delete revealed[ex.id];
+        else revealed[ex.id] = true;
+        state = { ...state, revealed };
+        change();
+      };
+
+      $("add").onsubmit = (e) => {
+        e.preventDefault();
+        const text = $("new").value.trim();
+        if (!text) return;
+        const id = `e${Date.now().toString(36)}${Math.floor(Math.random() * 1296).toString(36)}`;
+        state = { ...state, examples: [...state.examples, { id, text }], current: id };
+        $("new").value = "";
+        change();
+      };
+
+      function adopt(s) {
+        state = isTeacher() ? normalizeTeacher(s) : normalizeStudent(s);
+      }
+
+      host.connect({
+        setState(s, p) {
+          adopt(s);
+          phase = p;
+          render();
+        },
+        setContext(c) {
+          const roleChanged = c.role !== context.role;
+          context = c;
+          if (roleChanged) {
+            adopt(state);
+            // A new lesson starts with the default examples, so save them.
+            if (isTeacher()) host.update(state, phase);
+          }
+          syncClass();
+          render();
+        },
+      });
+      adopt(state);
+      host.update(state, phase);
+      render();
+    </script>
+  </body>
+</html>

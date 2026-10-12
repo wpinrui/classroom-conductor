@@ -1,0 +1,165 @@
+/* Name wheel. See docs/design.md. */
+
+.wheel-sheet {
+  position: fixed;
+  top: var(--space-4);
+  bottom: var(--space-4);
+  left: var(--space-4);
+  right: calc(var(--width-controls) + 2 * var(--space-4));
+  z-index: var(--z-sheet);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-6);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-overlay);
+  animation: wheel-in var(--duration-base) var(--ease-out);
+}
+
+@keyframes wheel-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}
+
+.wheel-close {
+  position: absolute;
+  top: var(--space-2);
+  right: var(--space-2);
+  width: 40px;
+  height: 40px;
+  padding: 0;
+}
+
+.wheel-pools {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2);
+  margin: 0 48px;
+}
+
+.wheel-pool {
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.wheel-count {
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-muted);
+}
+
+.wheel-pool[aria-pressed="true"] .wheel-count {
+  color: inherit;
+}
+
+.wheel {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  display: grid;
+  place-items: center;
+}
+
+/* The viewBox is square around the centre, so the hub can sit at 50% 50%. */
+.wheel-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.wheel-disc {
+  transition: transform var(--duration-spin) var(--ease-spin);
+}
+
+.wheel-slice {
+  stroke: var(--color-surface);
+  stroke-width: 0.6;
+  transition: fill var(--duration-base) var(--ease-out);
+}
+
+.wheel-slice[data-tone="0"] {
+  fill: var(--color-wheel-0);
+}
+
+.wheel-slice[data-tone="1"] {
+  fill: var(--color-wheel-1);
+}
+
+.wheel-slice[data-tone="2"] {
+  fill: var(--color-wheel-2);
+}
+
+.wheel-slice[data-won] {
+  fill: var(--color-accent);
+}
+
+.wheel-name {
+  fill: var(--color-text);
+  font-family: var(--font-family);
+  font-weight: var(--font-weight-strong);
+}
+
+.wheel-name[data-won] {
+  fill: var(--color-on-accent);
+}
+
+.wheel-rim {
+  fill: none;
+  stroke: var(--color-border);
+  stroke-width: 1.5;
+}
+
+.wheel-pointer {
+  fill: var(--color-accent);
+  stroke: var(--color-surface);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+}
+
+.wheel[data-empty] .wheel-slice {
+  fill: var(--color-bg);
+}
+
+.stage .wheel-hub {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  translate: -50% -50%;
+  width: 5.5rem;
+  height: 5.5rem;
+  padding: 0;
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-lg);
+  box-shadow: 0 0 0 6px var(--color-surface);
+}
+
+.wheel-winner {
+  min-height: calc(var(--font-size-display) * 1.1);
+  font-size: var(--font-size-display);
+  font-weight: var(--font-weight-display);
+  line-height: 1.1;
+  color: var(--color-accent);
+  text-align: center;
+  animation: none;
+}
+
+.wheel-winner:not(:empty) {
+  animation: wheel-win var(--duration-base) var(--ease-out);
+}
+
+@keyframes wheel-win {
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem);
+  }
+}
