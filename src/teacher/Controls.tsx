@@ -2,16 +2,12 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { ChatToggle } from "../chat/Chat";
 import { endSession, handoff, setControl } from "../firebase/client";
-import {
-  type Control,
-  DEFAULT_CHAT_LIMIT,
-  type Mode,
-  type Session,
-} from "../firebase/types";
+import { DEFAULT_CHAT_LIMIT, type Mode, type Session } from "../firebase/types";
 import { PulseButton } from "../pulse/Pulse";
 import { routes } from "../routes";
 import { TimerControls } from "../timer/TimerControls";
 import { Groups } from "./Groups";
+import { allowedModes, defaultsFor } from "./modes";
 import { BlankIcon, ChatIcon, GridIcon, PersonIcon, WheelIcon } from "./icons";
 import { Reveal } from "./Reveal";
 import { Stepper } from "./Stepper";
@@ -37,18 +33,7 @@ const MODE_GROUPS: [Mode, string][][] = [
     ["focus", "Focus"],
   ],
 ];
-const KEY_ORDER = MODE_GROUPS.flat().map(([m]) => m);
 const END_CONFIRM_MS = 3000;
-
-/** Control fields a mode needs, filled in when it is first entered. */
-function defaultsFor(mode: Mode, data: Session): Partial<Control> {
-  const c = data.control;
-  if (mode === "paced" && c.pacedPhase === undefined)
-    return { pacedPhase: data.teacherState?.phase ?? 0 };
-  if (mode === "reveal" && !c.reveal && data.teacherState)
-    return { reveal: { ...data.teacherState, at: Date.now() } };
-  return {};
-}
 
 const isTyping = (t: EventTarget | null) =>
   t instanceof HTMLElement &&
@@ -76,20 +61,27 @@ export function Controls({
   const chatLimit = control.chatLimit ?? DEFAULT_CHAT_LIMIT;
   const [thumbsOpen, setThumbsOpen] = useState(false);
   const [endArmed, setEndArmed] = useState(false);
+  const allowed = allowedModes(data);
+  const groups = MODE_GROUPS.map((g) =>
+    g.filter(([m]) => !allowed || allowed.includes(m)),
+  ).filter((g) => g.length > 0);
+  const keyOrder = groups.flat().map(([m]) => m);
+  const keys = useRef(keyOrder);
+  keys.current = keyOrder;
 
   const latest = useRef(data);
   latest.current = data;
   const pick = (mode: Mode) =>
     setControl(session, { mode, ...defaultsFor(mode, latest.current) });
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: pick reads the latest data through a ref
+  // biome-ignore lint/correctness/useExhaustiveDependencies: pick and keys read the latest values through refs
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.ctrlKey || e.metaKey || e.altKey || isTyping(e.target)) return;
       const i = "1234567890".indexOf(e.key);
-      if (i < 0 || i >= KEY_ORDER.length) return;
+      if (i < 0 || i >= keys.current.length) return;
       e.preventDefault();
-      pick(KEY_ORDER[i]);
+      pick(keys.current[i]);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -161,7 +153,7 @@ export function Controls({
         </div>
 
         <div className="modes">
-          {MODE_GROUPS.map((group) => (
+          {groups.map((group) => (
             <div key={group[0][0]} className="mode-group">
               {group.map(([mode, label]) => (
                 <button

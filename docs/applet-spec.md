@@ -8,7 +8,7 @@ Rules marked **Required** are enforced by the Conductor. Break one and the uploa
 
 ## 1. How a lesson runs
 
-The teacher uploads the HTML file and starts a session. Students join with a code and a name. The teacher then switches the class between modes. Every mode works with every applet, so the applet never needs to know the mode.
+The teacher uploads the HTML file and starts a session. Students join with a code and a name. The teacher then switches the class between modes. Every mode works with every applet, so the applet never needs to know the mode. An applet can still narrow the modes each phase offers (section 3).
 
 | Mode | What happens |
 | --- | --- |
@@ -62,7 +62,8 @@ Declare the manifest in a JSON script tag, anywhere in the file:
   "instructions": "Help the student place 3/8 on a number line ...",
   "pulsePrompt": "Each state has x, a number from 0 to 1 ...",
   "namelist": ["Ann Lee", "Bo Tan"],
-  "preparedStates": [{ "name": "Read as digits", "state": { "x": 0.38, "note": "" }, "phase": 1 }]
+  "preparedStates": [{ "name": "Read as digits", "state": { "x": 0.38, "note": "" }, "phase": 1 }],
+  "modes": [["independent", "spotlight"], ["independent", "reveal"]]
 }
 </script>
 ```
@@ -79,6 +80,7 @@ Declare the manifest in a JSON script tag, anywhere in the file:
 | `pulsePrompt` | Optional string. |
 | `namelist` | Optional list of strings. |
 | `preparedStates` | Optional list of `{ name, state, phase }`. `name` is a string. `state` must be present. `phase` is an integer from 0 to the number of phases minus 1. |
+| `modes` | Optional list with exactly one entry per phase. Each entry is a non-empty list of mode ids: `independent`, `demo`, `spotlight`, `anonymousSpotlight`, `gallery`, `group`, `paced`, `freeze`, `focus`, `reveal`. |
 
 **What each field does**
 
@@ -90,6 +92,12 @@ Declare the manifest in a JSON script tag, anywhere in the file:
 - `namelist` locks the session to those names. A student must type one to join. Matching ignores case, surrounding spaces and repeated spaces. Leave it out to let any name join.
 - `preparedStates` become buttons in the teacher's Reveal picker, labelled by `name`. Keep names short and unique.
 - Prepared states arrive exactly as written.
+- `modes` narrows the modes the teacher is offered in each phase. The phase is the teacher's own phase.
+- The first mode in each list is that phase's default.
+- When the teacher's phase changes to one that does not allow the current mode, the class switches to the new phase's default. The same happens when a session starts.
+- A scripted spotlight in a phase that does not allow Spotlight is undone straight away.
+- Handoff is always offered, because it is an action rather than a mode.
+- Leave `modes` out to offer every mode in every phase.
 
 ## 4. The runtime
 
@@ -437,6 +445,7 @@ A yes or no vote. The teacher types a question. Students vote, then explain. The
 
 - One HTML file, every asset inline, no storage APIs.
 - The manifest parses: `title` and `phases` present, prepared state phases in range.
+- `modes`, if present, has one non-empty list per phase, and each list starts with the mode the phase should open in.
 - `instructions` and `pulsePrompt` present, unless the lesson wants no chatbot or no Pulse.
 - Fetched resources have a fallback.
 - `connect` is called once, before the first `update`.
