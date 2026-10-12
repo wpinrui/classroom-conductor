@@ -1,0 +1,10 @@
+# Netlify builds the web app at the repo root, not engine/.
+[build]
+  command = "yarn build"
+  publish = "dist"
+
+# The app routes in the browser, so every path serves index.html (like the Firebase rewrite).
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
