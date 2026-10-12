@@ -50,7 +50,6 @@
     {"label": "Start 1 minute timer", "timer": 60},
     {"label": "Reveal NOR", "mode": "independent", "cue": "nor"},
     {"label": "NOR half", "phase": 3, "mode": "independent"},
-    {"label": "Fill NOR column", "cue": "fill NOR"},
     {"label": "Fill column 1", "cue": "fill 1"},
     {"label": "Fill column 2", "cue": "fill 2"},
     {"label": "NAND: students type", "phase": 4, "mode": "independent", "cue": "type"},
@@ -1776,7 +1775,8 @@ const DEFAULTS = {
   warm: { round: -1, q: -1, deal: 1, shown: false },
   predict: { ex: 0, shown: {}, counts: {}, votes: {}, hide: false },
   tt: { cols: [], target: "----", reveal: false },
-  nor: { cols: [], t: "----", o1: "----", o2: "----" },
+  // The NOR column was found in the truth table phase, so it arrives filled in.
+  nor: { cols: [], t: "1000", o1: "----", o2: "----" },
   nand: { mode: "type", shown: false, table: false, cells: { ...BLANK_TABLE }, text: "", done: false, bad: false, pick: "" },
   pw: { code: DEFAULT_CODE, password: "", confirm: "", result: "", err: "", passes: false },
   circ: { gates: {}, wires: {}, showCount: false },
@@ -2313,7 +2313,7 @@ const hasData = (cells) => Object.values(cells || {}).some((v) => /[01]/.test(St
 // ---------- Phase 3: NOR half ----------
 // The class works out each circuit's output. No algebra is given: the teacher adds working columns as the class names them.
 const NOR_OUTS = [{ k: "t", tag: "NOR", goal: true, e: "NOT (A OR B)" }, { k: "o1", tag: "1", e: "NOT A OR NOT B" }, { k: "o2", tag: "2", e: "NOT A AND NOT B" }];
-const norHas = (n) => n.cols.length > 0 || /[01]/.test(n.t + n.o1 + n.o2);
+const norHas = (n) => n.cols.length > 0 || /[01]/.test(n.o1 + n.o2);
 function viewNor() {
   const twoIn = (main) => ({ w: 400, h: 200, inputs: { A: [40, 55], B: [40, 145] }, out: { name: "", x: 370, y: 100 }, ...main });
   const c0 = twoIn({ gates: { o: { type: "OR", x: 120, y: 70 }, n: { type: "NOT", x: 240, y: 70 } }, wires: { "o:0": "A", "o:1": "B", "n:0": "o", Q: "n" } });
@@ -2334,12 +2334,12 @@ function viewNor() {
       ? `<th>${exInput(`nor.cols.${ci}`, c, ["A", "B"])}<span class="hacts"><button class="x" data-act="nordel" data-i="${ci}" aria-label="Remove column">${I.trash}</button>${c.done ? fillBtn(`nor.cols.${ci}.vals`, c.text, ["A", "B"]) : ""}</span></th>`
       : `<th>${c.done ? alg(c.text) : ""}</th>`;
   });
-  head += NOR_OUTS.map((o) => `<th class="${cls(o)}"><span class="ctag ${o.goal ? "goal" : ""}">${o.tag}</span><span class="hacts">${fillBtn(`nor.${o.k}`, o.e, ["A", "B"])}</span></th>`).join("");
+  head += NOR_OUTS.map((o) => `<th class="${cls(o)}"><span class="ctag ${o.goal ? "goal" : ""}">${o.tag}</span><span class="hacts">${o.goal ? "" : fillBtn(`nor.${o.k}`, o.e, ["A", "B"])}</span></th>`).join("");
   let body = "";
   ROWS.forEach(([a, b], ri) => {
     body += `<tr><td class="in">${a}</td><td class="in">${b}</td>`;
     n.cols.forEach((c, ci) => { body += cell(`data-act="norcell" data-c="${ci}" data-r="${ri}"`, pad4(c.vals)[ri]); });
-    body += NOR_OUTS.map((o) => cell(`data-act="norcell" data-c="${o.k}" data-r="${ri}"`, pad4(n[o.k])[ri], cls(o))).join("");
+    body += NOR_OUTS.map((o) => (o.goal ? `<td class="cell ro ${cls(o)}">${showCell(pad4(n.t)[ri])}</td>` : cell(`data-act="norcell" data-c="${o.k}" data-r="${ri}"`, pad4(n[o.k])[ri], cls(o)))).join("");
     body += "</tr>";
   });
   return `<div class="stage">
@@ -2977,7 +2977,7 @@ function resetPresentation(p) {
   if (p === 0) Object.assign(state.warm, { round: -1, q: -1, shown: false });
   if (p === 1) Object.assign(state.predict, { ex: 0, shown: {}, hide: false });
   if (p === 2) state.tt.reveal = false;
-  if (p === 3) Object.assign(state.nor, { t: "----", o1: "----", o2: "----" });
+  if (p === 3) Object.assign(state.nor, { t: "1000", o1: "----", o2: "----" });
   if (p === 4) Object.assign(state.nand, { mode: "type", shown: false, table: false });
   if (p === 6) state.circ.showCount = false;
   if (p === 8) Object.assign(state.conc, { view: "cards", exitOpen: false, shown: false });
