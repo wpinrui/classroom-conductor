@@ -75,15 +75,8 @@ button:disabled { cursor: default; opacity: .4; }
 .seg button.on { background: var(--ink); color: #fff; }
 
 /* Algebra */
-.alg { display: inline-flex; align-items: flex-end; white-space: nowrap; font-family: "Cambria Math", "STIX Two Math", "Times New Roman", serif; }
-.alg i.bv { font-style: italic; padding: 0 .04em; }
-.alg .bo { padding: 0 .22em; }
-.alg .bp { padding: 0 .04em; }
-.alg .bar { position: relative; display: inline-flex; align-items: flex-end; padding-top: .12em; margin: 0 .05em; }
-/* Drawn as its own line, shifted right to follow the italic slant of the letters below. */
-.alg .bar::before { content: ""; position: absolute; top: 0; left: .14em; right: -.06em; border-top: .06em solid currentColor; }
-/* Each piece under a bar is only as tall as a capital letter, so the bar sits just above the letters, not a full line above. */
-.alg .bar > * { line-height: .82; }
+/* Algebra is MathML, typeset by the browser with the maths font, so bars sit and stack by the font's own metrics. */
+math.alg { font-family: "Cambria Math", "STIX Two Math", math; white-space: nowrap; }
 
 /* Expression input */
 .ex { display: flex; flex-direction: column; gap: 10px; }
@@ -226,7 +219,7 @@ table.sum { border-collapse: collapse; width: 100%; font-size: 22px; }
 .tcard { min-height: 280px; border-radius: 22px; background: var(--card); border: 1px solid var(--line); padding: 28px; display: flex; flex-direction: column; justify-content: center; gap: 18px; font-size: 28px; font-weight: 600; text-align: center; }
 .tcard.back { background: repeating-linear-gradient(135deg, #e9e5da 0 14px, #f1eee6 14px 28px); border-color: #e0dbcf; font-size: 56px; color: #b8b1a1; }
 button.tcard { cursor: pointer; }
-.tcard .alg { font-size: 34px; font-weight: 400; justify-content: center; }
+.tcard .alg { font-size: 34px; font-weight: 400; }
 
 /* NOR half: the target circuit and its tags */
 .cmp { display: flex; align-items: center; gap: 22px; }
@@ -435,23 +428,24 @@ const Bool = (() => {
 
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
-  // Algebra form as HTML. Groups typed by the student keep their brackets.
+  // Algebra form as MathML. Groups typed by the student keep their brackets.
   // Ungrouped trees from the engine get the brackets precedence needs.
+  const paren = (inner) => "<mrow><mo>(</mo>" + inner + "<mo>)</mo></mrow>";
   function html(n) {
     switch (n.t) {
-      case "v": return '<i class="bv">' + esc(n.v) + "</i>";
-      case "c": return '<span class="bc">' + n.v + "</span>";
-      case "grp": return '<span class="bp">(</span>' + html(n.a) + '<span class="bp">)</span>';
+      case "v": return "<mi>" + esc(n.v) + "</mi>";
+      case "c": return "<mn>" + n.v + "</mn>";
+      case "grp": return paren(html(n.a));
       case "not": {
         let a = n.a;
         while (a.t === "grp") a = a.a;
-        return '<span class="bar">' + html(a) + "</span>";
+        return '<mover accent="true"><mrow>' + html(a) + '</mrow><mo stretchy="true">&#x203E;</mo></mover>';
       }
       case "and": {
-        const w = (c) => (c.t === "or" ? '<span class="bp">(</span>' + html(c) + '<span class="bp">)</span>' : html(c));
-        return w(n.a) + '<span class="bo">⋅</span>' + w(n.b);
+        const w = (c) => (c.t === "or" ? paren(html(c)) : html(c));
+        return "<mrow>" + w(n.a) + "<mo>&#x22C5;</mo>" + w(n.b) + "</mrow>";
       }
-      case "or": return html(n.a) + '<span class="bo">+</span>' + html(n.b);
+      case "or": return "<mrow>" + html(n.a) + "<mo>+</mo>" + html(n.b) + "</mrow>";
     }
   }
 
@@ -1729,9 +1723,9 @@ function T() {
 const P = (text) => Bool.parse(text).ast;
 const alg = (text, cls = "") => {
   const r = Bool.parse(text);
-  return r.ast ? `<span class="alg ${cls}">${Bool.html(r.ast)}</span>` : esc(text);
+  return r.ast ? `<math class="alg ${cls}">${Bool.html(r.ast)}</math>` : esc(text);
 };
-const algAst = (ast, cls = "") => `<span class="alg ${cls}">${Bool.html(ast)}</span>`;
+const algAst = (ast, cls = "") => `<math class="alg ${cls}">${Bool.html(ast)}</math>`;
 
 // ---------- Icons ----------
 const I = {
