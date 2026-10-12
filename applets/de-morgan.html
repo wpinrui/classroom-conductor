@@ -1267,7 +1267,7 @@ function viewTT() {
       <table class="tt">${"<tr>" + head + "</tr>" + body}</table>
       <button class="btn icon" data-act="ttadd" aria-label="Add column" data-tip="Add column for intermediate working">${I.plus}</button>
     </div>
-    ${isTeacher() ? `<div class="row"><button class="btn ${state.tt.answer ? "on" : ""}" data-act="ttanswer">${I.eye}Answer</button><button class="btn ${rv ? "on" : ""}" data-act="ttreveal">${I.eye}Gate</button></div>` : ""}
+    ${isTeacher() ? `<div class="row"><button class="btn icon" data-act="ttstep" data-d="-1" aria-label="Back" ${!state.tt.answer && !rv ? "disabled" : ""}>${I.left}</button><button class="btn" data-act="ttstep" data-d="1" ${rv ? "disabled" : ""}>Next${I.right}</button></div>` : ""}
   </div>`;
 }
 
@@ -2124,7 +2124,14 @@ const ACT = {
     else { const c = state.tt.cols[+el.dataset.c]; c.vals = setChar(pad4(c.vals), r, cyc(pad4(c.vals)[r])); }
     commit();
   },
-  ttanswer() { state.tt.answer = !state.tt.answer; commit(); },
+  // Own tables, then the completed table, then the gate.
+  ttstep(el) {
+    const now = state.tt.reveal ? 2 : state.tt.answer ? 1 : 0;
+    const next = Math.max(0, Math.min(2, now + +el.dataset.d));
+    state.tt.answer = next >= 1;
+    state.tt.reveal = next === 2;
+    commit();
+  },
   ttreveal() { state.tt.reveal = !state.tt.reveal; commit(); },
   gatelabels() { gateLabels = !gateLabels; render(true); },
   northeorem() { state.nor.theorem = !state.nor.theorem; commit(); },
