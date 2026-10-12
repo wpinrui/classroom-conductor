@@ -36,6 +36,7 @@ The controls overlay the applet on the teacher's laptop. A keyboard shortcut sho
 - set group size, and form or rearrange groups
 - override the chatbot rate limit
 - request a Pulse for the whole class or one student
+- blank the projected screen
 - see live thumbnails of every student's screen (trial)
 
 ## Students
@@ -46,14 +47,14 @@ A student who refreshes or disconnects rejoins with their work intact.
 
 Students form groups with a short code.
 
-The chatbot is always available, within rate limits.
+The chatbot is available when the applet supplies instructions, within rate limits.
 
 ## Modes
 
 Modes are a fixed set provided by the Classroom Conductor. Every mode works with every applet.
 
 - **Demo**: students watch the teacher use the applet live on their own laptops.
-- **Spotlight**: the teacher picks a student, and everyone else views that student's screen. The spotlighted student keeps working.
+- **Spotlight**: the teacher picks a student, and everyone else views that student's screen, including on the teacher's laptop. The spotlighted student keeps working.
 - **Anonymous Spotlight**: Spotlight without showing the student's name.
 - **Gallery**: several students' screens shown side by side on everyone's laptop.
 - **Independent**: students work in the applet themselves.
@@ -71,8 +72,8 @@ Every applet:
 - exposes its full state as data
 - accepts a state handed to it
 - declares its phases
-- supplies custom instructions for the chatbot
-- supplies the Pulse prompt
+- optionally supplies custom instructions for the chatbot, which switch the chatbot on
+- optionally supplies the Pulse prompt, which switches the Pulse on
 - optionally supplies a namelist
 - optionally supplies prepared states for Reveal
 
