@@ -11,6 +11,7 @@ Every rule is marked as one of two kinds.
 
 Read `examples/number-line.html` first. It is the smallest applet that does everything right.
 `applets/python-for-loops.html` is a full lesson built the same way.
+`applets/mango-or-pear.html` shows the context and the name wheel filters.
 
 ## 1. The file
 
@@ -59,7 +60,7 @@ Declare the manifest in a JSON script tag:
 
 - `namelist` locks the session to those names. A student must type one of them to join. Matching ignores case and repeated spaces (`nameKey` in `src/applet/manifest.ts`). Leave it out to let any name join.
 - `preparedStates` become buttons in the teacher's Reveal picker. Each `name` is the button label. Keep names short and unique, because two equal names share one button key.
-- `instructions` and `pulsePrompt` go to Claude. Section 5 covers how to write them.
+- `instructions` and `pulsePrompt` go to Claude. Section 6 covers how to write them.
 
 ## 3. The runtime
 
@@ -101,7 +102,34 @@ host.update(state, phase);
 - Treat a missing field as its empty value instead of trusting `null`. `examples/number-line.html` reads a missing `x` as unplaced.
 - Disable the next phase control when the phase limit forbids it, so a student never presses a button that silently fails.
 
-## 4. The interface
+## 4. Context and the name wheel
+
+An applet cannot read the database, so the host hands it what it needs to see beyond its own state.
+
+```js
+host.connect({
+  setState(s, p) { /* ... */ },
+  setContext(c) { context = c; render(); },
+});
+```
+
+**Required**
+
+- Treat `setContext` as optional. It arrives before the first `setState`, but an applet opened on its own never gets one. Default to `{ role: "student", teacher: null, students: null }`.
+- Pick the view from `context.role`, never from who is looking. Demo shows the teacher's state on a student's device with role `"teacher"`. Thumbnails and Spotlight show a student's state on the teacher's device with role `"student"`.
+- Render from the state and the context together. A frame showing another student's state gets the same `teacher` context, so it can draw the same question.
+- Expect `context.students` to be `null` in every frame except the teacher's own live one. Anything drawn from it must also work without it. Copy a summary into the teacher's state when students must see it, such as revealed counts.
+- Calling `update` from `setContext` is allowed, because the host did not push that state. Only call it when the state really changed.
+- Send `conductor.filters(list)` from the teacher's frame only, with `role === "teacher"` and `students` present. Each entry is `{ name, students }`, where `students` lists student ids. Each call replaces every earlier filter. Guard the call with `if (host.filters)` when using the fallback host.
+
+**Recommended**
+
+- Publish filters the teacher would call on, such as "True" and "False" for the current question. The wheel always offers the whole class, so never publish an everyone filter.
+- Keep filter names short and unique. They become buttons beside the wheel.
+- Publish nothing that would leak a hidden result. The wheel shows how many students each filter holds. `applets/mango-or-pear.html` publishes its True and False filters only after the teacher reveals the counts.
+- Keep per question data keyed by a stable id that the teacher's state assigns. A student's answer then stays attached to its question when the teacher moves on.
+
+## 5. The interface
 
 **Required**
 
@@ -117,7 +145,7 @@ host.update(state, phase);
 - Never use the native `title` attribute for tooltips. Build a real tooltip if one is needed.
 - Respect the student's phase list as the navigation. One control to move forward and one to move back is usually enough.
 
-## 5. The chatbot and the Pulse
+## 6. The chatbot and the Pulse
 
 ### Chat
 
@@ -154,7 +182,7 @@ The input is an object keyed by student id. Each entry is `{ name, phase, state 
 - Ask for counts, not percentages, and ask for brevity.
 - Cover the single student case too. The same prompt serves a Pulse for one student.
 
-## 6. Pedagogy
+## 7. Pedagogy
 
 These are all **recommended**. They come from the for loops lesson, which shows each of them in working code.
 
@@ -167,7 +195,7 @@ These are all **recommended**. They come from the for loops lesson, which shows 
 - **Prepare the states a teacher will want to show.** A common wrong answer and a model answer are the usual pair. `examples/number-line.html` prepares "Read as digits" next to the correct placement.
 - **Keep one idea per phase.** A phase that needs a paragraph to explain is two phases.
 
-## 7. Checklist
+## 8. Checklist
 
 Before handing over an applet, check every required item:
 
@@ -180,4 +208,5 @@ Before handing over an applet, check every required item:
 - The phase never passes the limit.
 - `instructions` assume the bot cannot see the state.
 - `pulsePrompt` describes every state field and phase index.
+- The screen renders without a context, and filters go out from the teacher's frame only.
 - No needless text, no em-dashes and no middle dots.

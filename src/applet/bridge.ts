@@ -7,7 +7,8 @@ var handlers=null,seq=0;
 function send(m){parent.postMessage(m,"*");}
 window.conductor={
 connect:function(h){handlers=h;send({cc:"connect"});},
-update:function(state,phase){send({cc:"update",state:JSON.parse(JSON.stringify(state===undefined?null:state)),phase:phase|0,seq:seq});}
+update:function(state,phase){send({cc:"update",state:JSON.parse(JSON.stringify(state===undefined?null:state)),phase:phase|0,seq:seq});},
+filters:function(list){send({cc:"filters",filters:JSON.parse(JSON.stringify(list||[]))});}
 };
 window.addEventListener("message",function(e){
 if(e.source!==parent||!handlers)return;
@@ -15,6 +16,7 @@ var m=e.data;
 if(!m)return;
 if(m.cc==="setState"){seq=m.seq;handlers.setState(m.state,m.phase);}
 else if(m.cc==="phaseLimit"&&handlers.setPhaseLimit)handlers.setPhaseLimit(m.maxPhase);
+else if(m.cc==="context"&&handlers.setContext)handlers.setContext(m.context);
 });
 window.addEventListener("keydown",function(e){
 if((e.ctrlKey||e.metaKey)&&e.key==="."){e.preventDefault();send({cc:"shortcut"});}

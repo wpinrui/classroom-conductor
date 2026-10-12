@@ -16,14 +16,41 @@ export interface Manifest {
   preparedStates?: PreparedState[];
 }
 
+/** One student as the teacher's applet sees them. */
+export interface ClassMember {
+  name: string;
+  phase: number;
+  state: unknown;
+  online: boolean;
+}
+
+/**
+ * What surrounds the state a frame shows. role says whose state it is.
+ * A student frame gets the teacher's live state. The teacher's own frame gets every student.
+ */
+export interface AppletContext {
+  role: "teacher" | "student";
+  teacher: { state: unknown; phase: number } | null;
+  students: Record<string, ClassMember> | null;
+}
+
+/** A named set of students the teacher can spin the name wheel over. */
+export interface WheelFilter {
+  name: string;
+  students: string[];
+}
+
 /** Applet to host. */
 export type AppletMessage =
   | { cc: "connect" }
   | { cc: "update"; state: unknown; phase: number; seq: number }
+  /** Replaces the filters the name wheel offers. Only the teacher's frame is heard. */
+  | { cc: "filters"; filters: WheelFilter[] }
   /** The controls shortcut, pressed while the applet has focus. */
   | { cc: "shortcut" };
 
 /** Host to applet. maxPhase null lifts the limit. */
 export type HostMessage =
   | { cc: "setState"; state: unknown; phase: number; seq: number }
-  | { cc: "phaseLimit"; maxPhase: number | null };
+  | { cc: "phaseLimit"; maxPhase: number | null }
+  | { cc: "context"; context: AppletContext };

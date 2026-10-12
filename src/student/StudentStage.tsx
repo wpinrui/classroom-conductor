@@ -1,4 +1,4 @@
-import { AppletFrame } from "../applet/AppletFrame";
+import { AppletFrame, TeacherStateContext } from "../applet/AppletFrame";
 import { Chat } from "../chat/Chat";
 import type { Control, Mode } from "../firebase/types";
 import {
@@ -18,7 +18,12 @@ export function DemoView({ session, html }: StageProps) {
   if (teacher === undefined) return <Loading />;
   return (
     <>
-      <AppletFrame html={html} state={teacher} interactive={false} />
+      <AppletFrame
+        html={html}
+        state={teacher}
+        interactive={false}
+        owner="teacher"
+      />
       <Edge kind="watch" />
     </>
   );
@@ -58,6 +63,7 @@ const views: Partial<Record<Mode, (p: StageProps) => React.ReactNode>> = {
 export function StudentStage({ session, uid, me }: Omit<StageProps, "html">) {
   const control = useControl(session);
   const applet = useSessionApplet(session);
+  const teacher = useTeacherState(session);
   if (!control || !applet)
     return (
       <main className="stage">
@@ -72,13 +78,15 @@ export function StudentStage({ session, uid, me }: Omit<StageProps, "html">) {
   const showOwn = Boolean(ownProps) || !View;
   return (
     <main className="stage">
-      <div className="view" key={showOwn ? "own" : mode}>
-        {showOwn ? (
-          <OwnApplet {...props} {...ownProps?.(control)} />
-        ) : (
-          View && <View {...props} />
-        )}
-      </div>
+      <TeacherStateContext.Provider value={teacher ?? null}>
+        <div className="view" key={showOwn ? "own" : mode}>
+          {showOwn ? (
+            <OwnApplet {...props} {...ownProps?.(control)} />
+          ) : (
+            View && <View {...props} />
+          )}
+        </div>
+      </TeacherStateContext.Provider>
       {mode === "freeze" && <Frozen />}
       {mode === "focus" && <div className="focus" />}
       {mode !== "focus" && <Chat session={session} uid={uid} />}
