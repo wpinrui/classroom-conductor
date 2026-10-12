@@ -149,8 +149,10 @@ input[aria-invalid="true"] {
   border-radius: var(--radius-sm);
   background: var(--color-text);
   color: var(--color-bg);
+  font-family: var(--font-family);
   font-size: var(--font-size-caption);
   font-weight: var(--font-weight-strong);
+  letter-spacing: normal;
   line-height: 1.4;
   white-space: nowrap;
   pointer-events: none;
