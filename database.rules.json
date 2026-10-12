@@ -15,6 +15,7 @@
     },
     "live": {
       "$sid": {
+        ".read": "auth != null",
         ".write": "auth != null && root.child('sessions').child($sid).child('teacher').val() === auth.uid",
         ".validate": "newData.val() === true"
       }
