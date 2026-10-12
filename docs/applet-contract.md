@@ -95,7 +95,7 @@ Every option is optional and changes only what it names.
 | `open` | `true` opens the wheel and `false` closes it. |
 | `filter` | Selects a filter by name. `""` selects the whole class. |
 | `spin` | `true` opens the wheel and spins it. |
-| `replacement` | `false` takes each drawn student out of the pool for the rest of the session. `true` puts drawing back to normal. The teacher's "No repeats" toggle sets the same value. |
+| `replacement` | `false` takes each drawn student out of the pool for the rest of the session. `true` puts drawing back to normal. The teacher's "No repeats" toggle sets the same value, and once the teacher uses it the applet's value is ignored for the rest of the session. |
 
 See `examples/counter.html` for a complete applet.
 `docs/applet-authoring.md` explains every rule and adds pedagogy.

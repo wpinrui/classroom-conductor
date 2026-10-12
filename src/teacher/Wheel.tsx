@@ -222,7 +222,9 @@ export function Wheel({
             type="button"
             className="wheel-pool"
             aria-pressed={!replacement}
-            onClick={() => setWheel(session, { replacement: !replacement })}
+            onClick={() =>
+              setWheel(session, { replacement: !replacement, teacherSet: true })
+            }
           >
             No repeats
           </button>

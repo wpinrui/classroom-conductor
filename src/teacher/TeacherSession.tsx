@@ -30,7 +30,8 @@ export function TeacherSession() {
   const onWheel = (raw: unknown) => {
     if (typeof raw !== "object" || raw === null) return;
     const o = raw as WheelOptions;
-    if (typeof o.replacement === "boolean")
+    // Once the teacher has chosen, the applet's choice no longer applies.
+    if (typeof o.replacement === "boolean" && !data?.control.wheel?.teacherSet)
       setWheel(session, { replacement: o.replacement });
     if (o.open === false && !o.spin) return setWheelOpen(false);
     const filter = typeof o.filter === "string" ? o.filter : undefined;
