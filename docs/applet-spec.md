@@ -190,6 +190,7 @@ The applet cannot read the database. The host hands it what it needs through `se
 **Recommended**
 
 - Keep per question data keyed by an id the teacher's state assigns. A student's answer then stays with its question when the teacher moves on.
+- If students follow the teacher's phase, check again after every `setState`, deferred so `update` is not called inside it. The context arrives before the saved state, and the saved state carries the phase it was saved at, which can be behind the teacher. This happens whenever a student's applet reloads, such as after Demo, Spotlight or Reveal.
 
 ## 6. Class tools
 
