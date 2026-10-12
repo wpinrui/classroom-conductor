@@ -21,6 +21,16 @@ const teacher = () =>
   env
     .authenticatedContext(TEACHER, {
       firebase: { sign_in_provider: "google.com" },
+      email: "wongpinrui@gmail.com",
+      email_verified: true,
+    })
+    .database();
+const stranger = () =>
+  env
+    .authenticatedContext("stranger", {
+      firebase: { sign_in_provider: "google.com" },
+      email: "someone@gmail.com",
+      email_verified: true,
     })
     .database();
 const student = (uid = STUDENT) =>
@@ -49,7 +59,11 @@ beforeEach(async () => {
       teacher: TEACHER,
       code: "ABC234",
       createdAt: 1,
-      applet: { name: "a", html: "<p>", manifest: { instructions: "Be kind." } },
+      applet: {
+        name: "a",
+        html: "<p>",
+        manifest: { instructions: "Be kind." },
+      },
       control: { mode: "independent" },
     });
     await set(ref(ctx.database(), "codes/ABC234"), {
@@ -79,6 +93,21 @@ describe("teachers", () => {
     );
     await assertSucceeds(
       set(ref(teacher(), "sessions/s2"), { teacher: TEACHER, code: "X" }),
+    );
+  });
+
+  it("only allowlisted Google accounts can teach", async () => {
+    await assertFails(
+      set(ref(stranger(), "sessions/s3"), { teacher: "stranger", code: "X" }),
+    );
+    await assertFails(
+      set(ref(stranger(), "codes/NEW234"), {
+        teacher: "stranger",
+        session: "s3",
+      }),
+    );
+    await assertFails(
+      set(ref(stranger(), "teachers/stranger/applets/x"), { name: "a" }),
     );
   });
 
