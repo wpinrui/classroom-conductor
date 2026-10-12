@@ -2006,7 +2006,7 @@ function viewPredict() {
 // ---------- Phase 2: Truth table ----------
 function viewTT() {
   if (isTeacher() && state.tt.reveal) {
-    const L = { w: 560, h: 210, inputs: { M: [50, 55], P: [50, 145] }, out: { name: "", x: 520, y: 100 }, gates: { g: { type: "NOR", x: 240, y: 70, label: "NOR" } }, wires: { "g.0": "M", "g.1": "P", Q: "g" } };
+    const L = { w: 560, h: 210, inputs: { M: [50, 55], P: [50, 145] }, out: { name: "", x: 520, y: 100 }, gates: { g: { type: "NOR", x: 240, y: 70, label: "NOR" } }, wires: { "g:0": "M", "g:1": "P", Q: "g" } };
     const svg = circuitSVG(L, false);
     const vals = "1000";
     return `<div class="stage" style="margin-top:20px">
@@ -2062,8 +2062,8 @@ const hasData = (cells) => Object.values(cells || {}).some((v) => /[01]/.test(St
 // ---------- Phase 3: NOR half ----------
 function viewNor() {
   const twoIn = (g, main) => ({ w: 400, h: 200, inputs: { A: [40, 55], B: [40, 145] }, out: { name: "", x: 370, y: 100 }, ...main });
-  const c0 = twoIn(0, { gates: { o: { type: "OR", x: 120, y: 70 }, n: { type: "NOT", x: 240, y: 70 } }, wires: { "o.0": "A", "o.1": "B", "n.0": "o", Q: "n" } });
-  const cand = (type) => twoIn(0, { gates: { n1: { type: "NOT", x: 110, y: 25 }, n2: { type: "NOT", x: 110, y: 115 }, g: { type, x: 250, y: 70 } }, wires: { "n1.0": "A", "n2.0": "B", "g.0": "n1", "g.1": "n2", Q: "g" } });
+  const c0 = twoIn(0, { gates: { o: { type: "OR", x: 120, y: 70 }, n: { type: "NOT", x: 240, y: 70 } }, wires: { "o:0": "A", "o:1": "B", "n:0": "o", Q: "n" } });
+  const cand = (type) => twoIn(0, { gates: { n1: { type: "NOT", x: 110, y: 25 }, n2: { type: "NOT", x: 110, y: 115 }, g: { type, x: 250, y: 70 } }, wires: { "n1:0": "A", "n2:0": "B", "g:0": "n1", "g:1": "n2", Q: "g" } });
   const box = (L, e, n) => `<div class="card col" style="align-items:center;padding:14px 16px;gap:6px">${n ? `<div class="muted small" style="align-self:flex-start;font-weight:700">${n}</div>` : ""}${circuitSVG(L, false).replace(/width="400" height="200"/, 'width="352" height="176"')}<div style="font-size:30px">${alg(e)}</div></div>`;
   const cells = isTeacher() || hasData(state.nor) ? state.nor : T().nor;
   return `<div class="stage">
