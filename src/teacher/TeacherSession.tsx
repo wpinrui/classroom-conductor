@@ -234,11 +234,21 @@ export function TeacherSession() {
         setControlsOpen((o) => !o);
       }
     };
+    // The middle mouse button toggles the controls too. Clicks inside the applet arrive through the bridge.
+    const onMiddle = (e: MouseEvent) => {
+      if (e.button !== 1) return;
+      e.preventDefault();
+      setControlsOpen((o) => !o);
+    };
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    window.addEventListener("mousedown", onMiddle);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("mousedown", onMiddle);
+    };
   }, []);
 
-  // Clicking the lesson itself tucks the controls away. Ctrl+. brings them back.
+  // Clicking the lesson itself tucks the controls away. Ctrl+. or the middle button brings them back.
   useEffect(() => {
     if (!controlsOpen) return;
     const inFrame = () => document.activeElement instanceof HTMLIFrameElement;
@@ -249,6 +259,7 @@ export function TeacherSession() {
         if (inFrame()) setControlsOpen(false);
       });
     const onDown = (e: PointerEvent) => {
+      if (e.button !== 0) return;
       const t = e.target;
       if (
         t instanceof Element &&
