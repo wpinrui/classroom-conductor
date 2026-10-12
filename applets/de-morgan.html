@@ -239,6 +239,12 @@ svg.circ .port { fill: #b7c1d4; stroke: transparent; stroke-width: 12; }
 svg.circ .port.io { cursor: crosshair; }
 svg.circ .port.io:hover { fill: var(--accent); }
 svg.circ .lbl { font: italic 30px "Cambria Math", "Times New Roman", serif; fill: var(--ink); }
+/* Gate labels: a light fill per gate type with its name in dark bold text, readable on a projector. */
+svg.circ .gt-OR .body, svg.circ .gt-NOR .body { fill: #ffe1a6; }
+svg.circ .gt-AND .body { fill: #c9dcff; }
+svg.circ .gt-NOT .body { fill: #f7cde9; }
+svg.circ .gname { font: 800 15px system-ui, sans-serif; fill: #1c1d21; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+svg.circ .gname.small { font-size: 12px; }
 svg.circ .glabel { font: 700 15px system-ui, sans-serif; fill: var(--soft); letter-spacing: .06em; }
 svg.circ .gate { cursor: grab; }
 svg.circ .gate:active { cursor: grabbing; }
@@ -2095,7 +2101,9 @@ function wirePath(x1, y1, x2, y2) {
   return `M${x1} ${y1} C${x1 + dx} ${y1} ${x2 - dx} ${y2} ${x2} ${y2}`;
 }
 // Static or interactive circuit. layout: { w, h, inputs: {A:[x,y]}, out: {name,x,y}, gates, wires }
-function circuitSVG(L, interactive) {
+// Where each gate's name sits inside its body when gate labels are on.
+const GATE_MID = { AND: [32, 30], OR: [34, 30], NOR: [34, 30], NOT: [24, 30] };
+function circuitSVG(L, interactive, labels = false) {
   const srcPos = (s) => (L.inputs[s] ? [L.inputs[s][0] + 22, L.inputs[s][1]] : L.gates[s] ? [L.gates[s].x + OUT[0], L.gates[s].y + OUT[1]] : null);
   const dstPos = (p) => {
     if (p === "Q") return [L.out.x - 22, L.out.y];
@@ -2117,7 +2125,8 @@ function circuitSVG(L, interactive) {
     const ports = interactive
       ? inPorts(G.type).map(([x, y], i) => `<circle class="port io" data-in="${id}:${i}" cx="${x}" cy="${y}" r="7"/>`).join("") + `<circle class="port io" data-out="${id}" cx="${OUT[0]}" cy="${OUT[1]}" r="7"/>`
       : "";
-    gates += `<g class="${interactive ? "gate" : ""}" data-gate="${interactive ? id : ""}" transform="translate(${G.x} ${G.y})">${gateShape(G.type)}${G.label ? `<text class="glabel" x="40" y="88" text-anchor="middle">${G.label}</text>` : ""}${ports}</g>`;
+    const name = labels && GATE_MID[G.type] ? `<text class="gname ${G.type === "NOT" ? "small" : ""}" x="${GATE_MID[G.type][0]}" y="${GATE_MID[G.type][1]}">${G.type}</text>` : "";
+    gates += `<g class="${interactive ? "gate" : ""} ${labels ? "gt-" + G.type : ""}" data-gate="${interactive ? id : ""}" transform="translate(${G.x} ${G.y})">${gateShape(G.type)}${name}${G.label ? `<text class="glabel" x="40" y="88" text-anchor="middle">${G.label}</text>` : ""}${ports}</g>`;
   }
   let io = "";
   for (const [n, [x, y]] of Object.entries(L.inputs)) {
@@ -2351,6 +2360,8 @@ const NAND_DEFS = [{ k: "a", e: "A" }, { k: "b", e: "B" }, { k: "c2", e: "NOT (A
 const hasData = (cells) => Object.values(cells || {}).some((v) => /[01]/.test(String(v)));
 
 // ---------- Phase 3: NOR half ----------
+// Each viewer, teacher or student, can colour and name the gates while they learn them. A viewing choice, so not saved.
+let gateLabels = false;
 // The class works out each circuit's output. No algebra is given: the teacher adds working columns as the class names them.
 const NOR_OUTS = [{ k: "t", tag: "NOR", goal: true, e: "NOT (A OR B)" }, { k: "o1", tag: "1", e: "NOT A OR NOT B" }, { k: "o2", tag: "2", e: "NOT A AND NOT B" }];
 const norHas = (n) => n.cols.length > 0 || /[01]/.test(n.o1 + n.o2);
@@ -2358,7 +2369,7 @@ function viewNor() {
   const twoIn = (main) => ({ w: 400, h: 200, inputs: { A: [40, 55], B: [40, 145] }, out: { name: "", x: 370, y: 100 }, ...main });
   const c0 = twoIn({ gates: { o: { type: "OR", x: 120, y: 70 }, n: { type: "NOT", x: 240, y: 70 } }, wires: { "o:0": "A", "o:1": "B", "n:0": "o", Q: "n" } });
   const cand = (type) => twoIn({ gates: { n1: { type: "NOT", x: 110, y: 25 }, n2: { type: "NOT", x: 110, y: 115 }, g: { type, x: 250, y: 70 } }, wires: { "n1:0": "A", "n2:0": "B", "g:0": "n1", "g:1": "n2", Q: "g" } });
-  const svg = (L) => circuitSVG(L, false).replace(/width="400" height="200"/, 'width="340" height="170"');
+  const svg = (L) => circuitSVG(L, false, gateLabels).replace(/width="400" height="200"/, 'width="340" height="170"');
   const card = (L, o) => `<div class="ccard ${o.goal ? "goal" : ""}"><span class="ctag ${o.goal ? "goal" : ""}">${o.tag}</span>${svg(L)}</div>`;
   // Students watch the teacher's table until a Handoff gives them their own copy, which they then work on.
   const ed = isTeacher() || norHas(state.nor);
@@ -2391,6 +2402,7 @@ function viewNor() {
       ${card(cand("OR"), NOR_OUTS[1])}
       ${card(cand("AND"), NOR_OUTS[2])}
     </div>
+    <div class="row"><button class="btn ${gateLabels ? "on" : ""}" data-act="gatelabels">${gateLabels ? I.eye : I.eyeOff}Gate labels</button></div>
     <div class="row" style="flex-wrap:nowrap;align-items:center">
       <table class="tt">${"<tr>" + head + "</tr>" + body}</table>
       ${ed ? `<button class="btn icon" data-act="noradd" aria-label="Add column" data-tip="Add column for intermediate working">${I.plus}</button>` : ""}
@@ -3179,6 +3191,7 @@ const ACT = {
   },
   ttanswer() { state.tt.answer = !state.tt.answer; commit(); },
   ttreveal() { state.tt.reveal = !state.tt.reveal; commit(); },
+  gatelabels() { gateLabels = !gateLabels; render(true); },
   northeorem() { state.nor.theorem = !state.nor.theorem; commit(); },
   dimcol(el) { setPath(state, el.dataset.path, !getPath(state, el.dataset.path)); commit(); },
   fillcol(el) {
