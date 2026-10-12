@@ -48,7 +48,6 @@
     {"label": "Pick a False voter", "wheel": {"filter": "False", "spin": true}},
     {"label": "Truth Table", "phase": 2, "mode": "independent"},
     {"label": "Start 1 minute timer", "timer": 60},
-    {"label": "Pick a table", "wheel": {"filter": "", "spin": true}},
     {"label": "Reveal NOR", "mode": "independent", "cue": "nor"},
     {"label": "NOR half", "phase": 3, "mode": "independent"},
     {"label": "Fill NOR column", "cue": "fill NOR"},
@@ -2289,7 +2288,7 @@ function viewTT() {
       <table class="tt">${"<tr>" + head + "</tr>" + body}</table>
       <button class="btn icon" data-act="ttadd" aria-label="Add column">${I.plus}</button>
     </div>
-    ${isTeacher() ? `<div class="row"><button class="btn primary" data-act="pick">${I.wheel}Pick</button><button class="btn" data-act="ttreveal">${I.eye}Reveal</button></div>` : ""}
+    ${isTeacher() ? `<div class="row"><button class="btn" data-act="ttreveal">${I.eye}Reveal</button></div>` : ""}
   </div>`;
 }
 
@@ -3239,9 +3238,6 @@ host.connect({
     ownSeed();
   },
   slide(step) { runSlide(step || {}); },
-  wheelPicked(id) {
-    if (phase === 0 || phase === 2) host.spotlight?.(id);
-  },
 });
 if (!gotState) {
   state.me = newSeed();
