@@ -7,7 +7,8 @@ var handlers=null,seq=0;
 function send(m){parent.postMessage(m,"*");}
 window.conductor={
 connect:function(h){handlers=h;send({cc:"connect"});},
-update:function(state,phase){send({cc:"update",state:JSON.parse(JSON.stringify(state===undefined?null:state)),phase:phase|0,seq:seq});}
+update:function(state,phase){send({cc:"update",state:JSON.parse(JSON.stringify(state===undefined?null:state)),phase:phase|0,seq:seq});},
+timer:function(seconds,opts){send({cc:"timer",seconds:seconds==null?null:Number(seconds),shared:!(opts&&opts.shared===false)});}
 };
 window.addEventListener("message",function(e){
 if(e.source!==parent||!handlers)return;

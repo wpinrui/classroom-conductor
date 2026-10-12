@@ -1,7 +1,12 @@
 import { useEffect, useMemo, useRef } from "react";
 import type { StoredState } from "../firebase/types";
 import { withBridge } from "./bridge";
-import type { AppletMessage, HostMessage } from "./contract";
+import {
+  type AppletMessage,
+  type HostMessage,
+  isTool,
+  type ToolMessage,
+} from "./contract";
 
 interface Props {
   html: string;
@@ -16,6 +21,8 @@ interface Props {
   className?: string;
   /** Called when the controls shortcut is pressed inside the applet. */
   onShortcut?: () => void;
+  /** Called when the applet scripts a class tool. Only the teacher's frame passes it. */
+  onTool?: (m: ToolMessage) => void;
 }
 
 type Known = { json: string; phase: number };
@@ -29,13 +36,14 @@ export function AppletFrame({
   interactive = true,
   className,
   onShortcut,
+  onTool,
 }: Props) {
   const frame = useRef<HTMLIFrameElement>(null);
   const known = useRef<Known | null>(null);
   const connected = useRef(false);
   const seq = useRef(0);
-  const latest = useRef({ state, onUpdate, maxPhase, onShortcut });
-  latest.current = { state, onUpdate, maxPhase, onShortcut };
+  const latest = useRef({ state, onUpdate, maxPhase, onShortcut, onTool });
+  latest.current = { state, onUpdate, maxPhase, onShortcut, onTool };
   const srcDoc = useMemo(() => withBridge(html), [html]);
 
   const post = (m: HostMessage) =>
@@ -63,6 +71,8 @@ export function AppletFrame({
       const { state, onUpdate, maxPhase } = latest.current;
       if (m?.cc === "shortcut") {
         latest.current.onShortcut?.();
+      } else if (isTool(m)) {
+        latest.current.onTool?.(m);
       } else if (m?.cc === "connect") {
         connected.current = true;
         post({ cc: "phaseLimit", maxPhase });

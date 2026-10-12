@@ -53,6 +53,17 @@ export interface Control {
   groupSize?: number;
   /** Chat messages per student per minute. Absent means the default. 0 means unlimited. */
   chatLimit?: number;
+  /** Countdown every student sees. */
+  timer?: Timer;
+}
+
+/**
+ * A countdown. Running timers hold endsAt in server time, so clients compute
+ * what is left without ticking writes. Paused timers hold the ms left instead.
+ */
+export interface Timer {
+  endsAt?: number;
+  left?: number;
 }
 
 /** Chat messages per student per minute when control.chatLimit is absent. */
@@ -107,6 +118,8 @@ export interface Session {
   /** nameKey to display name, copied from the manifest. Absent when any name may join. */
   namelist?: Record<string, string>;
   control: Control;
+  /** Countdown only the teacher sees. Students cannot read it. */
+  teacherTimer?: Timer;
   teacherState?: StoredState;
   students?: Record<string, Student>;
   presence?: Record<string, true>;

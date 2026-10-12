@@ -21,7 +21,20 @@ export type AppletMessage =
   | { cc: "connect" }
   | { cc: "update"; state: unknown; phase: number; seq: number }
   /** The controls shortcut, pressed while the applet has focus. */
-  | { cc: "shortcut" };
+  | { cc: "shortcut" }
+  | ToolMessage;
+
+/**
+ * Class tools an applet can script. Only the teacher's own applet is heard.
+ * The teacher can override any of them from the controls at any time.
+ */
+export type ToolMessage =
+  /** Starts a countdown, or cancels it when seconds is null. Shared unless shared is false. */
+  { cc: "timer"; seconds: number | null; shared?: boolean };
+
+const TOOLS: ReadonlySet<string> = new Set<ToolMessage["cc"]>(["timer"]);
+export const isTool = (m: { cc?: unknown } | null): m is ToolMessage =>
+  typeof m?.cc === "string" && TOOLS.has(m.cc);
 
 /** Host to applet. maxPhase null lifts the limit. */
 export type HostMessage =

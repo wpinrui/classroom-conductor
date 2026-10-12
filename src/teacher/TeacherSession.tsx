@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router";
 import { AppletFrame } from "../applet/AppletFrame";
+import type { ToolMessage } from "../applet/contract";
 import { Chat } from "../chat/Chat";
 import { writeTeacherState } from "../firebase/client";
 import type { Session, StoredState } from "../firebase/types";
 import { useSession, useThrottledWriter } from "../hooks/session";
 import { PulsePanel } from "../pulse/Pulse";
+import { Countdown } from "../timer/Countdown";
+import { scriptTimer } from "../timer/timer";
 import { Controls } from "./Controls";
 
 /** The teacher's live view: their own applet with the controls overlaid. */
@@ -35,7 +38,12 @@ export function TeacherSession() {
         data={data}
         onUpdate={write}
         onShortcut={() => setControlsOpen((o) => !o)}
+        onTool={(m) => {
+          if (m.cc === "timer") scriptTimer(session, m.seconds, m.shared);
+        }}
       />
+      {data.control.timer && <Countdown timer={data.control.timer} />}
+      {data.teacherTimer && <Countdown timer={data.teacherTimer} private />}
       {controlsOpen && <Controls session={session} data={data} />}
       <PulsePanel session={session} />
       <Chat session={session} uid={data.teacher} teacher />
@@ -48,10 +56,12 @@ function TeacherApplet({
   data,
   onUpdate,
   onShortcut,
+  onTool,
 }: {
   data: Session;
   onUpdate: (s: StoredState) => void;
   onShortcut: () => void;
+  onTool: (m: ToolMessage) => void;
 }) {
   const [initial] = useState(data.teacherState ?? null);
   return (
@@ -60,6 +70,7 @@ function TeacherApplet({
       state={initial}
       onUpdate={onUpdate}
       onShortcut={onShortcut}
+      onTool={onTool}
     />
   );
 }

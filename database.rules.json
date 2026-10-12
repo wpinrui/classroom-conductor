@@ -27,7 +27,19 @@
           ".read": "auth != null && root.child('sessions').child($sid).child('students').child(auth.uid).exists()"
         },
         "control": {
-          ".read": "auth != null && root.child('sessions').child($sid).child('students').child(auth.uid).exists()"
+          ".read": "auth != null && root.child('sessions').child($sid).child('students').child(auth.uid).exists()",
+          "timer": {
+            ".validate": "newData.hasChild('endsAt') !== newData.hasChild('left') && (!newData.hasChild('endsAt') || newData.child('endsAt').isNumber()) && (!newData.hasChild('left') || (newData.child('left').isNumber() && newData.child('left').val() >= 0))",
+            "endsAt": { ".validate": true },
+            "left": { ".validate": true },
+            "$other": { ".validate": false }
+          }
+        },
+        "teacherTimer": {
+          ".validate": "newData.hasChild('endsAt') !== newData.hasChild('left') && (!newData.hasChild('endsAt') || newData.child('endsAt').isNumber()) && (!newData.hasChild('left') || (newData.child('left').isNumber() && newData.child('left').val() >= 0))",
+          "endsAt": { ".validate": true },
+          "left": { ".validate": true },
+          "$other": { ".validate": false }
         },
         "teacherState": {
           ".read": "auth != null && root.child('sessions').child($sid).child('students').child(auth.uid).exists()",
