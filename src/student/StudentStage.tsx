@@ -91,7 +91,9 @@ export function StudentStage({ session, uid, me }: Omit<StageProps, "html">) {
       {mode === "freeze" && <Frozen />}
       {control.timer && mode !== "focus" && <Countdown timer={control.timer} />}
       {mode === "focus" && <div className="focus" />}
-      {mode !== "focus" && <Chat session={session} uid={uid} />}
+      {mode !== "focus" && applet.manifest.instructions !== undefined && (
+        <Chat session={session} uid={uid} />
+      )}
     </main>
   );
 }

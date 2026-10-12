@@ -45,6 +45,10 @@ interface Props {
   onWheel?: (options: unknown) => void;
   /** Called when the applet scripts a countdown. Only the teacher's frame passes it. */
   onTimer?: (seconds: unknown, shared: unknown) => void;
+  /** Called when the applet spotlights a student. Only the teacher's frame passes it. */
+  onSpotlight?: (student: unknown) => void;
+  /** The student the name wheel last landed on. n grows with every pick, so each one is sent once. */
+  wheelPick?: { student: string; n: number } | null;
 }
 
 type Known = { json: string; phase: number };
@@ -63,6 +67,8 @@ export function AppletFrame({
   onFilters,
   onWheel,
   onTimer,
+  onSpotlight,
+  wheelPick,
 }: Props) {
   const teacherState = useContext(TeacherStateContext);
   const teacher = owner === "student" ? teacherState : null;
@@ -92,6 +98,7 @@ export function AppletFrame({
     onFilters,
     onWheel,
     onTimer,
+    onSpotlight,
     contextJson,
   });
   latest.current = {
@@ -102,6 +109,7 @@ export function AppletFrame({
     onFilters,
     onWheel,
     onTimer,
+    onSpotlight,
     contextJson,
   };
   const srcDoc = useMemo(() => withBridge(html), [html]);
@@ -140,6 +148,8 @@ export function AppletFrame({
         latest.current.onTimer?.(m.seconds, m.shared);
       } else if (m?.cc === "wheel") {
         latest.current.onWheel?.(m.options);
+      } else if (m?.cc === "spotlight") {
+        latest.current.onSpotlight?.(m.student);
       } else if (m?.cc === "connect") {
         connected.current = true;
         post({ cc: "phaseLimit", maxPhase });
@@ -174,6 +184,12 @@ export function AppletFrame({
   useEffect(() => {
     if (connected.current) postContext();
   }, [contextJson]);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: post once per pick
+  useEffect(() => {
+    if (connected.current && wheelPick)
+      post({ cc: "wheelPicked", student: wheelPick.student });
+  }, [wheelPick?.n]);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: post only when the limit changes
   useEffect(() => {

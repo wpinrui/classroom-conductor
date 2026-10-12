@@ -19,7 +19,9 @@ Read `examples/number-line.html` first. It is the smallest applet that does ever
 
 - The applet is one HTML file. Every script, style, image and font is inline.
 - It runs in an iframe with `sandbox="allow-scripts allow-forms allow-modals"` (`src/applet/AppletFrame.tsx`). The origin is opaque. `localStorage`, `sessionStorage`, cookies and IndexedDB throw or fail. Popups, downloads and navigating the top page are blocked.
+- Outside network requests work within that origin. Images load from any site. `fetch` reaches any site that answers with `Access-Control-Allow-Origin: *`, because the frame's origin is `null`. A site that lists allowed origins rejects it.
 - Keep anything that must persist in the state (section 3). Nothing else survives a reload.
+- Inline what the lesson cannot run without. A fetched site can be down or blocked by the school network. Show a usable screen while a fetch is pending or after it fails.
 
 **Recommended**
 
@@ -51,8 +53,8 @@ Declare the manifest in a JSON script tag:
 | body | Valid JSON, and an object. Write `<\/script>` if a string must contain that text. |
 | `title` | A non-empty string. It names the applet in the library and in prompts. |
 | `phases` | A non-empty list of strings. Phases are referred to by index everywhere else. |
-| `instructions` | A string. It may be empty. |
-| `pulsePrompt` | A string. It may be empty. |
+| `instructions` | Optional. A string. |
+| `pulsePrompt` | Optional. A string. |
 | `namelist` | Optional. A list of strings. |
 | `preparedStates` | Optional. A list of `{ name, state, phase }`. `name` is a string. `state` is present. `phase` is an integer index into `phases`. |
 
@@ -61,6 +63,8 @@ Declare the manifest in a JSON script tag:
 - `namelist` locks the session to those names. A student must type one of them to join. Matching ignores case and repeated spaces (`nameKey` in `src/applet/manifest.ts`). Leave it out to let any name join.
 - `preparedStates` become buttons in the teacher's Reveal picker. Each `name` is the button label. Keep names short and unique, because two equal names share one button key.
 - `instructions` and `pulsePrompt` go to Claude. Section 6 covers how to write them.
+- Leaving out `instructions` switches the chatbot off for students and the teacher. Leaving out `pulsePrompt` removes every Pulse button. An empty string keeps the feature on with no guidance, so leave the field out instead.
+- Phase names appear only on the teacher's Paced stepper. Students never see them, so a name may give away what a phase is for.
 
 ## 3. The runtime
 
@@ -141,6 +145,21 @@ host.connect({
 - Keep filter names short and unique. They become buttons beside the wheel.
 - Publish nothing that would leak a hidden result. The wheel shows how many students each filter holds. `applets/mango-or-pear.html` publishes its True and False filters only after the teacher reveals the counts.
 - Keep per question data keyed by a stable id that the teacher's state assigns. A student's answer then stays attached to its question when the teacher moves on.
+
+### The wheel's pick
+
+`wheelPicked(studentId)` in `connect` runs in the teacher's frame each time the wheel stops. It runs for scripted spins and the teacher's own spins alike.
+
+```js
+host.connect({
+  // ...
+  wheelPicked(id) { called = id; render(); },
+});
+```
+
+- Look the student up in `context.students`.
+- Write the pick into the teacher's state if students must see it.
+- To show the student's screen, call `host.spotlight?.(id)`. The teacher can also spotlight the pick with one tap on the wheel. Either way the teacher's screen shows the student's, so the projector does too. Switching mode ends it.
 
 ### Scripting the wheel
 
@@ -228,7 +247,9 @@ These are all **recommended**. They come from the for loops lesson, which shows 
 Before handing over an applet, check every required item:
 
 - One HTML file, every asset inline, no storage APIs.
-- The manifest parses: `title`, `phases`, `instructions` and `pulsePrompt` present, prepared state phases in range.
+- The manifest parses: `title` and `phases` present, prepared state phases in range.
+- `instructions` and `pulsePrompt` present, unless the lesson wants no chatbot or no Pulse.
+- Fetched resources have a fallback, and lesson critical assets are inline.
 - `connect` is called before the first `update`.
 - `update` follows every change, and never follows `setState`.
 - The screen renders from the state and phase alone.

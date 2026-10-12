@@ -3,7 +3,12 @@
 Paste this into the prompt when vibe coding an applet.
 
 An applet is **one HTML file** with every asset inline. It runs in a sandboxed
-frame with no network access to the Conductor, so it cannot reach Firebase.
+frame with an opaque origin, so it cannot reach Firebase.
+
+The frame may load images from any site. It may also `fetch` from any site whose
+CORS headers allow every origin (`Access-Control-Allow-Origin: *`), such as
+pokeapi.co. The class needs that site to be up, so inline anything the lesson
+cannot run without.
 
 ## 1. Manifest
 
@@ -22,7 +27,12 @@ Declare the applet in a JSON script tag:
 </script>
 ```
 
-`namelist` and `preparedStates` are optional. Phases are referred to by index.
+`instructions`, `pulsePrompt`, `namelist` and `preparedStates` are optional.
+Leave out `instructions` to switch the student chatbot off. Leave out
+`pulsePrompt` to switch the Pulse off.
+
+Phases are referred to by index. Phase names are shown only to the teacher, in
+Paced mode. Students never see them.
 
 ## 2. Runtime
 
@@ -36,6 +46,8 @@ conductor.connect({
   setPhaseLimit(maxPhase) {},
   // Optional. Who this frame belongs to, and what it can see beyond its state.
   setContext({ role, teacher, students }) {},
+  // Optional, teacher's frame only. The name wheel landed on this student id.
+  wheelPicked(studentId) {},
 });
 
 // Call on load and after every change to the state or the phase.
@@ -80,6 +92,19 @@ conductor.timer(null);
 ```
 
 A new timer replaces the running one.
+
+### Spotlight
+
+```js
+// Spotlight a student, by id. Everyone's screen and the teacher's show theirs.
+conductor.spotlight(studentId);
+// End the spotlight.
+conductor.spotlight(null);
+```
+
+Spotlight switches the class into Spotlight mode, or keeps Anonymous Spotlight
+if the teacher is already in it. Pair it with `wheelPicked` to put the wheel's
+pick on the projector. The teacher can also do that with one tap on the wheel.
 
 ### Name wheel
 

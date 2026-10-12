@@ -7,7 +7,7 @@ import type {
   WheelOptions,
 } from "../applet/contract";
 import { Chat } from "../chat/Chat";
-import { setWheel, writeTeacherState } from "../firebase/client";
+import { setControl, setWheel, writeTeacherState } from "../firebase/client";
 import type { Session, StoredState } from "../firebase/types";
 import { useSession, useThrottledWriter } from "../hooks/session";
 import { PulsePanel } from "../pulse/Pulse";
@@ -25,6 +25,30 @@ export function TeacherSession() {
   const [filters, setFilters] = useState<WheelFilter[]>([]);
   const [wheelCommand, setWheelCommand] = useState<WheelCommand | null>(null);
   const commands = useRef(0);
+  const [wheelPick, setWheelPick] = useState<{
+    student: string;
+    n: number;
+  } | null>(null);
+  const [blank, setBlank] = useState(false);
+  const blankOn = () => {
+    // Pull focus out of the applet, so the next key reaches the page and ends the blank.
+    if (document.activeElement instanceof HTMLElement)
+      document.activeElement.blur();
+    setBlank(true);
+  };
+
+  /** Spotlights a student, keeping Anonymous Spotlight anonymous. Null ends the spotlight. */
+  const spotlight = (uid: string | null) => {
+    if (uid === null) return setControl(session, { spotlight: null });
+    if (!data?.students?.[uid]) return;
+    const m = data.control.mode;
+    setControl(session, {
+      spotlight: uid,
+      ...(m === "spotlight" || m === "anonymousSpotlight"
+        ? {}
+        : { mode: "spotlight" }),
+    });
+  };
 
   /** The applet drives the name wheel. The teacher can still close or change it from the controls. */
   const onWheel = (raw: unknown) => {
@@ -43,8 +67,32 @@ export function TeacherSession() {
     writeTeacherState(session, s),
   );
 
+  // While blank, any key or click brings the screen back.
+  useEffect(() => {
+    if (!blank) return;
+    const onKey = (e: KeyboardEvent) => {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      setBlank(false);
+    };
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
+  }, [blank]);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: blankOn only calls state setters
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      const t = e.target;
+      const typing =
+        t instanceof HTMLElement &&
+        (t.tagName === "INPUT" ||
+          t.tagName === "TEXTAREA" ||
+          t.isContentEditable);
+      if (!e.ctrlKey && !e.metaKey && !e.altKey && !typing && e.key === "b") {
+        e.preventDefault();
+        blankOn();
+        return;
+      }
       if ((e.ctrlKey || e.metaKey) && e.key === ".") {
         e.preventDefault();
         setControlsOpen((o) => !o);
@@ -55,6 +103,12 @@ export function TeacherSession() {
   }, []);
 
   if (!data) return null;
+  const { manifest } = data.applet;
+  const target =
+    data.control.mode === "spotlight" ||
+    data.control.mode === "anonymousSpotlight"
+      ? data.control.spotlight
+      : undefined;
   return (
     <main className="stage">
       <TeacherStateContext.Provider value={data.teacherState ?? null}>
@@ -65,7 +119,22 @@ export function TeacherSession() {
           onFilters={setFilters}
           onTimer={(seconds, shared) => scriptTimer(session, seconds, shared)}
           onWheel={onWheel}
+          onSpotlight={(raw) => spotlight(typeof raw === "string" ? raw : null)}
+          wheelPick={wheelPick}
         />
+        {target && data.students?.[target] && (
+          <div className="teacher-spotlight">
+            <AppletFrame
+              key={target}
+              html={data.applet.html}
+              state={data.states?.[target] ?? null}
+              interactive={false}
+            />
+            {data.control.mode === "spotlight" && (
+              <div className="name-pill">{data.students[target].name}</div>
+            )}
+          </div>
+        )}
         {data.control.timer && <Countdown timer={data.control.timer} />}
         {data.teacherTimer && <Countdown timer={data.teacherTimer} private />}
         {controlsOpen && (
@@ -74,6 +143,7 @@ export function TeacherSession() {
             data={data}
             wheelOpen={wheelOpen}
             onWheel={() => setWheelOpen((o) => !o)}
+            onBlank={blankOn}
           />
         )}
       </TeacherStateContext.Provider>
@@ -85,10 +155,24 @@ export function TeacherSession() {
           command={wheelCommand}
           onCommandDone={() => setWheelCommand(null)}
           onClose={() => setWheelOpen(false)}
+          onPicked={(student) =>
+            setWheelPick((p) => ({ student, n: (p?.n ?? 0) + 1 }))
+          }
+          onSpotlight={(uid) => {
+            spotlight(uid);
+            setWheelOpen(false);
+          }}
         />
       )}
-      <PulsePanel session={session} />
-      <Chat session={session} uid={data.teacher} teacher />
+      {manifest.pulsePrompt !== undefined && <PulsePanel session={session} />}
+      {manifest.instructions !== undefined && (
+        <Chat session={session} uid={data.teacher} teacher />
+      )}
+      {blank && (
+        // biome-ignore lint/a11y/noStaticElementInteractions: any key also ends the blank
+        // biome-ignore lint/a11y/useKeyWithClickEvents: any key also ends the blank
+        <div className="blank" onClick={() => setBlank(false)} />
+      )}
     </main>
   );
 }
@@ -119,6 +203,8 @@ function TeacherApplet({
   onFilters,
   onTimer,
   onWheel,
+  onSpotlight,
+  wheelPick,
 }: {
   data: Session;
   onUpdate: (s: StoredState) => void;
@@ -126,6 +212,8 @@ function TeacherApplet({
   onFilters: (f: WheelFilter[]) => void;
   onTimer: (seconds: unknown, shared: unknown) => void;
   onWheel: (options: unknown) => void;
+  onSpotlight: (student: unknown) => void;
+  wheelPick: { student: string; n: number } | null;
 }) {
   const [initial] = useState(data.teacherState ?? null);
   const students = useClass(data);
@@ -140,6 +228,8 @@ function TeacherApplet({
       onFilters={onFilters}
       onTimer={onTimer}
       onWheel={onWheel}
+      onSpotlight={onSpotlight}
+      wheelPick={wheelPick}
     />
   );
 }

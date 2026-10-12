@@ -114,6 +114,8 @@ export async function producePulse(
   } | null;
   if (!p) throw new Error("pulse is missing");
   if (!applet) throw new Error("session has no applet");
+  if (applet.manifest.pulsePrompt === undefined)
+    throw new Error("this applet has no Pulse");
 
   const input = readableInput(p.input, studentsSnap.val() ?? {});
   const whole = p.student === undefined;

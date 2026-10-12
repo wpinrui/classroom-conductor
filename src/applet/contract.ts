@@ -10,8 +10,10 @@ export interface PreparedState {
 export interface Manifest {
   title: string;
   phases: string[];
-  instructions: string;
-  pulsePrompt: string;
+  /** Shapes the student chatbot. Absent switches the chatbot off. */
+  instructions?: string;
+  /** Tells the Engine what a Pulse reports. Absent switches the Pulse off. */
+  pulsePrompt?: string;
   namelist?: string[];
   preparedStates?: PreparedState[];
 }
@@ -60,6 +62,8 @@ export type AppletMessage =
   | { cc: "filters"; filters: WheelFilter[] }
   /** Drives the name wheel with WheelOptions. Only the teacher's frame is heard. */
   | { cc: "wheel"; options: unknown }
+  /** Spotlights a student, or ends the spotlight when student is null. Only the teacher's frame is heard. */
+  | { cc: "spotlight"; student: unknown }
   /** The controls shortcut, pressed while the applet has focus. */
   | { cc: "shortcut" }
   /** Starts a countdown, or cancels it when seconds is null. Shared unless shared is false. Only the teacher's frame is heard. */
@@ -69,4 +73,6 @@ export type AppletMessage =
 export type HostMessage =
   | { cc: "setState"; state: unknown; phase: number; seq: number }
   | { cc: "phaseLimit"; maxPhase: number | null }
-  | { cc: "context"; context: AppletContext };
+  | { cc: "context"; context: AppletContext }
+  /** The name wheel landed on this student. Sent to the teacher's frame only. */
+  | { cc: "wheelPicked"; student: string };

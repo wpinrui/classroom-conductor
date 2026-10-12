@@ -79,3 +79,10 @@ export const ResetIcon = () => (
     <path d="M3 3v5h5" />
   </Svg>
 );
+
+export const BlankIcon = () => (
+  <Svg>
+    <rect x="2" y="4" width="20" height="13" rx="2" fill="currentColor" />
+    <path d="M8 21h8M12 17v4" />
+  </Svg>
+);

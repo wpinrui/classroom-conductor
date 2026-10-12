@@ -12,7 +12,7 @@ import { PulseButton } from "../pulse/Pulse";
 import { routes } from "../routes";
 import { TimerControls } from "../timer/TimerControls";
 import { Groups } from "./Groups";
-import { ChatIcon, GridIcon, PersonIcon, WheelIcon } from "./icons";
+import { BlankIcon, ChatIcon, GridIcon, PersonIcon, WheelIcon } from "./icons";
 import { Reveal } from "./Reveal";
 import { Stepper } from "./Stepper";
 import { Thumbnails } from "./Thumbnails";
@@ -60,12 +60,15 @@ export function Controls({
   data,
   wheelOpen,
   onWheel,
+  onBlank,
 }: {
   session: string;
   data: Session;
   wheelOpen: boolean;
   onWheel: () => void;
+  onBlank: () => void;
 }) {
+  const { manifest } = data.applet;
   const navigate = useNavigate();
   const control = data.control;
   const students = Object.keys(data.students ?? {});
@@ -143,7 +146,18 @@ export function Controls({
           >
             <WheelIcon />
           </button>
-          <ChatToggle className="quiet icon-button" />
+          {manifest.instructions !== undefined && (
+            <ChatToggle className="quiet icon-button" />
+          )}
+          <button
+            type="button"
+            className="quiet icon-button"
+            aria-label="Blank screen"
+            data-tip="Blank screen"
+            onClick={onBlank}
+          >
+            <BlankIcon />
+          </button>
         </div>
 
         <div className="modes">
@@ -176,7 +190,9 @@ export function Controls({
           >
             Handoff
           </button>
-          <PulseButton session={session} />
+          {manifest.pulsePrompt !== undefined && (
+            <PulseButton session={session} />
+          )}
         </div>
 
         <TimerControls session={session} data={data} />
