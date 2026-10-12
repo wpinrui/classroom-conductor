@@ -446,3 +446,9 @@ button[aria-busy="true"]::after {
   left: 0;
   right: auto;
 }
+
+/* With the controls hidden, the drawer and the wheel take the space the panel left. */
+.stage[data-bare] .thumbs-drawer,
+.stage[data-bare] .wheel-sheet {
+  right: var(--space-4);
+}
