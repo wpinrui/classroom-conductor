@@ -126,6 +126,7 @@ table.tt { border-collapse: separate; border-spacing: 0; background: var(--card)
 .decal.nf img { display: none; }
 .decal.nf .fb { display: block; }
 .decal.nf { border: 0; background: var(--c); }
+.decal .name { position: absolute; bottom: 14px; left: 0; right: 0; text-align: center; font-size: 30px; font-weight: 700; line-height: 1; }
 #board { touch-action: none; }
 
 /* Predict */
@@ -1862,6 +1863,7 @@ const HEART = "❤️";
 const FRUIT_OTHER = ["🍎", "🍌", "🍇", "🍓", "🍊", "🍉", "🍍", "🍒", "🥝", "🍑", "🍋"];
 const MANGO = "🥭";
 const PEAR = "🍐";
+const FRUIT_NAMES = { "🍎": "Apple", "🍌": "Banana", "🍇": "Grapes", "🍓": "Strawberry", "🍊": "Orange", "🍉": "Watermelon", "🍍": "Pineapple", "🍒": "Cherries", "🥝": "Kiwi", "🍑": "Peach", "🍋": "Lemon", [MANGO]: "Mango", [PEAR]: "Pear" };
 const POKE = {
   yellow: [[25, "Pikachu"], [172, "Pichu"], [54, "Psyduck"], [52, "Meowth"], [135, "Jolteon"], [145, "Zapdos"], [181, "Ampharos"], [778, "Mimikyu"]],
   green: [[1, "Bulbasaur"], [10, "Caterpie"], [123, "Scyther"], [152, "Chikorita"], [252, "Treecko"], [384, "Rayquaza"], [470, "Leafeon"], [906, "Sprigatito"]],
@@ -1908,7 +1910,7 @@ function decals(round, deal, me) {
   return shuffled(r, items).map((e) => ({ emoji: e }));
 }
 function decalHTML(d) {
-  if (d.emoji) return `<div class="decal">${d.emoji}</div>`;
+  if (d.emoji) return `<div class="decal">${d.emoji}${FRUIT_NAMES[d.emoji] ? `<span class="name">${FRUIT_NAMES[d.emoji]}</span>` : ""}</div>`;
   const [id, name] = d.poke;
   return `<div class="decal" style="--c:${POKE_BG[d.col]}"><img alt="" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png" onerror="this.parentNode.classList.add('nf')"><div class="fb">${name}</div></div>`;
 }
