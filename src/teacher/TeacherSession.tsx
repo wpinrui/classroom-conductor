@@ -13,7 +13,7 @@ import { useSession, useThrottledWriter } from "../hooks/session";
 import { PulsePanel } from "../pulse/Pulse";
 import { Countdown } from "../timer/Countdown";
 import { scriptTimer } from "../timer/timer";
-import { Controls, MODE_GROUPS } from "./Controls";
+import { Controls } from "./Controls";
 import { allowedModes, defaultsFor, teacherPhase } from "./modes";
 import { Wheel, type WheelCommand } from "./Wheel";
 
@@ -153,14 +153,20 @@ export function TeacherSession() {
           </div>
         )}
         <div className="status-bar">
-          <output className="status" aria-label="Class mode">
-            <span>
-              {MODE_GROUPS.flat().find(([m]) => m === data.control.mode)?.[1]}
-            </span>
-            {target && data.students?.[target] && (
-              <b>{data.students[target].name}</b>
-            )}
-          </output>
+          {/* The projector shows this screen, so it says only what students would see. */}
+          {target && data.students?.[target] && (
+            <output className="status" data-tone="watch">
+              {data.control.mode === "spotlight" ? (
+                <span>
+                  Viewing <b>{data.students[target].name}'s</b> screen
+                </span>
+              ) : (
+                <span>
+                  Viewing a <b>classmate's</b> screen
+                </span>
+              )}
+            </output>
+          )}
           {data.control.timer && <Countdown timer={data.control.timer} />}
           {data.teacherTimer && <Countdown timer={data.teacherTimer} private />}
         </div>

@@ -49,7 +49,7 @@ Consequences for the applet:
 
 - Design for a 1280 pixel wide viewport. Thumbnails render the applet at 1280 pixels and scale it down.
 - Make the screen readable from the back of a room. It is projected in Demo, Spotlight and Reveal.
-- Keep the top 48 pixels clear of anything important. The Conductor shows a small status bar at the top middle, such as the class mode, whose screen a student is viewing and the countdown.
+- Keep the top 48 pixels clear of anything important. The Conductor shows a small status bar at the top middle, such as whose screen is shown and the countdown.
 
 ## 3. The manifest
 
