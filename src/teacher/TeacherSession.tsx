@@ -581,8 +581,13 @@ function JoinScreen({ code, onClose }: { code: string; onClose: () => void }) {
   );
 }
 
-/** The class rules R shows. Placeholders until the teacher writes them. */
-const CLASS_RULES = ["Rule one", "Rule two", "Rule three"];
+/** The class rules R shows. */
+const CLASS_RULES = [
+  "Be ready to learn.",
+  "Help your friends be ready to learn.",
+  "Phones should be kept out of sight.",
+  "Take care of the space.",
+];
 
 /** The class rules, filling the screen. R, Escape or a click hides them. */
 function ClassRules({ onClose }: { onClose: () => void }) {
