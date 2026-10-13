@@ -1197,9 +1197,7 @@ function votesFor(e) {
 function predictTop(ex, hide) {
   const E = hide ? {} : EXAMPLES[ex] || EXAMPLES[0];
   const fruit = (e, cls) => `<span class="${cls}"><span>${e}</span><span class="name">${FRUIT_NAMES[e]}</span></span>`;
-  return `<div class="legend"><span>${alg("M")} = I have a mango</span><span>${alg("P")} = I have a pear</span></div>
-    <div class="huge">${alg("NOT (M OR P)")}</div>
-    <div class="basket">${E.m ? fruit(MANGO, "bfruit") : ""}${E.p ? fruit(PEAR, "bfruit") : ""}</div>`;
+  return `<div class="basket">${E.m ? fruit(MANGO, "bfruit") : ""}${E.p ? fruit(PEAR, "bfruit") : ""}</div>`;
 }
 function viewPredict() {
   const tp = T().predict;
