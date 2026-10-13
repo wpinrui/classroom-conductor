@@ -51,6 +51,8 @@ export function TeacherSession() {
   const [thumbsOpen, setThumbsOpen] = useState(false);
   // The full-screen join screen: the address and the code, for the projector.
   const [joinOpen, setJoinOpen] = useState(false);
+  // R shows the class rules on the teacher's screen, which is projected.
+  const [rulesOpen, setRulesOpen] = useState(false);
   const [filters, setFilters] = useState<WheelFilter[]>([]);
   const [wheelCommand, setWheelCommand] = useState<WheelCommand | null>(null);
   const commands = useRef(0);
@@ -259,6 +261,17 @@ export function TeacherSession() {
         setThumbsOpen((o) => !o);
         return;
       }
+      if (
+        !e.ctrlKey &&
+        !e.metaKey &&
+        !e.altKey &&
+        !typing &&
+        (e.key === "r" || e.key === "R")
+      ) {
+        e.preventDefault();
+        setRulesOpen((o) => !o);
+        return;
+      }
       if (!e.ctrlKey && !e.metaKey && !e.altKey && !typing && e.key === "b") {
         e.preventDefault();
         blankOn();
@@ -366,7 +379,10 @@ export function TeacherSession() {
           slide={slide}
           onStep={(dir) => show.current.step(dir)}
           onSlideshowToggle={() => show.current.toggle()}
-          onHotkey={(k) => k === "g" && setThumbsOpen((o) => !o)}
+          onHotkey={(k) => {
+            if (k === "g") setThumbsOpen((o) => !o);
+            if (k === "r") setRulesOpen((o) => !o);
+          }}
         />
         {target && data.students?.[target] && (
           <div className="teacher-spotlight">
@@ -454,6 +470,7 @@ export function TeacherSession() {
       {manifest.instructions !== undefined && (
         <Chat session={session} uid={data.teacher} teacher />
       )}
+      {rulesOpen && <ClassRules onClose={() => setRulesOpen(false)} />}
       {joinOpen && (
         <JoinScreen code={data.code} onClose={() => setJoinOpen(false)} />
       )}
@@ -560,6 +577,33 @@ function JoinScreen({ code, onClose }: { code: string; onClose: () => void }) {
     <div className="join-screen" onClick={onClose}>
       <div className="join-url">{JOIN_URL}</div>
       <div className="join-big">{code}</div>
+    </div>
+  );
+}
+
+/** The class rules R shows. Placeholders until the teacher writes them. */
+const CLASS_RULES = ["Rule one", "Rule two", "Rule three"];
+
+/** The class rules, filling the screen. R, Escape or a click hides them. */
+function ClassRules({ onClose }: { onClose: () => void }) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      e.preventDefault();
+      onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+  return (
+    // biome-ignore lint/a11y/noStaticElementInteractions: R and Escape also close it
+    // biome-ignore lint/a11y/useKeyWithClickEvents: R and Escape also close it
+    <div className="class-rules" onClick={onClose}>
+      <ol>
+        {CLASS_RULES.map((r) => (
+          <li key={r}>{r}</li>
+        ))}
+      </ol>
     </div>
   );
 }
