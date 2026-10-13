@@ -263,7 +263,7 @@ host.timer?.(null);                    // cancel
 
 ### Slideshow
 
-The teacher can drive the lesson from the manifest's `slides`. S switches the slideshow on and off. While it is on, the scroll wheel, PageDown, ArrowDown and Space step forward. PageUp and ArrowUp step back. Clickers send PageDown and PageUp, so they work too. One wheel gesture is one step. Students see no difference, because a step only does what the teacher could do by hand.
+The teacher can drive the lesson from the manifest's `slides`. S switches the slideshow on and off. While it is on, the scroll wheel, PageDown, ArrowDown and Space step forward. PageUp and ArrowUp step back. Clickers send PageDown and PageUp, so they work too. Each scroll of the wheel is one step. Students see no difference, because a step only does what the teacher could do by hand.
 
 The teacher can leave the slideshow at any time, act by hand and come back. Coming back resumes at the same step and changes nothing until the next step.
 
