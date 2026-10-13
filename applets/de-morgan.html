@@ -1917,7 +1917,7 @@ const TASKS = [
   () => null,
   () => ["Build A AND B using only OR and NOT gates."],
   () => ["Simplify the expression one line at a time."],
-  () => ((isTeacher() ? state.conc.view === "exit" : T().conc.exitOpen) ? ["Simplify this expression so every bar sits on a single letter."] : null),
+  () => ((isTeacher() ? state.conc.view === "exit" : T().conc.exitOpen) ? ["Simplify this expression."] : null),
 ];
 function taskHTML() {
   const t = TASKS[phase] && TASKS[phase]();
