@@ -332,29 +332,47 @@ function SpotlightPicker({
   pending: Mode | null;
 }) {
   const current = data.control.spotlight;
-  const students = Object.entries(data.students ?? {}).sort(([, a], [, b]) =>
-    a.name.localeCompare(b.name),
-  );
+  const [query, setQuery] = useState("");
+  const q = query.trim().toLowerCase();
+  const students = Object.entries(data.students ?? {})
+    .filter(([, s]) => !q || s.name.toLowerCase().includes(q))
+    .sort(([, a], [, b]) => a.name.localeCompare(b.name));
+  const pick = (uid: string) =>
+    setControl(
+      session,
+      pending
+        ? { mode: pending, spotlight: uid }
+        : { spotlight: current === uid ? null : uid },
+    );
   return (
-    <div className="choices spotlight-picker">
-      {students.map(([uid, s]) => (
-        <button
-          key={uid}
-          type="button"
-          aria-pressed={!pending && current === uid}
-          data-offline={!data.presence?.[uid] || undefined}
-          onClick={() =>
-            setControl(
-              session,
-              pending
-                ? { mode: pending, spotlight: uid }
-                : { spotlight: current === uid ? null : uid },
-            )
-          }
-        >
-          {s.name}
-        </button>
-      ))}
+    <div className="spotlight-picker">
+      <input
+        type="search"
+        className="spotlight-search"
+        aria-label="Search students"
+        placeholder="Search"
+        // biome-ignore lint/a11y/noAutofocus: choosing Spotlight is a request to pick someone
+        autoFocus
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        onKeyDown={(e) => {
+          // Enter spotlights the first match.
+          if (e.key === "Enter" && students[0]) pick(students[0][0]);
+        }}
+      />
+      <div className="choices">
+        {students.map(([uid, s]) => (
+          <button
+            key={uid}
+            type="button"
+            aria-pressed={!pending && current === uid}
+            data-offline={!data.presence?.[uid] || undefined}
+            onClick={() => pick(uid)}
+          >
+            {s.name}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
