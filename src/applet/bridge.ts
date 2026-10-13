@@ -4,9 +4,9 @@
 // drop updates the applet sent before it saw the host's latest push.
 // Once the host sends a slideshow message (teacher's frame, applets with slides),
 // S and, while on, the step keys and the wheel go to the host instead of the applet.
-// The wheel gesture rule matches wheelGesture in src/teacher/slides.ts.
+// The wheel rule matches wheelGesture in src/teacher/slides.ts: every wheel event steps once.
 const BRIDGE = `<script>(function(){
-var handlers=null,seq=0,slideshow=null,lastWheel=0,armed=true;
+var handlers=null,seq=0,slideshow=null;
 function send(m){parent.postMessage(m,"*");}
 function typing(t){return !!(t&&t.nodeType===1&&(t.tagName==="INPUT"||t.tagName==="TEXTAREA"||t.tagName==="SELECT"||t.isContentEditable||(t.closest&&t.closest('[role="textbox"]'))));}
 function stop(e){e.preventDefault();e.stopImmediatePropagation();}
@@ -42,12 +42,8 @@ else if(e.key==="PageUp"||e.key==="ArrowUp"){stop(e);send({cc:"step",dir:-1});}
 window.addEventListener("wheel",function(e){
 if(!slideshow)return;
 e.preventDefault();
-var now=Date.now();
-if(now-lastWheel>=250)armed=true;
-lastWheel=now;
 var dy=e.deltaY*(e.deltaMode===1?16:e.deltaMode===2?800:1);
-if(!armed||Math.abs(dy)<4)return;
-armed=false;
+if(Math.abs(dy)<4)return;
 send({cc:"step",dir:dy>0?1:-1});
 },{passive:false,capture:true});
 })();</script>`;

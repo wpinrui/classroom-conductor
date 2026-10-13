@@ -49,21 +49,13 @@ export function slideCues(
 
 /** Wheel deltas this small are trackpad noise. */
 const MIN_DELTA = 4;
-/** A gesture ends after this long without a wheel event. */
-const GESTURE_GAP_MS = 250;
 
-/** One step per wheel gesture, so trackpad inertia never skips steps. Returns the direction to step, or 0. */
+/** Every wheel event steps once, with no lock between events. Returns the direction to step, or 0. */
 export function wheelGesture(): (e: WheelEvent) => 0 | 1 | -1 {
-  let last = 0;
-  let armed = true;
   return (e) => {
-    const now = Date.now();
-    if (now - last >= GESTURE_GAP_MS) armed = true;
-    last = now;
     const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 800 : 1;
     const dy = e.deltaY * unit;
-    if (!armed || Math.abs(dy) < MIN_DELTA) return 0;
-    armed = false;
+    if (Math.abs(dy) < MIN_DELTA) return 0;
     return dy > 0 ? 1 : -1;
   };
 }
