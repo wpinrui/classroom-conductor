@@ -337,6 +337,11 @@ button.tcard { cursor: pointer; }
 
 /* De Morgan's theorem, shown under the NOR table once the class has found it. */
 .theorem { font-size: 52px; padding: 8px 24px; }
+/* The NOR theorem sits beside the table, so revealing it does not make the page taller. */
+.thm { display: flex; flex-direction: column; align-items: center; gap: 4px; margin-left: 24px; }
+.thm .theorem { font-size: 44px; }
+.thm .cmp { gap: 8px; }
+.thm .eqq { font-size: 48px; }
 
 /* The student's lesson recap in the conclusion. */
 .recap { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; width: 100%; align-items: start; }
@@ -1296,7 +1301,7 @@ function viewNor() {
   const c0 = twoIn({ gates: { o: { type: "OR", x: 120, y: 70 }, n: { type: "NOT", x: 240, y: 70 } }, wires: { "o:0": "A", "o:1": "B", "n:0": "o", Q: "n" } });
   const cand = (type) => twoIn({ gates: { n1: { type: "NOT", x: 110, y: 25 }, n2: { type: "NOT", x: 110, y: 115 }, g: { type, x: 250, y: 70 } }, wires: { "n1:0": "A", "n2:0": "B", "g:0": "n1", "g:1": "n2", Q: "g" } });
   // The comparison is pure algebra. The theorem shows the gate equivalent under the equation, always labelled.
-  const svg = (L) => circuitSVG(L, false, true).replace(/width="400" height="200"/, 'width="340" height="170"');
+  const svg = (L) => circuitSVG(L, false, true).replace(/width="400" height="200"/, 'width="260" height="130"');
   const card = (o) => `<div class="ccard ${o.goal ? "goal" : ""}"><span class="ctag ${o.goal ? "goal" : ""}">${o.tag}</span><div class="cexpr">${alg(o.e)}</div><div class="csay">"${o.say}"</div></div>`;
   // Students watch the teacher's table until a Handoff gives them their own copy, which they then work on.
   const ed = isTeacher() || norHas(state.nor);
@@ -1332,8 +1337,8 @@ function viewNor() {
     <div class="row" style="flex-wrap:nowrap;align-items:center">
       <table class="tt">${"<tr>" + head + "</tr>" + body}</table>
       ${ed ? `<button class="btn icon" data-act="noradd" aria-label="Add column" data-tip="Add column for intermediate working">${I.plus}</button>` : ""}
+      ${T().nor.theorem ? `<div class="thm"><div class="theorem">${typeset(String.raw`\overline{A + B} = \overline{A} \cdot \overline{B}`)}</div><div class="cmp">${svg(c0)}<span class="eqq">=</span>${svg(cand("AND"))}</div></div>` : ""}
     </div>
-    ${T().nor.theorem ? `<div class="theorem">${typeset(String.raw`\overline{A + B} = \overline{A} \cdot \overline{B}`)}</div><div class="cmp">${svg(c0)}<span class="eqq">=</span>${svg(cand("AND"))}</div>` : ""}
     ${ed ? `<div class="row"><button class="btn ${state.nor.theorem ? "on" : ""}" data-act="northeorem">${I.eye}Theorem</button></div>` : ""}
   </div>`;
 }
