@@ -24,10 +24,13 @@ export function Thumbnails({
   session,
   data,
   html,
+  onSpotlighted,
 }: {
   session: string;
   data: Session;
   html: string;
+  /** Called once a student is spotlighted, so the drawer can get out of the way. */
+  onSpotlighted: () => void;
 }) {
   const { mode, spotlight, gallery = {} } = data.control;
   const spotlighting = mode === "spotlight" || mode === "anonymousSpotlight";
@@ -47,8 +50,10 @@ export function Thumbnails({
   const [height, setHeight] = useState<number | null>(null);
 
   const click = (uid: string) => {
-    if (spotlighting) setControl(session, { spotlight: uid });
-    else if (mode === "gallery") {
+    if (spotlighting) {
+      setControl(session, { spotlight: uid });
+      onSpotlighted();
+    } else if (mode === "gallery") {
       const next = { ...gallery };
       if (next[uid]) delete next[uid];
       else next[uid] = true;
@@ -115,12 +120,13 @@ export function Thumbnails({
                 type="button"
                 aria-label="Spotlight"
                 data-tip="Spotlight"
-                onClick={() =>
+                onClick={() => {
                   setControl(session, {
                     spotlight: uid,
                     ...(spotlighting ? {} : { mode: "spotlight" }),
-                  })
-                }
+                  });
+                  onSpotlighted();
+                }}
               >
                 <SpotlightIcon />
               </button>

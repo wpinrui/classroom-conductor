@@ -472,7 +472,12 @@ export function TeacherSession() {
         )}
         {/* Inside the provider: student screens draw from the teacher's state. */}
         {thumbsOpen && html && (
-          <Thumbnails session={session} data={data} html={html} />
+          <Thumbnails
+            session={session}
+            data={data}
+            html={html}
+            onSpotlighted={() => setThumbsOpen(false)}
+          />
         )}
       </TeacherStateContext.Provider>
       {wheelOpen && (
