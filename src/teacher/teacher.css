@@ -514,6 +514,11 @@ button[aria-busy="true"]::after {
   cursor: pointer;
 }
 
+.class-rules .rule-blank {
+  display: inline-block;
+  border-bottom: 0.08em solid currentColor;
+}
+
 .class-rules ol {
   margin: 0;
   padding-left: 1.2em;

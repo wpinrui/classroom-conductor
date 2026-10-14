@@ -612,12 +612,11 @@ function JoinScreen({ code, onClose }: { code: string; onClose: () => void }) {
   );
 }
 
-/** The class rules R shows. */
+/** The class rules R shows, as prompts the class completes. Each blank is about as long as the words it hides. */
 const CLASS_RULES = [
-  "Be ready to learn.",
-  "Help your friends be ready to learn.",
-  "Phones should be kept out of sight.",
-  "Take care of the space.",
+  { lead: "Be", hidden: "ready to learn." },
+  { lead: "Help", hidden: "your friends be ready to learn." },
+  { lead: "Phones should be", hidden: "kept out of sight." },
 ];
 
 /** The class rules, filling the screen. R, Escape or a click hides them. */
@@ -637,7 +636,13 @@ function ClassRules({ onClose }: { onClose: () => void }) {
     <div className="class-rules" onClick={onClose}>
       <ol>
         {CLASS_RULES.map((r) => (
-          <li key={r}>{r}</li>
+          <li key={r.lead}>
+            {r.lead}{" "}
+            <span
+              className="rule-blank"
+              style={{ width: `${r.hidden.length}ch` }}
+            />
+          </li>
         ))}
       </ol>
     </div>
