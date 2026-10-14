@@ -740,7 +740,7 @@ const DEFAULTS = {
   me: "",
   warm: { round: -1, q: -1, deal: 1, shown: false },
   predict: { ex: 0, shown: {}, counts: {}, votes: {}, hide: false },
-  tt: { cols: [], target: "----", reveal: false, answer: false, dimT: false },
+  tt: { cols: [{ text: "M OR P", done: true, bad: false, vals: "----" }], target: "----", reveal: false, answer: false, dimT: false },
   // The NOR column was found in the truth table phase, so it arrives filled in.
   nor: { cols: [], t: "1000", o1: "----", o2: "----", dimOut: {}, theorem: false },
   nand: { step: 0, mode: "type", shown: false, table: false, cells: { ...BLANK_TABLE }, text: "", done: false, bad: false, pick: "" },
