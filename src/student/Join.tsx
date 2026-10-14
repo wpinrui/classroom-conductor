@@ -44,26 +44,30 @@ export function Join() {
   return (
     <main className="center">
       <form className="join" onSubmit={submit}>
-        <input
-          className="code-input"
-          aria-label="Join code"
-          placeholder="Code"
-          aria-invalid={bad === "code"}
-          maxLength={JOIN_CODE_LENGTH}
-          autoComplete="off"
-          value={code}
-          onChange={(e) => setCode(e.target.value.toUpperCase())}
-          required
-        />
-        <input
-          aria-label="Name"
-          placeholder="Name"
-          aria-invalid={bad === "name"}
-          maxLength={60}
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          required
-        />
+        <label className="join-field">
+          Join code
+          <input
+            className="code-input"
+            placeholder={"-".repeat(JOIN_CODE_LENGTH)}
+            autoFocus
+            aria-invalid={bad === "code"}
+            maxLength={JOIN_CODE_LENGTH}
+            autoComplete="off"
+            value={code}
+            onChange={(e) => setCode(e.target.value.toUpperCase())}
+            required
+          />
+        </label>
+        <label className="join-field">
+          Your name
+          <input
+            aria-invalid={bad === "name"}
+            maxLength={60}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+          />
+        </label>
         <button type="submit" className="primary" disabled={busy}>
           Join
         </button>

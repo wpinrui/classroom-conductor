@@ -213,6 +213,14 @@ input[aria-invalid="true"] {
   text-transform: uppercase;
 }
 
+/* Each field carries a visible label, so the name box is never read as the code box. */
+.join-field {
+  display: grid;
+  gap: var(--space-1);
+  font-weight: var(--font-weight-display);
+  color: var(--color-text-muted);
+}
+
 .code-input::placeholder {
   font-weight: var(--font-weight-regular);
 }
