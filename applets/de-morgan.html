@@ -1314,7 +1314,7 @@ function viewNor() {
       : `<th class="${dimCls(c.dim)}">${c.done ? alg(c.text) : ""}</th>`;
   });
   const dimOut = n.dimOut || {};
-  head += NOR_OUTS.map((o) => `<th class="${cls(o)} ${dimCls(dimOut[o.k])}"><span class="ctag ${o.goal ? "goal" : ""}">${o.tag}</span><span class="hacts">${o.goal ? "" : fillBtn(`nor.${o.k}`, o.e, ["A", "B"])}${dimBtn(`nor.dimOut.${o.k}`, dimOut[o.k])}</span></th>`).join("");
+  head += NOR_OUTS.map((o) => `<th class="${cls(o)} ${dimCls(dimOut[o.k])}">${alg(o.e)}<span class="hacts">${o.goal ? "" : fillBtn(`nor.${o.k}`, o.e, ["A", "B"])}${dimBtn(`nor.dimOut.${o.k}`, dimOut[o.k])}</span></th>`).join("");
   let body = "";
   ROWS.forEach(([a, b], ri) => {
     body += `<tr><td class="in">${a}</td><td class="in">${b}</td>`;
