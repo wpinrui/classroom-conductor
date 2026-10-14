@@ -52,9 +52,7 @@
     {"label": "Fill column 1", "cue": "fill 1"},
     {"label": "Fill column 2", "cue": "fill 2"},
     {"label": "De Morgan's theorem", "cue": "theorem"},
-    {"label": "NAND expression", "phase": 4, "mode": "independent", "cue": "type"},
-    {"label": "Show = ?", "cue": "ask"},
-    {"label": "Students answer", "cue": "answer"},
+    {"label": "NAND, 1 or 2", "phase": 4, "mode": "independent"},
     {"label": "Show answers", "cue": "answers"},
     {"label": "Passwords", "phase": 5, "mode": "independent"},
     {"label": "Demo my code", "mode": "demo"},
@@ -750,7 +748,7 @@ const DEFAULTS = {
   tt: { cols: [{ text: "M OR P", done: true, bad: false, vals: "----" }], target: "----", reveal: false, answer: false, dimT: false },
   // The NOR column was found in the truth table phase, so it arrives filled in.
   nor: { cols: [], t: "1000", o1: "----", o2: "----", dimOut: {}, theorem: false },
-  nand: { step: 0, mode: "type", shown: false, table: false, cells: { ...BLANK_TABLE }, text: "", done: false, bad: false, pick: "" },
+  nand: { step: 2, mode: "pick", shown: false, table: false, cells: { ...BLANK_TABLE }, text: "", done: false, bad: false, pick: "" },
   pw: { code: DEFAULT_CODE, password: "", confirm: "", result: "", err: "", passes: false },
   circ: { gates: {}, wires: {}, showCount: false },
   prac: { cur: "q0", work: {}, log: [] },
@@ -1360,8 +1358,7 @@ function nandGrade(text) {
 const OPTS = { o1: "NOT A OR NOT B", o2: "NOT A AND NOT B" };
 function viewNand() {
   const tn = T().nand;
-  // The teacher reveals the question in steps: the expression, then "= ?", then the answer controls.
-  // Hidden parts keep their space, so nothing moves as each step appears.
+  // The question and its two choices show at once.
   const step = tn.step | 0;
   const vis = (on) => `style="visibility:${on ? "visible" : "hidden"}"`;
   const q = `<div class="row big" style="gap:28px">${alg(NAND_Q)}<span ${vis(step >= 1)}>=</span><span class="muted" ${vis(step >= 1)}>?</span></div>`;
@@ -1395,9 +1392,7 @@ function viewNand() {
     }
     return `<div class="stage">
       ${q}
-      <div class="seg">${["Expression", "= ?", "Answer"].map((l, i) => `<button class="${step === i ? "on" : ""}" data-act="nandstep" data-s="${i}">${l}</button>`).join("")}</div>
       <div class="row">
-        <div class="seg"><button class="${state.nand.mode === "type" ? "on" : ""}" data-act="nandmode" data-m="type">Type</button><button class="${state.nand.mode === "pick" ? "on" : ""}" data-act="nandmode" data-m="pick">1 or 2</button></div>
         ${live() ? `<span class="stat"><b>${outOf(answered)}</b><span>answered</span></span>` : ""}
         <button class="btn ${state.nand.shown ? "on" : ""}" data-act="nandshow">${I.eye}Answers</button>
         <button class="btn ${state.nand.table ? "on" : ""}" data-act="nandtable" aria-label="Truth table">${I.table}</button>
@@ -1986,7 +1981,7 @@ function resetPresentation(p) {
   if (p === 1) Object.assign(state.predict, { ex: 0, shown: {}, hide: false });
   if (p === 2) Object.assign(state.tt, { reveal: false, answer: false });
   if (p === 3) Object.assign(state.nor, { t: "1000", o1: "----", o2: "----", theorem: false });
-  if (p === 4) Object.assign(state.nand, { step: 0, mode: "type", shown: false, table: false });
+  if (p === 4) Object.assign(state.nand, { step: 2, mode: "pick", shown: false, table: false });
   if (p === 6) state.circ.showCount = false;
   if (p === 8) Object.assign(state.conc, { view: "cards", exitOpen: false, shown: false });
 }
@@ -2015,7 +2010,6 @@ function applyCue(name, fresh) {
       if (o) state.nor[o.k] = evalCol(o.e);
       break;
     }
-    case "type": state.nand.mode = "type"; break;
     case "ask": state.nand.step = 1; break;
     case "answer": state.nand.step = 2; break;
     case "choices": state.nand.mode = "pick"; break;
