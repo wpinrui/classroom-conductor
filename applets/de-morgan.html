@@ -10,7 +10,7 @@
   "phases": ["Warm-up", "Predict", "Truth table", "NOR half", "NAND half", "Passwords", "Challenge", "Practice", "Conclusion"],
   "preparedStates": [
     { "name": "Truth table", "phase": 2, "state": { "tt": { "cols": [{ "text": "M OR P", "done": true, "vals": "0111" }], "target": "1000" } } },
-    { "name": "NOR table", "phase": 3, "state": { "nor": { "cols": [], "mp": "0111", "nm": "1100", "np": "1010", "t": "1000", "o1": "1110", "o2": "1000" } } },
+    { "name": "NOR table", "phase": 3, "state": { "nor": { "cols": [], "nm": "1100", "np": "1010", "t": "1000", "o1": "1110", "o2": "1000" } } },
     { "name": "AND circuit", "phase": 6, "state": { "circ": { "gates": { "g1": { "type": "NOT", "x": 190, "y": 110 }, "g2": { "type": "NOT", "x": 190, "y": 290 }, "g3": { "type": "OR", "x": 340, "y": 200 }, "g4": { "type": "NOT", "x": 470, "y": 200 } }, "wires": { "g1:0": "A", "g2:0": "B", "g3:0": "g1", "g3:1": "g2", "g4:0": "g3", "Q": "g4" } } } }
   ],
   "modes": [
@@ -746,7 +746,7 @@ const DEFAULTS = {
   predict: { ex: 0, shown: {}, counts: {}, votes: {}, hide: false },
   tt: { cols: [{ text: "M OR P", done: true, bad: false, vals: "----" }], target: "----", reveal: false, answer: false, dimT: false },
   // The NOR column was found in the truth table phase, so it arrives filled in.
-  nor: { cols: [], t: "1000", mp: "----", nm: "----", np: "----", o1: "----", o2: "----", dimOut: {}, theorem: false },
+  nor: { cols: [], t: "1000", nm: "----", np: "----", o1: "----", o2: "----", dimOut: {}, theorem: false },
   nand: { step: 2, mode: "pick", shown: false, table: false, cells: { ...BLANK_TABLE }, text: "", done: false, bad: false, pick: "" },
   pw: { code: DEFAULT_CODE, password: "", confirm: "", result: "", err: "", passes: false },
   circ: { gates: {}, wires: {}, showCount: false },
@@ -1292,10 +1292,10 @@ const hasData = (cells) => Object.values(cells || {}).some((v) => /[01]/.test(St
 const NOR_OUTS = [{ k: "t", tag: "NOR", goal: true, e: "NOT (M OR P)", tex: String.raw`\overline{\textcolor{#a07800}{M} + \textcolor{#2e7d32}{P}}`, say: 'I have neither <b class="k-m">mango</b> nor <b class="k-p">pear</b>' },
   { k: "o1", tag: "1", e: "NOT M OR NOT P", tex: String.raw`\overline{\textcolor{#a07800}{M}} + \overline{\textcolor{#2e7d32}{P}}`, say: 'Either I do not have a <b class="k-m">mango</b> or I do not have a <b class="k-p">pear</b>' },
   { k: "o2", tag: "2", e: "NOT M AND NOT P", tex: String.raw`\overline{\textcolor{#a07800}{M}} \cdot \overline{\textcolor{#2e7d32}{P}}`, say: 'I do not have a <b class="k-m">mango</b>, and I do not have a <b class="k-p">pear</b>' }];
-// Working columns, always there, so the class can build each expression a step at a time.
-const NOR_STEPS = { mp: { k: "mp", step: true, e: "M OR P" }, nm: { k: "nm", step: true, e: "NOT M" }, np: { k: "np", step: true, e: "NOT P" } };
-const NOR_COLS = [NOR_STEPS.mp, NOR_OUTS[0], NOR_STEPS.nm, NOR_STEPS.np, NOR_OUTS[1], NOR_OUTS[2]];
-const norHas = (n) => n.cols.length > 0 || /[01]/.test(n.o1 + n.o2 + n.mp + n.nm + n.np);
+// Working columns for the NOT M and NOT P steps. The class already found NOT (M OR P) in the truth table.
+const NOR_STEPS = { nm: { k: "nm", step: true, e: "NOT M" }, np: { k: "np", step: true, e: "NOT P" } };
+const NOR_COLS = [NOR_OUTS[0], NOR_STEPS.nm, NOR_STEPS.np, NOR_OUTS[1], NOR_OUTS[2]];
+const norHas = (n) => n.cols.length > 0 || /[01]/.test(n.o1 + n.o2 + n.nm + n.np);
 function viewNor() {
   const twoIn = (main) => ({ w: 400, h: 200, inputs: { A: [40, 55], B: [40, 145] }, out: { name: "", x: 370, y: 100 }, ...main });
   const c0 = twoIn({ gates: { o: { type: "OR", x: 120, y: 70 }, n: { type: "NOT", x: 240, y: 70 } }, wires: { "o:0": "A", "o:1": "B", "n:0": "o", Q: "n" } });
@@ -1975,7 +1975,7 @@ function resetPresentation(p) {
   if (p === 0) Object.assign(state.warm, { round: -1, q: -1, shown: false });
   if (p === 1) Object.assign(state.predict, { ex: 0, shown: {}, hide: false });
   if (p === 2) Object.assign(state.tt, { reveal: false, answer: false });
-  if (p === 3) Object.assign(state.nor, { t: "1000", mp: "----", nm: "----", np: "----", o1: "----", o2: "----", theorem: false });
+  if (p === 3) Object.assign(state.nor, { t: "1000", nm: "----", np: "----", o1: "----", o2: "----", theorem: false });
   if (p === 4) Object.assign(state.nand, { step: 2, mode: "pick", shown: false, table: false });
   if (p === 6) state.circ.showCount = false;
   if (p === 8) Object.assign(state.conc, { view: "cards", exitOpen: false, shown: false });
