@@ -332,9 +332,6 @@ button.tcard { cursor: pointer; }
 .opt { display: flex; flex-direction: column; align-items: center; gap: 12px; }
 .onum { display: grid; place-items: center; width: 60px; height: 60px; border-radius: 50%; background: var(--ink); color: #fff; font: 800 34px/1 system-ui, sans-serif; }
 
-/* Title cards a student sees entering Predict and at each of its questions: each fades in and out over 1.5s. */
-.flash { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; background: var(--bg); font-size: 96px; font-weight: 700; pointer-events: none; animation: flash 1.5s ease-in-out forwards; }
-@keyframes flash { 0% { opacity: 0; } 25% { opacity: 1; } 70% { opacity: 1; } 100% { opacity: 0; } }
 
 /* De Morgan's theorem, shown under the NOR table once the class has found it. */
 .theorem { font-size: 52px; padding: 8px 24px; }
@@ -1865,42 +1862,6 @@ function viewConc() {
   </div>`;
 }
 
-// ---------- Question title card ----------
-// A student entering Predict sees "Rapid Fire T/F", then "Question 1". Each later question gets its own title.
-// Every title fades in and out over 1.5s.
-let titledEx = null;
-let flashTimers = [];
-function flash(texts) {
-  flashTimers.forEach(clearTimeout);
-  flashTimers = [];
-  document.querySelectorAll(".flash").forEach((f) => f.remove());
-  texts.forEach((text, i) => {
-    flashTimers.push(setTimeout(() => {
-      const f = document.createElement("div");
-      f.className = "flash";
-      f.textContent = text;
-      document.body.appendChild(f);
-      flashTimers.push(setTimeout(() => f.remove(), 1600));
-    }, i * 1500));
-  });
-}
-// Phases that open with a title card for students.
-const PHASE_TITLES = { 1: "Rapid Fire T/F", 2: "Truth Table" };
-let titledPhase = null;
-function questionTitle() {
-  const p = isTeacher() ? null : phase;
-  const ex = p === 1 ? T().predict.ex | 0 : null;
-  const entering = p !== titledPhase;
-  if (!entering && ex === titledEx) return;
-  titledPhase = p;
-  titledEx = ex;
-  if (p === null) return;
-  const cards = [];
-  if (entering && PHASE_TITLES[p]) cards.push(PHASE_TITLES[p]);
-  if (ex !== null) cards.push("Question " + (ex + 1));
-  if (cards.length) flash(cards);
-}
-
 // ---------- Task lines ----------
 // What the student should do in each phase. Shown on the teacher's screen too, since it is projected.
 const TASKS = [
@@ -1945,7 +1906,6 @@ function render(force) {
   }
   syncValues();
   syncHighlight();
-  questionTitle();
   renderNav();
   fit();
 }
