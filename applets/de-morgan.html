@@ -1186,7 +1186,7 @@ function viewWarm() {
 }
 
 // ---------- Phase 1: Predict ----------
-const EXAMPLES = [{ m: 1, p: 1 }, { m: 0, p: 0 }, { m: 1, p: 0 }, { m: 0, p: 1 }];
+const EXAMPLES = [{ m: 0, p: 0 }, { m: 1, p: 1 }, { m: 1, p: 0 }, { m: 0, p: 1 }];
 function votesFor(e) {
   const out = { t: [], f: [] };
   for (const [id, s] of Object.entries(ctx.students || {})) {
