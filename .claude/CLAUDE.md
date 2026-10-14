@@ -30,6 +30,7 @@ Still on, because none of it is code quality:
 - Use `python`, never `python3`.
 - Never offer to launch, run or screenshot the app for me. Verify headlessly (tests, typecheck, lint, build); if something genuinely needs the GUI to verify, state plainly what is unverified.
 - Scratch files go in `temp/`, which is gitignored. Not the session scratchpad, which I cannot navigate, and nowhere else in the repo.
+- Deploy means pushing `main` to the `deploy` branch. Every push costs a build, so push only when app code changed. Applet HTML in `applets/` is uploaded to the library by hand and never needs a deploy.
 - Never use the memory tool. I work across machines and memory does not travel. Anything worth keeping goes in this file, which is in git.
 
 ## Branching & commits
