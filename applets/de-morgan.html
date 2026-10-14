@@ -323,6 +323,7 @@ button.tcard { cursor: pointer; }
 .ccard { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 14px 16px; border-radius: 18px; background: var(--card); border: 1px solid var(--line); }
 .ccard.goal { border: 3px solid var(--accent); background: var(--accent-soft); }
 .ccard .ctag { align-self: flex-start; }
+.ccard .cexpr { font-size: 48px; padding: 24px 20px 32px; }
 .ctag { display: inline-block; font: 800 22px/1.2 system-ui, sans-serif; padding: 2px 12px; border-radius: 8px; border: 2px solid var(--ink); }
 .ctag.goal { background: var(--accent); border-color: var(--accent); color: #fff; }
 .eqq { font-size: 64px; font-weight: 300; color: var(--soft); }
@@ -1286,17 +1287,16 @@ const NAND_DEFS = [{ k: "a", e: "A" }, { k: "b", e: "B" }, { k: "c2", e: "NOT (A
 const hasData = (cells) => Object.values(cells || {}).some((v) => /[01]/.test(String(v)));
 
 // ---------- Phase 3: NOR half ----------
-// Each viewer, teacher or student, can colour and name the gates while they learn them. A viewing choice, so not saved.
-let gateLabels = false;
-// The class works out each circuit's output. No algebra is given: the teacher adds working columns as the class names them.
+// The class works out each expression's output. No working is given: the teacher adds working columns as the class names them.
 const NOR_OUTS = [{ k: "t", tag: "NOR", goal: true, e: "NOT (A OR B)" }, { k: "o1", tag: "1", e: "NOT A OR NOT B" }, { k: "o2", tag: "2", e: "NOT A AND NOT B" }];
 const norHas = (n) => n.cols.length > 0 || /[01]/.test(n.o1 + n.o2);
 function viewNor() {
   const twoIn = (main) => ({ w: 400, h: 200, inputs: { A: [40, 55], B: [40, 145] }, out: { name: "", x: 370, y: 100 }, ...main });
   const c0 = twoIn({ gates: { o: { type: "OR", x: 120, y: 70 }, n: { type: "NOT", x: 240, y: 70 } }, wires: { "o:0": "A", "o:1": "B", "n:0": "o", Q: "n" } });
   const cand = (type) => twoIn({ gates: { n1: { type: "NOT", x: 110, y: 25 }, n2: { type: "NOT", x: 110, y: 115 }, g: { type, x: 250, y: 70 } }, wires: { "n1:0": "A", "n2:0": "B", "g:0": "n1", "g:1": "n2", Q: "g" } });
-  const svg = (L) => circuitSVG(L, false, gateLabels).replace(/width="400" height="200"/, 'width="340" height="170"');
-  const card = (L, o) => `<div class="ccard ${o.goal ? "goal" : ""}"><span class="ctag ${o.goal ? "goal" : ""}">${o.tag}</span>${svg(L)}</div>`;
+  // The comparison is pure algebra. The theorem shows the gate equivalent under the equation, always labelled.
+  const svg = (L) => circuitSVG(L, false, true).replace(/width="400" height="200"/, 'width="340" height="170"');
+  const card = (o) => `<div class="ccard ${o.goal ? "goal" : ""}"><span class="ctag ${o.goal ? "goal" : ""}">${o.tag}</span><div class="cexpr">${alg(o.e)}</div></div>`;
   // Students watch the teacher's table until a Handoff gives them their own copy, which they then work on.
   const ed = isTeacher() || norHas(state.nor);
   const n = ed ? state.nor : T().nor;
@@ -1323,17 +1323,16 @@ function viewNor() {
   });
   return `<div class="stage">
     <div class="cmp">
-      ${card(c0, NOR_OUTS[0])}
+      ${card(NOR_OUTS[0])}
       <span class="eqq">=</span>
-      ${card(cand("OR"), NOR_OUTS[1])}
-      ${card(cand("AND"), NOR_OUTS[2])}
+      ${card(NOR_OUTS[1])}
+      ${card(NOR_OUTS[2])}
     </div>
-    <div class="row"><button class="btn ${gateLabels ? "on" : ""}" data-act="gatelabels">${gateLabels ? I.eye : I.eyeOff}Gate labels</button></div>
     <div class="row" style="flex-wrap:nowrap;align-items:center">
       <table class="tt">${"<tr>" + head + "</tr>" + body}</table>
       ${ed ? `<button class="btn icon" data-act="noradd" aria-label="Add column" data-tip="Add column for intermediate working">${I.plus}</button>` : ""}
     </div>
-    ${T().nor.theorem ? `<div class="theorem">${typeset(String.raw`\overline{A + B} = \overline{A} \cdot \overline{B}`)}</div>` : ""}
+    ${T().nor.theorem ? `<div class="theorem">${typeset(String.raw`\overline{A + B} = \overline{A} \cdot \overline{B}`)}</div><div class="cmp">${svg(c0)}<span class="eqq">=</span>${svg(cand("AND"))}</div>` : ""}
     ${ed ? `<div class="row"><button class="btn ${state.nor.theorem ? "on" : ""}" data-act="northeorem">${I.eye}Theorem</button></div>` : ""}
   </div>`;
 }
@@ -1868,7 +1867,7 @@ const TASKS = [
   () => null,
   () => ['"I do not have a mango or a pear."'],
   () => ["Fill in the truth table to check who was right.", "Tap a cell to switch between 0 and 1."],
-  () => ["Which circuit, 1 or 2, gives the same output as the NOR circuit?"],
+  () => ["Which expression, 1 or 2, equals the NOR expression?"],
   () => null,
   () => null,
   () => ["Build A AND B using only OR and NOT gates."],
@@ -2081,7 +2080,6 @@ const ACT = {
   },
   ttanswer() { state.tt.answer = !state.tt.answer; commit(); },
   ttreveal() { state.tt.reveal = !state.tt.reveal; commit(); },
-  gatelabels() { gateLabels = !gateLabels; render(true); },
   northeorem() { state.nor.theorem = !state.nor.theorem; commit(); },
   dimcol(el) { setPath(state, el.dataset.path, !getPath(state, el.dataset.path)); commit(); },
   fillcol(el) {
