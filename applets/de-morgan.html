@@ -16,7 +16,7 @@
   "modes": [
     ["independent", "spotlight"],
     ["independent"],
-    ["independent", "spotlight", "reveal"],
+    ["independent", "demo", "spotlight", "reveal"],
     ["independent", "demo", "reveal"],
     ["independent"],
     ["independent", "demo", "spotlight"],
@@ -44,8 +44,8 @@
     {"label": "Show results", "cue": "results"},
     {"label": "Example 4", "cue": "example 4"},
     {"label": "Show results", "cue": "results"},
-    {"label": "Truth Table", "phase": 2, "mode": "independent"},
-    {"label": "Show completed table", "mode": "independent", "cue": "answer"},
+    {"label": "Truth Table", "phase": 2, "mode": "demo"},
+    {"label": "Show completed table", "cue": "answer"},
     {"label": "NOR half, 2 minutes", "phase": 3, "mode": "independent", "timer": 120},
     {"label": "Fill column 1", "cue": "fill 1"},
     {"label": "Fill column 2", "cue": "fill 2"},
@@ -1257,7 +1257,6 @@ function viewTT() {
   return `<div class="stage" style="margin-top:20px">
     <div class="row" style="flex-wrap:nowrap;align-items:center">
       <table class="tt">${"<tr>" + head + "</tr>" + body}</table>
-      <button class="btn icon" data-act="ttadd" aria-label="Add column" data-tip="Add column for intermediate working">${I.plus}</button>
     </div>
     ${isTeacher() ? `<div class="row"><button class="btn ${state.tt.answer ? "on" : ""}" data-act="ttanswer">${I.eye}Answer</button></div>` : ""}
   </div>`;
