@@ -46,7 +46,8 @@
     {"label": "Show results", "cue": "results"},
     {"label": "Truth Table", "phase": 2, "mode": "demo"},
     {"label": "Show completed table", "cue": "answer"},
-    {"label": "NOR half, 2 minutes", "phase": 3, "mode": "independent", "timer": 120},
+    {"label": "NOR expression", "phase": 3, "mode": "independent", "cue": "intro"},
+    {"label": "NOR half, 2 minutes", "cue": "cards", "timer": 120},
     {"label": "Fill column 1", "cue": "fill 1"},
     {"label": "Fill column 2", "cue": "fill 2"},
     {"label": "De Morgan's theorem", "cue": "theorem"},
@@ -1295,6 +1296,8 @@ const NOR_STEPS = { nm: { k: "nm", step: true, e: "NOT M" }, np: { k: "np", step
 const NOR_COLS = [NOR_OUTS[0], NOR_STEPS.nm, NOR_STEPS.np, NOR_OUTS[1], NOR_OUTS[2]];
 const norHas = (n) => n.cols.length > 0 || /[01]/.test(n.o1 + n.o2 + n.nm + n.np);
 function viewNor() {
+  // The slideshow can open the phase on the NOR expression alone, before the comparison.
+  if (T().nor.intro) return `<div class="stage" style="margin-top:160px"><div style="font-size:140px">${typeset(NOR_OUTS[0].tex)}</div></div>`;
   const twoIn = (main) => ({ w: 400, h: 200, inputs: { A: [40, 55], B: [40, 145] }, out: { name: "", x: 370, y: 100 }, ...main });
   const c0 = twoIn({ gates: { o: { type: "OR", x: 120, y: 70 }, n: { type: "NOT", x: 240, y: 70 } }, wires: { "o:0": "A", "o:1": "B", "n:0": "o", Q: "n" } });
   const cand = (type) => twoIn({ gates: { n1: { type: "NOT", x: 110, y: 25 }, n2: { type: "NOT", x: 110, y: 115 }, g: { type, x: 250, y: 70 } }, wires: { "n1:0": "A", "n2:0": "B", "g:0": "n1", "g:1": "n2", Q: "g" } });
@@ -1973,7 +1976,7 @@ function resetPresentation(p) {
   if (p === 0) Object.assign(state.warm, { round: -1, q: -1, shown: false });
   if (p === 1) Object.assign(state.predict, { ex: 0, shown: {}, hide: false });
   if (p === 2) Object.assign(state.tt, { reveal: false, answer: false });
-  if (p === 3) Object.assign(state.nor, { t: "1000", nm: "----", np: "----", o1: "----", o2: "----", theorem: false });
+  if (p === 3) Object.assign(state.nor, { intro: false, t: "1000", nm: "----", np: "----", o1: "----", o2: "----", theorem: false });
   if (p === 4) Object.assign(state.nand, { step: 2, mode: "pick", shown: false, table: false });
   if (p === 6) state.circ.showCount = false;
   if (p === 8) Object.assign(state.conc, { view: "cards", exitOpen: false, shown: false });
@@ -1997,6 +2000,8 @@ function applyCue(name, fresh) {
     }
     case "answer": state.tt.answer = true; break;
     case "theorem": state.nor.theorem = true; break;
+    case "intro": state.nor.intro = true; break;
+    case "cards": state.nor.intro = false; break;
     case "fill": {
       const o = NOR_OUTS.find((x) => x.tag === arg);
       if (o) state.nor[o.k] = evalCol(o.e);
