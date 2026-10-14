@@ -47,7 +47,6 @@
     {"label": "Truth Table", "phase": 2, "mode": "independent"},
     {"label": "Start 1 minute timer", "timer": 60},
     {"label": "Show completed table", "mode": "independent", "cue": "answer"},
-    {"label": "Reveal NOR", "cue": "nor"},
     {"label": "NOR half", "phase": 3, "mode": "independent"},
     {"label": "Fill column 1", "cue": "fill 1"},
     {"label": "Fill column 2", "cue": "fill 2"},
@@ -1238,14 +1237,9 @@ function viewPredict() {
 // The basket each row stands for, so the class keeps sight of what the table is about.
 const basketCell = (m, p) => `<td class="fruitcell">${m || p ? `${m ? MANGO : ""}${p ? PEAR : ""}` : `<span class="muted">—</span>`}</td>`;
 const BASKET_HEAD = `<th class="fruithead">Basket</th>`;
-// One layout before and after the reveal, so nothing moves when the gate appears.
-// The gate's space is always there, hidden until the teacher reveals it. Revealing also shows the correct
-// NOR column to everyone; each student's own answers stay in their state and return when it is hidden.
-const NOR_GATE = { w: 560, h: 210, inputs: { M: [50, 55], P: [50, 145] }, out: { name: "", x: 520, y: 100 }, gates: { g: { type: "NOR", x: 240, y: 70, label: "NOR" } }, wires: { "g:0": "M", "g:1": "P", Q: "g" } };
+// Answer shows the correct column to everyone; each student's own answers stay in their state and return when it is hidden.
 function viewTT() {
-  const rv = !!T().tt.reveal;
-  // The correct NOR column shows with the gate, or on its own before the gate.
-  const ans = rv || !!T().tt.answer;
+  const ans = !!T().tt.answer;
   const tt = state.tt;
   let head = `${BASKET_HEAD}<th>${alg("M")}</th><th>${alg("P")}</th>`;
   tt.cols.forEach((c, ci) => {
@@ -1262,12 +1256,11 @@ function viewTT() {
       : `<td class="cell target ${dimCls(tt.dimT)}" data-act="ttcell" data-c="t" data-r="${ri}">${showCell(pad4(tt.target)[ri])}</td></tr>`;
   });
   return `<div class="stage" style="margin-top:20px">
-    <div style="visibility:${rv ? "visible" : "hidden"}">${circuitSVG(NOR_GATE, false)}</div>
     <div class="row" style="flex-wrap:nowrap;align-items:center">
       <table class="tt">${"<tr>" + head + "</tr>" + body}</table>
       <button class="btn icon" data-act="ttadd" aria-label="Add column" data-tip="Add column for intermediate working">${I.plus}</button>
     </div>
-    ${isTeacher() ? `<div class="row"><button class="btn ${state.tt.answer ? "on" : ""}" data-act="ttanswer">${I.eye}Answer</button><button class="btn ${rv ? "on" : ""}" data-act="ttreveal">${I.eye}Next</button></div>` : ""}
+    ${isTeacher() ? `<div class="row"><button class="btn ${state.tt.answer ? "on" : ""}" data-act="ttanswer">${I.eye}Answer</button></div>` : ""}
   </div>`;
 }
 
@@ -2003,7 +1996,6 @@ function applyCue(name, fresh) {
       break;
     }
     case "answer": state.tt.answer = true; break;
-    case "nor": state.tt.reveal = true; break;
     case "theorem": state.nor.theorem = true; break;
     case "fill": {
       const o = NOR_OUTS.find((x) => x.tag === arg);
@@ -2085,7 +2077,6 @@ const ACT = {
     commit();
   },
   ttanswer() { state.tt.answer = !state.tt.answer; commit(); },
-  ttreveal() { state.tt.reveal = !state.tt.reveal; commit(); },
   northeorem() { state.nor.theorem = !state.nor.theorem; commit(); },
   dimcol(el) { setPath(state, el.dataset.path, !getPath(state, el.dataset.path)); commit(); },
   fillcol(el) {
