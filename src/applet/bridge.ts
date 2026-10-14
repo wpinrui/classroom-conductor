@@ -32,7 +32,7 @@ else if(m.cc==="slide"&&handlers.slide)handlers.slide({phase:m.phase,cues:m.cues
 window.addEventListener("mousedown",function(e){if(e.button===1){e.preventDefault();send({cc:"shortcut"});}},true);
 window.addEventListener("keydown",function(e){
 if((e.ctrlKey||e.metaKey)&&e.key==="."){e.preventDefault();send({cc:"shortcut"});return;}
-if(!e.ctrlKey&&!e.metaKey&&!e.altKey&&/^[gGrR]$/.test(e.key)&&!typing(e.composedPath?e.composedPath()[0]:e.target))send({cc:"hotkey",key:e.key.toLowerCase()});
+if(!e.ctrlKey&&!e.metaKey&&!e.altKey&&/^([gGrR]|Escape)$/.test(e.key)&&!typing(e.composedPath?e.composedPath()[0]:e.target))send({cc:"hotkey",key:e.key.toLowerCase()});
 if(slideshow===null||e.ctrlKey||e.metaKey||e.altKey||typing(e.composedPath?e.composedPath()[0]:e.target))return;
 if(e.key==="s"||e.key==="S"){stop(e);send({cc:"slideshowToggle"});return;}
 if(!slideshow)return;
