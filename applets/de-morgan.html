@@ -323,7 +323,8 @@ button.tcard { cursor: pointer; }
 .ccard { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 14px 16px; border-radius: 18px; background: var(--card); border: 1px solid var(--line); }
 .ccard.goal { border: 3px solid var(--accent); background: var(--accent-soft); }
 .ccard .ctag { align-self: flex-start; }
-.ccard .cexpr { font-size: 48px; padding: 24px 20px 32px; }
+.ccard .cexpr { font-size: 48px; padding: 24px 20px 8px; }
+.ccard .csay { max-width: 300px; padding-bottom: 12px; font-size: 22px; text-align: center; color: var(--soft); }
 .ctag { display: inline-block; font: 800 22px/1.2 system-ui, sans-serif; padding: 2px 12px; border-radius: 8px; border: 2px solid var(--ink); }
 .ctag.goal { background: var(--accent); border-color: var(--accent); color: #fff; }
 .eqq { font-size: 64px; font-weight: 300; color: var(--soft); }
@@ -1288,7 +1289,7 @@ const hasData = (cells) => Object.values(cells || {}).some((v) => /[01]/.test(St
 
 // ---------- Phase 3: NOR half ----------
 // The class works out each expression's output. No working is given: the teacher adds working columns as the class names them.
-const NOR_OUTS = [{ k: "t", tag: "NOR", goal: true, e: "NOT (A OR B)" }, { k: "o1", tag: "1", e: "NOT A OR NOT B" }, { k: "o2", tag: "2", e: "NOT A AND NOT B" }];
+const NOR_OUTS = [{ k: "t", tag: "NOR", goal: true, e: "NOT (A OR B)", say: "I have neither mango nor pear" }, { k: "o1", tag: "1", e: "NOT A OR NOT B", say: "Either I do not have a mango or I do not have a pear" }, { k: "o2", tag: "2", e: "NOT A AND NOT B", say: "I do not have a mango, and I do not have a pear" }];
 const norHas = (n) => n.cols.length > 0 || /[01]/.test(n.o1 + n.o2);
 function viewNor() {
   const twoIn = (main) => ({ w: 400, h: 200, inputs: { A: [40, 55], B: [40, 145] }, out: { name: "", x: 370, y: 100 }, ...main });
@@ -1296,7 +1297,7 @@ function viewNor() {
   const cand = (type) => twoIn({ gates: { n1: { type: "NOT", x: 110, y: 25 }, n2: { type: "NOT", x: 110, y: 115 }, g: { type, x: 250, y: 70 } }, wires: { "n1:0": "A", "n2:0": "B", "g:0": "n1", "g:1": "n2", Q: "g" } });
   // The comparison is pure algebra. The theorem shows the gate equivalent under the equation, always labelled.
   const svg = (L) => circuitSVG(L, false, true).replace(/width="400" height="200"/, 'width="340" height="170"');
-  const card = (o) => `<div class="ccard ${o.goal ? "goal" : ""}"><span class="ctag ${o.goal ? "goal" : ""}">${o.tag}</span><div class="cexpr">${alg(o.e)}</div></div>`;
+  const card = (o) => `<div class="ccard ${o.goal ? "goal" : ""}"><span class="ctag ${o.goal ? "goal" : ""}">${o.tag}</span><div class="cexpr">${alg(o.e)}</div><div class="csay">"${o.say}"</div></div>`;
   // Students watch the teacher's table until a Handoff gives them their own copy, which they then work on.
   const ed = isTeacher() || norHas(state.nor);
   const n = ed ? state.nor : T().nor;
