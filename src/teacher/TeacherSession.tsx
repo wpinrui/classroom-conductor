@@ -10,7 +10,7 @@ import {
 } from "../applet/contract";
 import { Chat } from "../chat/Chat";
 import { setControl, setWheel, writeTeacherState } from "../firebase/client";
-import type { Session, StoredState } from "../firebase/types";
+import type { Mode, Session, StoredState } from "../firebase/types";
 import {
   useAppletHtml,
   useSession,
@@ -327,6 +327,31 @@ export function TeacherSession() {
   const allowed = data ? allowedModes(data) : null;
   const mode = data?.control.mode;
   const phase = data ? teacherPhase(data) : 0;
+  // Escape leaves a spotlight for the mode the teacher was in before it.
+  const beforeSpotlight = useRef<Mode>("independent");
+  if (mode && mode !== "spotlight" && mode !== "anonymousSpotlight")
+    beforeSpotlight.current = mode;
+  const overlayOpen = wheelOpen || rulesOpen || joinOpen || thumbsOpen;
+  const leaveSpotlight = () => {
+    const d = latestData.current;
+    const m = d?.control.mode;
+    if (!d || overlayOpen || (m !== "spotlight" && m !== "anonymousSpotlight"))
+      return false;
+    const next = beforeSpotlight.current;
+    setControl(session, { mode: next, ...defaultsFor(next, d) });
+    return true;
+  };
+  const leaveRef = useRef(leaveSpotlight);
+  leaveRef.current = leaveSpotlight;
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape" || isTextTarget(e.target)) return;
+      if (leaveRef.current()) e.preventDefault();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
   const requested = useRef("");
   // biome-ignore lint/correctness/useExhaustiveDependencies: allowed and data are derived from mode and phase
   useEffect(() => {
@@ -382,6 +407,7 @@ export function TeacherSession() {
           onHotkey={(k) => {
             if (k === "g") setThumbsOpen((o) => !o);
             if (k === "r") setRulesOpen((o) => !o);
+            if (k === "escape") leaveRef.current();
           }}
         />
         {target && data.students?.[target] && (
