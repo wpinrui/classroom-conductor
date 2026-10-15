@@ -6,10 +6,14 @@ import type { Session, StoredState } from "../firebase/types";
 import { PulseButton } from "../pulse/Pulse";
 import { showPulse } from "../pulse/store";
 import { spotlightStudent } from "../stage/actions";
-import { CheckIcon, PulseIcon, SpotlightIcon } from "./icons";
+import { CheckIcon, PulseIcon, SearchIcon, SpotlightIcon } from "./icons";
+import { isTextTarget } from "./slides";
 
 /** Applets render at this size, then scale down to fit the tile. */
 const FRAME_WIDTH = 1280;
+/** Keys that stay hotkeys on the laptop, so typing them never starts a search. */
+const HOTKEYS = "bgjrsw";
+
 /** A press held this long opens the student's Pulse on touch. */
 const LONG_PRESS_MS = 500;
 
@@ -48,9 +52,27 @@ export function Thumbnails({
     a < b ? -1 : 1,
   ))
     if (p.student && p.status === "done") latestPulse.set(p.student, pid);
-  const students = Object.entries(data.students ?? {}).sort(([, a], [, b]) =>
-    a.name.localeCompare(b.name),
-  );
+  const [query, setQuery] = useState("");
+  const q = query.trim().toLowerCase();
+  const students = Object.entries(data.students ?? {})
+    .filter(([, s]) => !q || s.name.toLowerCase().includes(q))
+    .sort(([, a], [, b]) => a.name.localeCompare(b.name));
+  const search = useRef<HTMLInputElement>(null);
+
+  // On the laptop, typing a letter that is not a hotkey starts a search.
+  useEffect(() => {
+    if (touch) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey || e.altKey || isTextTarget(e.target)) return;
+      if (!/^[a-z]$/i.test(e.key) || HOTKEYS.includes(e.key.toLowerCase()))
+        return;
+      e.preventDefault();
+      search.current?.focus();
+      setQuery((v) => v + e.key);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [touch]);
 
   const click = (uid: string) => {
     if (spotlighting) {
@@ -75,7 +97,32 @@ export function Thumbnails({
 
   return (
     <section className="screens" aria-label="Student screens">
-      {hasPulse && <PulseButton session={session} />}
+      <div className="screens-bar">
+        <label className="screens-search">
+          <SearchIcon />
+          <input
+            ref={search}
+            type="search"
+            aria-label="Search students"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => {
+              // Enter adds the first match to the gallery in Gallery, and spotlights it otherwise.
+              const first = students[0]?.[0];
+              if (e.key === "Enter" && first)
+                mode === "gallery"
+                  ? click(first)
+                  : spotlightStudent(session, data, first);
+              if (e.key === "Escape") {
+                e.stopPropagation();
+                setQuery("");
+                e.currentTarget.blur();
+              }
+            }}
+          />
+        </label>
+        {hasPulse && <PulseButton session={session} />}
+      </div>
       <ul className="thumbs">
         {students.map(([uid, s]) => (
           <li

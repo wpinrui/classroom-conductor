@@ -187,10 +187,6 @@
   align-content: start;
 }
 
-.screens .pulse-button {
-  justify-self: start;
-}
-
 .remote[data-phone] .screens .thumbs {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
