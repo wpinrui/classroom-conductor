@@ -67,7 +67,7 @@ The teacher's work splits across two pages, both signed in with the same teacher
 
 | Page | Route | Device | Job |
 | --- | --- | --- | --- |
-| Projection | `/teacher` | the laptop that drives the projector | What the class sees on the big screen. No controls. |
+| Projection | `/teacher` | the laptop that drives the projector | What the class sees on the big screen. Controls are optional and hidden by default. |
 | Remote | `/remote` | a phone, a tablet, or a laptop window | Every teacher control, including the library. |
 
 ### Pairing
@@ -101,7 +101,7 @@ The projection runs the teacher's applet, so it stays the one place that animate
 
 ## Projection
 
-The teacher's own applet fills the viewport and stays interactive, so the teacher can still demo on it with a mouse. Nothing else is permanent. There is no controls panel, no toggle for one, no thumbnail drawer, no Pulse sheet, no chat and no private timer.
+The teacher's own applet fills the viewport and stays interactive, so the teacher can still demo on it with a mouse. Nothing else shows by default. The private timer, Pulse, chat and student screens never show unless the teacher opens the optional controls overlay below.
 
 What can appear over the applet, all driven by the database:
 
@@ -115,9 +115,20 @@ What can appear over the applet, all driven by the database:
 
 The slideshow toast is gone. The remote shows slideshow state instead.
 
-Keys on the projection: while focus is on the projection, including inside the applet, the projection hotkeys work there (see Hotkeys). They write the same database paths as the remote. Nothing on the projection advertises them. This keeps a teacher mid-demo from having to click back into the remote window. The mode digits and G stay remote only, so applets keep their number keys. Any key or click on the projection also closes the join screen, the class rules or a blank, as today.
+Keys on the projection: while focus is on the projection, including inside the applet, the projection hotkeys work there (see Hotkeys). They write the same database paths as the remote. Nothing on the projection advertises them. This keeps a teacher mid-demo from having to click back into the remote window. With the overlay closed, the mode digits and G stay remote only, so applets keep their number keys. Any key or click on the projection also closes the join screen, the class rules or a blank, as today.
 
-Removed from the projection: Ctrl+. and middle-click toggling, the tuck-on-click behaviour and every local copy of overlay state. Its hotkeys now write `stage` paths instead of local state.
+### Optional controls overlay
+
+The projection can still carry full control, for a teacher with no second device or a mirrored display. Ctrl+., Cmd+. or the middle mouse button toggles it, as the old panel did. It starts hidden on every load, so the projector shows no controls unless the teacher asks.
+
+- The overlay is the laptop remote's left column, floating on the right as the old controls panel did: `--width-controls` wide, `--space-4` from the top, right and bottom edges, surface, border and overlay shadow.
+- Its icon buttons open Screens as a drawer docked to the bottom, left of the panel, 40vh tall. They open Chat and Pulse as the old sheets over the left of the viewport.
+- While it is open, the wheel sheet on the projection takes input: chips and No repeats are live, the hub is the Spin button, and the Spotlight button shows beside the result.
+- While it is open, every hotkey works on the projection, mode digits and G included, as they did with the old panel.
+- Clicking the applet tucks it away, as today.
+- It is the same component as the remote's, writing the same paths, so a remote and the overlay stay in step.
+
+Removed from the projection: every local copy of overlay state. Its hotkeys now write `stage` paths instead of local state.
 
 ## Remote
 
@@ -183,7 +194,7 @@ Two columns. The left column is `--width-controls` wide and holds everything in 
 
 ### Hotkeys
 
-None fire while typing in a field. The Projection column says which also work, unadvertised, on the projection.
+None fire while typing in a field. The Projection column says which also work, unadvertised, on the projection while its overlay is closed. With the overlay open, all of them work there.
 
 | Key | Action | Projection |
 | --- | --- | --- |
@@ -233,10 +244,12 @@ A control with `disabled: true` shows the disabled state. The group is hidden wh
 
 ### Applet contract changes
 
+**Backward compatible.** Every applet that works today runs unchanged, De Morgan included. No manifest field, handler or call is removed or renamed. `controls` and `control` are optional, and an applet without them simply has nothing on the remote's applet controls group. Its in-frame teacher controls keep working, because the projection's applet stays interactive. The only new reservation is B, J and W in the teacher's frame, and none of the applets in `applets/` or `examples/` bind them. The build must keep this true: run every applet in `applets/` and `examples/` through a session before merging.
+
 The applet contract changes as follows. Edit `docs/applet-spec.md`. Then copy it over `/mnt/project-files/applet-guide/applet-spec.md`, which has fallen behind the repo copy. Apply the same changes to `/mnt/project-files/applet-guide/applet-contract.md` and `/mnt/project-files/applet-guide/applet-authoring.md` wherever they cover the same rules.
 
 1. **What the teacher view is for.** In section 1, add that the teacher's frame is the main projection view. The class sees everything it draws. Teacher controls may stay in it, so the teacher can still run the lesson from the projector. They do not have to, because the remote can carry them through `controls`. Anything the class must not see, such as answers before a reveal, belongs behind a control and never on the teacher's frame.
-2. **Reserved keys.** In section 2, replace the Ctrl+., middle mouse, G and R rules. Ctrl+., Cmd+., the middle mouse button and G are no longer taken. In the teacher's own frame, B, J, R, W and Escape outside a text field are taken by the Conductor and the applet still receives them, so avoid binding them in the teacher's view. The slideshow keys are unchanged.
+2. **Reserved keys.** In section 2, keep the Ctrl+., Cmd+. and middle mouse rule, since they toggle the projection's overlay. Extend the G and R rule: in the teacher's own frame, B, G, J, R, W and Escape outside a text field go to the Conductor and the applet still receives them, so avoid binding them in the teacher's view. The slideshow keys are unchanged.
 3. **`host.controls(list)`.** In section 6, a new tool, from the teacher's own live frame only. Each entry is `{ id, label, kind, value, disabled }`. `id` and `label` are non-empty strings. `kind` is `"button"`, `"toggle"` or `"text"`, and defaults to `"button"`. `value` is a boolean for a toggle and a string for text. `disabled` is optional. Each call replaces the whole list. Malformed entries are dropped. Republish whenever a control's label, value or availability changes, and on first context. Guard it with `?.`.
 4. **`control({ id, value })` handler.** In section 4, a new optional handler, called in the teacher's own live frame when the teacher uses a control on the remote. `value` is absent for a button, the new boolean for a toggle and the submitted string for text. Treat it like a click inside the applet: change the state, then call `update`. Ignore an unknown `id`.
 5. **The remote's preview.** In section 5, add that the remote shows a view-only copy of the teacher's state with role `"teacher"` and `students: null`. Tool calls from it are ignored, like any frame that is not the teacher's own live frame. Render it from the state alone.
