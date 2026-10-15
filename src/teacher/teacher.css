@@ -262,6 +262,28 @@ button[aria-busy="true"]::after {
 
 /* Student screens */
 
+.screens-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.screens-search {
+  flex: 1;
+  min-width: 10rem;
+  max-width: 20rem;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-text-muted);
+}
+
+.screens-search input {
+  flex: 1;
+  min-width: 0;
+}
+
 .thumbs {
   list-style: none;
   margin: 0;
