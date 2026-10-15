@@ -12,8 +12,9 @@ The Classroom Conductor is a reusable classroom orchestration website. Every stu
 - **Library**: the teacher's collection of uploaded applets.
 - **Session**: one live run of an applet with one class.
 - **Phase**: one page of an applet.
-- **Mode**: the classroom-wide state the teacher sets.
-- **Handoff**: the transition from Demo into Independent, where students continue from the exact point the teacher stopped.
+- **Mode**: whether students watch the teacher (Demo) or work in their own applet (Work).
+- **Give**: every student continues from the state on screen, then works on it.
+- **Reset**: every student's applet returns to the fresh start of its phase.
 - **Engine**: the Claude Code process on the teacher's laptop. It answers chatbot requests and generates Pulses.
 - **Pulse**: teacher-facing feedback generated from students' current state.
 
@@ -31,9 +32,8 @@ The teacher signs in. Applets are uploaded into the library. A session is starte
 
 The controls overlay the applet on the teacher's laptop. A keyboard shortcut shows or hides them. From the controls, the teacher can:
 
-- switch modes
-- trigger Handoff
-- set group size, and form or rearrange groups
+- switch modes, spotlight a student and darken student screens
+- Give and Reset
 - override the chatbot rate limit
 - request a Pulse for the whole class or one student
 - blank the projected screen
@@ -45,24 +45,20 @@ A student opens the Classroom Conductor, enters the join code, and types their n
 
 A student who refreshes or disconnects rejoins with their work intact.
 
-Students form groups with a short code.
-
 The chatbot is available when the applet supplies instructions, within rate limits.
 
 ## Modes
 
-Modes are a fixed set provided by the Classroom Conductor. Every mode works with every applet.
+Every control works with every applet.
 
 - **Demo**: students watch the teacher use the applet live on their own laptops.
-- **Spotlight**: the teacher picks a student, and everyone else views that student's screen, including on the teacher's laptop. The spotlighted student keeps working.
-- **Anonymous Spotlight**: Spotlight without showing the student's name.
-- **Gallery**: several students' screens shown side by side on everyone's laptop.
-- **Independent**: students work in the applet themselves.
-- **Group**: a group of students shares one applet state and works on it together.
-- **Paced**: the teacher controls which phase everyone is on. Students work freely within it but cannot move ahead.
-- **Freeze**: students see their own work but cannot change it.
-- **Focus**: student screens go dark.
-- **Reveal**: the teacher pushes one state onto every student's applet. That state is either the teacher's current state or one prepared in the applet.
+- **Work**: students work in the applet themselves.
+- **Spotlight**: everyone views one student's screen, including the projection, over either mode. The spotlighted student keeps working, and the teacher can work in it too.
+- **Dark**: student screens go dark.
+- **Give**: the state on screen, the teacher's or the spotlighted student's, replaces every student's state, then the class goes to Work.
+- **Reset**: every student's applet returns to the fresh start of the phase it is on. The applet defines that start.
+
+Revealing an answer or a prepared state is the applet's job. It draws it in the teacher's view, and the class sees it in Demo.
 
 ## Contract
 
@@ -75,7 +71,7 @@ Every applet:
 - optionally supplies custom instructions for the chatbot, which switch the chatbot on
 - optionally supplies the Pulse prompt, which switches the Pulse on
 - optionally supplies a namelist
-- optionally supplies prepared states for Reveal
+- optionally rebuilds the fresh start of a phase, which switches Reset on
 
 ## Chatbot
 
