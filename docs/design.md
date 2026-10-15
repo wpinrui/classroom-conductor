@@ -115,9 +115,9 @@ What can appear over the applet, all driven by the database:
 
 The slideshow toast is gone. The remote shows slideshow state instead.
 
-Keys on the projection: while focus is on the projection, the same hotkeys as the laptop remote work there (see Hotkeys). They write the same database paths. Nothing on the projection advertises them. This keeps a teacher mid-demo from having to click back into the remote window. Any key or click on the projection also closes the join screen, the class rules or a blank, as today.
+Keys on the projection: while focus is on the projection, including inside the applet, the projection hotkeys work there (see Hotkeys). They write the same database paths as the remote. Nothing on the projection advertises them. This keeps a teacher mid-demo from having to click back into the remote window. The mode digits and G stay remote only, so applets keep their number keys. Any key or click on the projection also closes the join screen, the class rules or a blank, as today.
 
-Removed from the projection: Ctrl+. and middle-click toggling, the tuck-on-click behaviour and every local copy of overlay state. Its hotkeys now write `stage` paths instead of local state. G does nothing there.
+Removed from the projection: Ctrl+. and middle-click toggling, the tuck-on-click behaviour and every local copy of overlay state. Its hotkeys now write `stage` paths instead of local state.
 
 ## Remote
 
@@ -139,7 +139,7 @@ The remote starts in touch when `(pointer: coarse)` matches and `(hover: hover)`
 
 **Stage preview.** A view-only mirror of the projection: the teacher's applet from `teacherState`, with any spotlight on top. It lets a teacher on a phone know what the class sees. It goes black while blanked. Tapping it does nothing.
 
-**Class group.** Items 3 to 9 of Left column order: mode switcher, mode detail, Handoff, slideshow, timer, chat limit and End.
+**Class group.** Items 3 to 9 of Left column order: mode switcher, applet controls, mode detail, Handoff, slideshow, timer, chat limit and End.
 
 **Screens.** See Thumbnail grid. Tiles only render while scrolled into view, so a phone can carry a full class. Tile states are unchanged. Clicking or tapping a tile does what it does today in each mode. A whole-class Pulse button sits above the grid when the applet has a Pulse prompt.
 
@@ -183,21 +183,21 @@ Two columns. The left column is `--width-controls` wide and holds everything in 
 
 ### Hotkeys
 
-On the laptop remote, and invisibly on the projection. None fire while typing in a field.
+None fire while typing in a field. The Projection column says which also work, unadvertised, on the projection.
 
-| Key | Action |
-| --- | --- |
-| 1 to 9, 0 | Modes in switcher order |
-| G | Right column to Screens |
-| W | Toggle the wheel on the projector |
-| Space or Enter, with Wheel showing | Spin |
-| B | Toggle blank |
-| J | Toggle the join screen |
-| R | Toggle the class rules |
-| S | Toggle slideshow |
-| Right, Down, PageDown or Space, with slideshow on | Next step |
-| Left, Up or PageUp, with slideshow on | Previous step |
-| Esc | Close the join screen, rules or wheel on the projector, else leave a spotlight, as today |
+| Key | Action | Projection |
+| --- | --- | --- |
+| 1 to 9, 0 | Modes in switcher order | no |
+| G | Right column to Screens | no |
+| W | Toggle the wheel on the projector | yes |
+| Space or Enter, with Wheel showing on the remote | Spin | no |
+| B | Toggle blank | yes |
+| J | Toggle the join screen | yes |
+| R | Toggle the class rules | yes |
+| S | Toggle slideshow | yes |
+| Down, PageDown or Space, with slideshow on | Next step | yes |
+| Up or PageUp, with slideshow on | Previous step | yes |
+| Esc | Close the join screen, rules or wheel on the projector, else leave a spotlight, as today | yes |
 
 Space steps the slideshow rather than spinning when both apply, because a clicker sends it. The touch layout has no hotkeys.
 
@@ -208,12 +208,42 @@ The laptop layout's left column, and the touch layouts' Class group, run top to 
 1. **Join code.** Display size, mono, accent. It is the largest thing in the column.
 2. **Presence.** One stat: online over joined, `--font-size-xl`, with a person icon as its label. A success dot when everyone joined is online. On laptop, quiet icon buttons follow it: Blank, Join screen and Class rules.
 3. **Mode switcher.** See below.
-4. **Mode detail.** Only the controls the active mode needs. Spotlight and Anonymous show the name list. Paced shows a phase stepper (−, phase number, +). Reveal shows a source picker: the teacher's current state or each prepared state by name. Group shows the group size stepper and a Shuffle action. Gallery has no detail here. Its picker is Screens.
+4. **Applet controls**, when the applet publishes any. See Applet controls.
+4a. **Mode detail.** Only the controls the active mode needs. Spotlight and Anonymous show the name list. Paced shows a phase stepper (−, phase number, +). Reveal shows a source picker: the teacher's current state or each prepared state by name. Group shows the group size stepper and a Shuffle action. Gallery has no detail here. Its picker is Screens.
 5. **Handoff.** Primary, `--font-size-lg`, full width, in Demo only.
 6. **Slideshow**, when the applet has slides. The toggle, "Step n of m", and the next step's label in caption size, muted. Two large Previous and Next buttons sit under it while slideshow is on.
 7. **Timer.** See Timer above.
 8. **Chat limit.** A stepper labelled with a chat icon. 0 shows as ∞.
 9. **End.** Quiet and destructive, at the bottom. It asks for confirmation by turning into a danger-filled "End" on the first click. A second click within 3 seconds ends the session.
+
+
+### Applet controls
+
+An applet can publish teacher controls from its projection frame, and the remote draws them with the Conductor's own components. The remote never runs the applet live, so the projection frame stays the one writer of the teacher's state.
+
+A group under the mode switcher, with no heading. Controls flow in a 2-column grid in the order the applet gives. A text control spans both columns.
+
+| Kind | Look | Sends |
+| --- | --- | --- |
+| button | default button | `control({ id })` |
+| toggle | default button, the selected state while its `value` is true | `control({ id, value })` with the flipped value |
+| text | input holding `value`, with an accent send arrow. Enter sends. | `control({ id, value })` with the typed text |
+
+A control with `disabled: true` shows the disabled state. The group is hidden while the list is empty.
+
+### Applet contract changes
+
+The applet contract changes as follows. Edit `docs/applet-spec.md`. Then copy it over `/mnt/project-files/applet-guide/applet-spec.md`, which has fallen behind the repo copy. Apply the same changes to `/mnt/project-files/applet-guide/applet-contract.md` and `/mnt/project-files/applet-guide/applet-authoring.md` wherever they cover the same rules.
+
+1. **What the teacher view is for.** In section 1, add that the teacher's frame is the main projection view. The class sees everything it draws. Teacher controls may stay in it, so the teacher can still run the lesson from the projector. They do not have to, because the remote can carry them through `controls`. Anything the class must not see, such as answers before a reveal, belongs behind a control and never on the teacher's frame.
+2. **Reserved keys.** In section 2, replace the Ctrl+., middle mouse, G and R rules. Ctrl+., Cmd+., the middle mouse button and G are no longer taken. In the teacher's own frame, B, J, R, W and Escape outside a text field are taken by the Conductor and the applet still receives them, so avoid binding them in the teacher's view. The slideshow keys are unchanged.
+3. **`host.controls(list)`.** In section 6, a new tool, from the teacher's own live frame only. Each entry is `{ id, label, kind, value, disabled }`. `id` and `label` are non-empty strings. `kind` is `"button"`, `"toggle"` or `"text"`, and defaults to `"button"`. `value` is a boolean for a toggle and a string for text. `disabled` is optional. Each call replaces the whole list. Malformed entries are dropped. Republish whenever a control's label, value or availability changes, and on first context. Guard it with `?.`.
+4. **`control({ id, value })` handler.** In section 4, a new optional handler, called in the teacher's own live frame when the teacher uses a control on the remote. `value` is absent for a button, the new boolean for a toggle and the submitted string for text. Treat it like a click inside the applet: change the state, then call `update`. Ignore an unknown `id`.
+5. **The remote's preview.** In section 5, add that the remote shows a view-only copy of the teacher's state with role `"teacher"` and `students: null`. Tool calls from it are ignored, like any frame that is not the teacher's own live frame. Render it from the state alone.
+6. **Overview wording.** In section 1, say the teacher's class tools (thumbnails, name wheel, timer, Pulse, chat and modes) live on the remote, and the projection shows only what the class should see.
+7. **Checklist.** Add: the teacher's frame shows nothing the class should not see yet. Add: if the applet publishes `controls`, every one of them works from `control` alone, with no click inside the applet needed.
+
+The complete example in section 10 should publish its Spin Yes, Spin No and clock buttons as `controls` too, keeping the in-frame buttons.
 
 ### Mode switcher
 
