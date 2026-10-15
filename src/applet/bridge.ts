@@ -12,7 +12,7 @@ function send(m){parent.postMessage(m,"*");}
 function typing(t){return !!(t&&t.nodeType===1&&(t.tagName==="INPUT"||t.tagName==="TEXTAREA"||t.tagName==="SELECT"||t.isContentEditable||(t.closest&&t.closest('[role="textbox"]'))));}
 function stop(e){e.preventDefault();e.stopImmediatePropagation();}
 window.conductor={
-connect:function(h){handlers=h;send({cc:"connect"});},
+connect:function(h){handlers=h;send({cc:"connect",reset:!!(h&&typeof h.reset==="function")});},
 update:function(state,phase){send({cc:"update",state:JSON.parse(JSON.stringify(state===undefined?null:state)),phase:phase|0,seq:seq});},
 filters:function(list){send({cc:"filters",filters:JSON.parse(JSON.stringify(list||[]))});},
 timer:function(seconds,opts){send({cc:"timer",seconds:seconds==null?null:Number(seconds),shared:!(opts&&opts.shared===false)});},
@@ -30,6 +30,7 @@ else if(m.cc==="phaseLimit"&&handlers.setPhaseLimit)handlers.setPhaseLimit(m.max
 else if(m.cc==="context"&&handlers.setContext)handlers.setContext(m.context);
 else if(m.cc==="wheelPicked"&&handlers.wheelPicked)handlers.wheelPicked(m.student);
 else if(m.cc==="slide"&&handlers.slide)handlers.slide({phase:m.phase,cues:m.cues});
+else if(m.cc==="reset"&&handlers.reset)handlers.reset(m.phase);
 else if(m.cc==="control"&&handlers.control)handlers.control(m.value===undefined?{id:m.id}:{id:m.id,value:m.value});
 });
 window.addEventListener("mousedown",function(e){if(e.button===1){e.preventDefault();send({cc:"shortcut"});}},true);

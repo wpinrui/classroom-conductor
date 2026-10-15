@@ -370,11 +370,7 @@ function ProjectorToggle({
 
 /** What the class sees, view only: the teacher's applet with any spotlight on top. */
 function Preview({ data, html }: { data: Session; html: string }) {
-  const m = data.control.mode;
-  const target =
-    m === "spotlight" || m === "anonymousSpotlight"
-      ? data.control.spotlight
-      : undefined;
+  const target = data.control.spotlight;
   return (
     <div className="preview" data-blank={data.stage?.blank || undefined}>
       <Thumb html={html} state={data.teacherState ?? null} owner="teacher" />

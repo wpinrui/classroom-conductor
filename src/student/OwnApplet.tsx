@@ -11,31 +11,19 @@ export interface StageProps {
   html: string;
 }
 
-export interface OwnProps {
-  maxPhase?: number | null;
-  interactive?: boolean;
-}
-
-/** Student's own applet, synced to their stored state. */
+/** Student's own applet, synced to their stored state. It answers the teacher's Reset. */
 export function OwnApplet({
   session,
   uid,
   html,
-  maxPhase = null,
-  interactive = true,
-}: StageProps & OwnProps) {
+  reset,
+}: StageProps & { reset?: number }) {
   const mine = useStudentState(session, uid);
   const write = useThrottledWriter((s: StoredState) =>
     writeMyState(session, s).catch(() => {}),
   );
   if (mine === undefined) return <Loading />;
   return (
-    <AppletFrame
-      html={html}
-      state={mine}
-      onUpdate={interactive ? write : undefined}
-      maxPhase={maxPhase}
-      interactive={interactive}
-    />
+    <AppletFrame html={html} state={mine} onUpdate={write} reset={reset} />
   );
 }

@@ -7,7 +7,6 @@ import { paths } from "../firebase/paths";
 import type {
   ChatMessage,
   Control,
-  Group,
   LibraryApplet,
   Pulse,
   Session,
@@ -78,9 +77,6 @@ export const useStates = (s: string) =>
   useValue<Map<StoredState>>(paths.states(s));
 export const useStudentState = (s: string, uid: string | null) =>
   useValue<StoredState>(uid && paths.state(s, uid));
-export const useGroups = (s: string) => useValue<Map<Group>>(paths.groups(s));
-export const useGroup = (s: string, g: string | null | undefined) =>
-  useValue<Group>(g ? paths.group(s, g) : null);
 export const useChat = (s: string, uid: string | null) =>
   useValue<Map<ChatMessage>>(uid && paths.chat(s, uid));
 export const usePulses = (s: string) => useValue<Map<Pulse>>(paths.pulses(s));

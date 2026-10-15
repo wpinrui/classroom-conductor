@@ -14,6 +14,7 @@ import {
   setControl,
   setStage,
   setWheel,
+  writeStudentState,
   writeTeacherState,
 } from "../firebase/client";
 import { paths } from "../firebase/paths";
@@ -49,7 +50,7 @@ import {
   RulesIcon,
   WheelIcon,
 } from "./icons";
-import { allowedModes, defaultsFor, teacherPhase } from "./modes";
+import { slideMode, teacherPhase } from "./modes";
 import {
   type SlideEffect,
   slideCues,
@@ -59,9 +60,6 @@ import {
 import { Thumbnails } from "./Thumbnails";
 import { Wheel } from "./Wheel";
 import "./teacher.css";
-
-/** How long a slideshow step waits for the applet to reach its phase before setting the mode anyway. */
-const SLIDE_MODE_WAIT_MS = 3000;
 
 type SlideMessage = { phase: number; cues: SlideCue[]; n: number };
 
@@ -131,34 +129,26 @@ function TeacherSession({ session }: { session: string }) {
   const slideshowOn = !!stage.slideshow?.on;
   const cursor = useRef(-1);
   const [slide, setSlide] = useState<SlideMessage | null>(null);
-  const pendingMode = useRef<{
-    phase: number;
-    effect: SlideEffect;
-    timer: ReturnType<typeof setTimeout>;
-  } | null>(null);
+  // A state the projection pushes into the teacher's applet, such as an old slide's reveal.
+  const [pushed, setPushed] = useState<StoredState | null>(null);
 
-  /** Sets the mode a step leaves in force, with the same defaults the mode buttons use. */
+  /** Sets the mode a step leaves in force. An old reveal step loads its prepared state into the teacher's applet. */
   const applySlideMode = (effect: SlideEffect, d: Session) => {
     if (effect.reveal !== undefined) {
       const p = d.applet.manifest.preparedStates?.find(
         (x) => x.name === effect.reveal,
       );
-      if (p)
-        setControl(session, {
-          mode: "reveal",
-          reveal: { json: preparedJson(p), phase: p.phase, at: Date.now() },
-        });
+      if (!p) return;
+      const state = { json: preparedJson(p), phase: p.phase, at: Date.now() };
+      setControl(session, { mode: "demo", dark: null });
+      // After the step's own slide message, so its phase does not move the applet off the reveal.
+      setTimeout(() => {
+        setPushed(state);
+        writeTeacherState(session, state);
+      });
       return;
     }
-    if (effect.mode)
-      setControl(session, {
-        mode: effect.mode,
-        ...defaultsFor(effect.mode, d),
-      });
-  };
-  const clearPendingMode = () => {
-    if (pendingMode.current) clearTimeout(pendingMode.current.timer);
-    pendingMode.current = null;
+    if (effect.mode) setControl(session, slideMode(effect.mode));
   };
 
   const stepSlide = (dir: 1 | -1) => {
@@ -176,20 +166,7 @@ function TeacherSession({ session }: { session: string }) {
     const target = effect.phase ?? teacherPhase(d);
     const cues = slideCues(slides, k, forward);
     setSlide((m) => ({ phase: target, cues, n: (m?.n ?? 0) + 1 }));
-    clearPendingMode();
-    // Setting a mode before the applet reaches the step's phase would let that phase's allowed modes undo it.
-    if (target === teacherPhase(d)) applySlideMode(effect, d);
-    else
-      pendingMode.current = {
-        phase: target,
-        effect,
-        timer: setTimeout(() => {
-          const p = pendingMode.current;
-          pendingMode.current = null;
-          if (p && latestData.current)
-            applySlideMode(p.effect, latestData.current);
-        }, SLIDE_MODE_WAIT_MS),
-      };
+    applySlideMode(effect, d);
     if (!forward) return;
     const s = slides[k];
     if (s.wheel) onWheel(s.wheel);
@@ -338,52 +315,23 @@ function TeacherSession({ session }: { session: string }) {
   const uncover = () =>
     setStage(session, { blank: null, join: null, rules: null });
 
-  // When the applet narrows the modes per phase, leave a mode the current phase does not allow.
-  const allowed = data ? allowedModes(data) : null;
-  const mode = data?.control.mode;
-  const phase = data ? teacherPhase(data) : 0;
-  const requested = useRef("");
-  // biome-ignore lint/correctness/useExhaustiveDependencies: allowed and data are derived from mode and phase
-  useEffect(() => {
-    if (!data || !allowed || !mode) return;
-    if (allowed.includes(mode)) {
-      requested.current = "";
-      return;
-    }
-    const next = allowed[0];
-    const key = `${phase}:${mode}:${next}`;
-    if (requested.current === key) return;
-    requested.current = key;
-    setControl(session, { mode: next, ...defaultsFor(next, data) });
-  }, [session, mode, phase, allowed?.join()]);
-
-  // A slideshow step's mode lands once the applet reaches the step's phase, after the switch above.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: runs when the teacher's phase changes
-  useEffect(() => {
-    const p = pendingMode.current;
-    if (!p || p.phase !== phase || !latestData.current) return;
-    clearPendingMode();
-    applySlideMode(p.effect, latestData.current);
-  }, [phase]);
-
-  // biome-ignore lint/correctness/useExhaustiveDependencies: clears the wait on unmount only
-  useEffect(() => clearPendingMode, []);
-
   const html = useAppletHtml(session, data?.applet.html);
   if (data === null || data?.ended) return <main className="stage" />;
   if (!data || !html) return null;
-  const target =
-    data.control.mode === "spotlight" ||
-    data.control.mode === "anonymousSpotlight"
-      ? data.control.spotlight
-      : undefined;
+  const target = data.control.spotlight;
+  const spotlit = target ? data.states?.[target] : undefined;
   return (
     <main className="stage" data-overlay={overlay || undefined}>
       <TeacherStateContext.Provider value={data.teacherState ?? null}>
         <TeacherApplet
           data={data}
           html={html}
+          pushed={pushed}
           onUpdate={write}
+          onConnect={({ reset }) => {
+            if (!!latestData.current?.stage?.canReset !== reset)
+              setStage(session, { canReset: reset || null });
+          }}
           onFilters={onFilters}
           onControls={onControls}
           control={fresh}
@@ -412,11 +360,12 @@ function TeacherSession({ session }: { session: string }) {
         />
         {target && data.students?.[target] && (
           <div className="teacher-spotlight">
-            <AppletFrame
+            <SpotlitApplet
               key={target}
+              session={session}
+              student={target}
               html={html}
-              state={data.states?.[target] ?? null}
-              interactive={false}
+              state={spotlit}
             />
           </div>
         )}
@@ -424,15 +373,9 @@ function TeacherSession({ session }: { session: string }) {
           {/* The projector shows this screen, so it says only what students would see. */}
           {target && data.students?.[target] && (
             <output className="status" data-tone="watch">
-              {data.control.mode === "spotlight" ? (
-                <span>
-                  Viewing <b>{data.students[target].name}'s</b> screen
-                </span>
-              ) : (
-                <span>
-                  Viewing a <b>classmate's</b> screen
-                </span>
-              )}
+              <span>
+                Viewing <b>{data.students[target].name}'s</b> screen
+              </span>
             </output>
           )}
           {data.control.timer && <Countdown timer={data.control.timer} />}
@@ -564,6 +507,28 @@ function TeacherSession({ session }: { session: string }) {
   );
 }
 
+/** The spotlighted student's applet. The teacher can work on it, alongside the student. */
+function SpotlitApplet({
+  session,
+  student,
+  html,
+  state,
+}: {
+  session: string;
+  student: string;
+  html: string;
+  state: StoredState | undefined;
+}) {
+  const reset = state?.reset;
+  const write = useThrottledWriter((s: StoredState) =>
+    writeStudentState(session, student, {
+      ...s,
+      ...(reset ? { reset } : {}),
+    }),
+  );
+  return <AppletFrame html={html} state={state ?? null} onUpdate={write} />;
+}
+
 /** Every student with their parsed state, as the teacher's applet sees them. */
 function useClass(data: Session): Record<string, ClassMember> {
   const { students, states, presence } = data;
@@ -586,11 +551,14 @@ function useClass(data: Session): Record<string, ClassMember> {
 function TeacherApplet({
   data,
   html,
+  pushed,
   onUpdate,
   ...rest
 }: {
   data: Session;
   html: string;
+  /** A state to load into the applet, replacing what the teacher has. */
+  pushed: StoredState | null;
   onUpdate: (s: StoredState) => void;
 } & Pick<
   React.ComponentProps<typeof AppletFrame>,
@@ -607,13 +575,14 @@ function TeacherApplet({
   | "onSlideshowToggle"
   | "onHotkey"
   | "onShortcut"
+  | "onConnect"
 >) {
   const [initial] = useState(data.teacherState ?? null);
   const students = useClass(data);
   return (
     <AppletFrame
       html={html}
-      state={initial}
+      state={pushed ?? initial}
       onUpdate={onUpdate}
       owner="teacher"
       students={students}

@@ -6,7 +6,7 @@ import type { Session, StoredState } from "../firebase/types";
 import { PulseButton } from "../pulse/Pulse";
 import { showPulse } from "../pulse/store";
 import { spotlightStudent } from "../stage/actions";
-import { CheckIcon, PulseIcon, SearchIcon, SpotlightIcon } from "./icons";
+import { PulseIcon, SearchIcon, SpotlightIcon } from "./icons";
 import { isTextTarget } from "./slides";
 
 /** Applets render at this size, then scale down to fit the tile. */
@@ -27,7 +27,7 @@ function isDone(json: string | undefined): boolean {
   }
 }
 
-/** Live, view-only student screens on the remote. Also the Spotlight and Gallery picker. */
+/** Live, view-only student screens on the remote. During a spotlight, also its picker. */
 export function Thumbnails({
   session,
   data,
@@ -39,8 +39,7 @@ export function Thumbnails({
   html: string;
   touch: boolean;
 }) {
-  const { mode, spotlight, gallery = {} } = data.control;
-  const spotlighting = mode === "spotlight" || mode === "anonymousSpotlight";
+  const { spotlight } = data.control;
   const hasPulse = data.applet.manifest.pulsePrompt !== undefined;
   const pulses = Object.values(data.pulses ?? {});
   const pending = new Set(
@@ -75,13 +74,8 @@ export function Thumbnails({
   }, [touch]);
 
   const click = (uid: string) => {
-    if (spotlighting) {
+    if (spotlight) {
       setControl(session, { spotlight: uid });
-    } else if (mode === "gallery") {
-      const next = { ...gallery };
-      if (next[uid]) delete next[uid];
-      else next[uid] = true;
-      setControl(session, { gallery: next });
     } else {
       const pid = latestPulse.get(uid);
       if (pid) showPulse(pid);
@@ -107,12 +101,10 @@ export function Thumbnails({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => {
-              // Enter adds the first match to the gallery in Gallery, and spotlights it otherwise.
+              // Enter spotlights the first match.
               const first = students[0]?.[0];
               if (e.key === "Enter" && first)
-                mode === "gallery"
-                  ? click(first)
-                  : spotlightStudent(session, data, first);
+                spotlightStudent(session, data, first);
               if (e.key === "Escape") {
                 e.stopPropagation();
                 setQuery("");
@@ -130,11 +122,7 @@ export function Thumbnails({
             className="thumb"
             data-offline={!data.presence?.[uid] || undefined}
             data-done={isDone(data.states?.[uid]?.json) || undefined}
-            data-selected={
-              (spotlighting
-                ? spotlight === uid
-                : mode === "gallery" && !!gallery[uid]) || undefined
-            }
+            data-selected={spotlight === uid || undefined}
           >
             <TileButton
               label={s.name}
@@ -145,11 +133,6 @@ export function Thumbnails({
             </TileButton>
             <span className="thumb-name">{s.name}</span>
             {latestPulse.has(uid) && <span className="dot accent thumb-dot" />}
-            {mode === "gallery" && gallery[uid] && (
-              <span className="thumb-badge">
-                <CheckIcon />
-              </span>
-            )}
             {!touch && (
               <div className="thumb-actions">
                 <button

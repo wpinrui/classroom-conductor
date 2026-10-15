@@ -7,7 +7,6 @@ import {
 } from "firebase/auth";
 import {
   get,
-  increment,
   onDisconnect,
   push,
   ref,
@@ -23,7 +22,6 @@ import type {
   ChatMessage,
   Control,
   EngineRequest,
-  Group,
   JoinCode,
   LibraryApplet,
   Pulse,
@@ -172,7 +170,7 @@ export async function startSession(
       hash: await fingerprint(html),
     },
     ...(namelist ? { namelist } : {}),
-    control: { mode: applet.manifest.modes?.[0]?.[0] ?? "demo" },
+    control: { mode: "demo" },
   };
   // Retry on the rare code collision: the codes rule refuses to overwrite.
   for (let attempt = 0; ; attempt++) {
@@ -219,30 +217,40 @@ export const setWheel = (
 export const writeTeacherState = (session: string, state: StoredState) =>
   set(ref(db, paths.teacherState(session)), state);
 
-/** Writes one state onto every listed student in a single update. */
-export function writeAllStates(
-  session: string,
-  students: string[],
-  state: StoredState,
-) {
-  return update(
-    ref(db),
-    Object.fromEntries(students.map((s) => [paths.state(session, s), state])),
+/**
+ * Give: every student continues from what is on screen, then works on it.
+ * That is the spotlighted student's state during a spotlight, else the teacher's.
+ */
+export async function give(session: string, data: Session) {
+  const source = data.control.spotlight;
+  const snap = await get(
+    ref(
+      db,
+      source ? paths.state(session, source) : paths.teacherState(session),
+    ),
   );
-}
-
-/** Handoff: every student continues from the teacher's current state. */
-export async function handoff(session: string, students: string[]) {
-  const snap = await get(ref(db, paths.teacherState(session)));
   const updates: Record<string, unknown> = {
-    [`${paths.control(session)}/mode`]: "independent",
+    [`${paths.control(session)}/mode`]: "work",
+    [`${paths.control(session)}/spotlight`]: null,
   };
   if (snap.exists()) {
-    const state = { ...(snap.val() as StoredState), at: Date.now() };
-    for (const s of students) updates[paths.state(session, s)] = state;
+    const { json, phase } = snap.val() as StoredState;
+    // Marked as answering the last Reset, so the given state is not reset away.
+    const state: StoredState = {
+      json,
+      phase,
+      at: Date.now(),
+      ...(data.control.reset ? { reset: data.control.reset } : {}),
+    };
+    for (const s of Object.keys(data.students ?? {}))
+      if (s !== source) updates[paths.state(session, s)] = state;
   }
   return update(ref(db), updates);
 }
+
+/** Reset: every student's own applet goes back to the fresh start of its phase. */
+export const resetAll = (session: string) =>
+  setControl(session, { reset: Date.now() });
 
 /** Snapshots current states, of the class or one student, and queues a Pulse for the Engine. */
 export async function requestPulse(
@@ -351,11 +359,12 @@ export async function trackPresence(session: string) {
 export const writeMyState = (session: string, state: StoredState) =>
   set(ref(db, paths.state(session, uid())), state);
 
-export const writeGroupState = (
+/** The teacher writing a student's state, such as while working on it in a spotlight. */
+export const writeStudentState = (
   session: string,
-  group: string,
+  student: string,
   state: StoredState,
-) => set(ref(db, paths.groupState(session, group)), state);
+) => set(ref(db, paths.state(session, student)), state);
 
 export async function sendChat(session: string, text: string) {
   const me = uid();
@@ -367,77 +376,4 @@ export async function sendChat(session: string, text: string) {
     at: Date.now(),
     status: "pending",
   });
-}
-
-// Groups (teacher)
-
-function shuffle<T>(items: T[]): T[] {
-  const a = [...items];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
-
-const GROUP_CODE_LENGTH = 4;
-
-/** Splits students into random groups of `size`, replacing every existing group. A lone leftover joins the last group. */
-export function formGroups(session: string, students: string[], size: number) {
-  const order = shuffle(students);
-  const chunks: string[][] = [];
-  for (let i = 0; i < order.length; i += size)
-    chunks.push(order.slice(i, i + size));
-  const last = chunks.at(-1);
-  if (chunks.length > 1 && last && last.length === 1)
-    chunks[chunks.length - 2].push(...(chunks.pop() as string[]));
-  const groups: Record<string, Group> = {};
-  const updates: Record<string, unknown> = {};
-  for (const members of chunks) {
-    const gid = push(ref(db, paths.groups(session))).key as string;
-    groups[gid] = {
-      code: randomCode(GROUP_CODE_LENGTH),
-      members: Object.fromEntries(members.map((m) => [m, true])),
-      count: members.length,
-    };
-    for (const m of members)
-      updates[`${paths.student(session, m)}/group`] = gid;
-  }
-  updates[paths.groups(session)] = groups;
-  return update(ref(db), updates);
-}
-
-/**
- * Moves a student into group `to`, or out of every group when `to` is null.
- * `to` "new" starts a fresh group. A group left empty is deleted.
- */
-export function moveToGroup(
-  session: string,
-  student: string,
-  from: (Group & { id: string }) | null,
-  to: string | null,
-) {
-  const updates: Record<string, unknown> = {};
-  if (from) {
-    const left = Object.keys(from.members ?? {}).filter((m) => m !== student);
-    if (left.length === 0) updates[paths.group(session, from.id)] = null;
-    else {
-      updates[`${paths.group(session, from.id)}/members/${student}`] = null;
-      updates[`${paths.group(session, from.id)}/count`] = left.length;
-    }
-  }
-  let target = to;
-  if (to === "new") {
-    target = push(ref(db, paths.groups(session))).key as string;
-    updates[paths.group(session, target)] = {
-      code: randomCode(GROUP_CODE_LENGTH),
-      members: { [student]: true },
-      count: 1,
-    };
-  } else if (to) {
-    updates[`${paths.group(session, to)}/members/${student}`] = true;
-    updates[`${paths.group(session, to)}/count`] = increment(1);
-  }
-  updates[`${paths.student(session, student)}/group`] = target;
-  return update(ref(db), updates);
 }

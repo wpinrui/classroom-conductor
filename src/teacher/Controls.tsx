@@ -1,39 +1,22 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import type { AppletControl } from "../applet/contract";
-import { endSession, handoff, setControl } from "../firebase/client";
+import { endSession, give, resetAll, setControl } from "../firebase/client";
 import { DEFAULT_CHAT_LIMIT, type Mode, type Session } from "../firebase/types";
 import { sendControl, stepSlideshow, toggleSlideshow } from "../stage/actions";
-import { Groups } from "./Groups";
 import { ChatIcon, CopyIcon, PersonIcon, SendIcon } from "./icons";
-import { allowedModes, defaultsFor, handoffAllowed } from "./modes";
-import { Reveal } from "./Reveal";
+import { giveAllowed } from "./modes";
 import { Stepper } from "./Stepper";
 import "./teacher.css";
 
 // The remote's class controls, one component per group in docs/design.md's Left column order.
 
-/** Watch, Work and Stop groups, in switcher and number-key order. */
-const MODE_GROUPS: [Mode, string][][] = [
-  [
-    ["demo", "Demo"],
-    ["reveal", "Reveal"],
-    ["spotlight", "Spotlight"],
-    ["anonymousSpotlight", "Anonymous"],
-    ["gallery", "Gallery"],
-  ],
-  [
-    ["independent", "Independent"],
-    ["paced", "Paced"],
-    ["group", "Group"],
-  ],
-  [
-    ["freeze", "Freeze"],
-    ["focus", "Focus"],
-  ],
+/** Demo and Work, in switcher and number-key order. */
+const MODE_BUTTONS: [Mode, string][] = [
+  ["demo", "Demo"],
+  ["work", "Work"],
 ];
 const END_CONFIRM_MS = 3000;
 const COPIED_MS = 1500;
-const SPOTLIGHTS: Mode[] = ["spotlight", "anonymousSpotlight"];
 
 const isTyping = (t: EventTarget | null) =>
   t instanceof HTMLElement &&
@@ -98,8 +81,8 @@ export function Presence({ data }: { data: Session }) {
 }
 
 /**
- * The mode switcher and the detail the active mode needs. Spotlight waits for a student:
- * choosing it only opens the picker, so screens change once, with someone on them.
+ * Demo and Work, the Spotlight picker, Dark, and the Give and Reset actions.
+ * Spotlight sits over either mode, so ending it returns the class to the mode underneath.
  */
 export function Modes({
   session,
@@ -108,39 +91,21 @@ export function Modes({
 }: {
   session: string;
   data: Session;
-  /** True when 1 to 9 and 0 switch modes. */
+  /** True when 1 and 2 switch modes. */
   keys: boolean;
 }) {
   const control = data.control;
-  const allowed = allowedModes(data);
-  const groups = MODE_GROUPS.map((g) =>
-    g.filter(([m]) => !allowed || allowed.includes(m)),
-  ).filter((g) => g.length > 0);
-  const keyOrder = groups.flat().map(([m]) => m);
-  const order = useRef(keyOrder);
-  order.current = keyOrder;
-  const latest = useRef(data);
-  latest.current = data;
-  const [pending, setPending] = useState<Mode | null>(null);
-  // biome-ignore lint/correctness/useExhaustiveDependencies: a mode change settles any pending spotlight
-  useEffect(() => setPending(null), [control.mode]);
-  const pick = (mode: Mode) => {
-    const current = latest.current.control.mode;
-    if (SPOTLIGHTS.includes(mode) && !SPOTLIGHTS.includes(current))
-      return setPending((p) => (p === mode ? null : mode));
-    setPending(null);
-    setControl(session, { mode, ...defaultsFor(mode, latest.current) });
-  };
+  const [picking, setPicking] = useState(false);
+  const spotlit = !!control.spotlight;
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: pick and order read the latest values through refs
   useEffect(() => {
     if (!keys) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.ctrlKey || e.metaKey || e.altKey || isTyping(e.target)) return;
-      const i = "1234567890".indexOf(e.key);
-      if (i < 0 || i >= order.current.length) return;
+      const i = "12".indexOf(e.key);
+      if (i < 0) return;
       e.preventDefault();
-      pick(order.current[i]);
+      setControl(session, { mode: MODE_BUTTONS[i][0] });
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -149,45 +114,80 @@ export function Modes({
   return (
     <>
       <div className="modes">
-        {groups.map((group) => (
-          <div key={group[0][0]} className="mode-group">
-            {group.map(([mode, label]) => (
-              <button
-                key={mode}
-                type="button"
-                data-mode={mode}
-                aria-pressed={control.mode === mode}
-                data-armed={pending === mode || undefined}
-                onClick={() => pick(mode)}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
+        {MODE_BUTTONS.map(([mode, label]) => (
+          <button
+            key={mode}
+            type="button"
+            data-mode={mode}
+            aria-pressed={!spotlit && control.mode === mode}
+            onClick={() => setControl(session, { mode, spotlight: null })}
+          >
+            {label}
+          </button>
         ))}
+        <button
+          type="button"
+          aria-pressed={spotlit || picking}
+          onClick={() =>
+            spotlit
+              ? setControl(session, { spotlight: null })
+              : setPicking((p) => !p)
+          }
+        >
+          Spotlight
+        </button>
+        <button
+          type="button"
+          data-mode="dark"
+          aria-pressed={!!control.dark}
+          onClick={() => setControl(session, { dark: !control.dark || null })}
+        >
+          Dark
+        </button>
       </div>
-      <AppletControls session={session} data={data} />
-      {control.mode === "paced" && <Paced session={session} data={data} />}
-      {control.mode === "reveal" && <Reveal session={session} data={data} />}
-      {(pending || SPOTLIGHTS.includes(control.mode)) && (
+      {(picking || spotlit) && (
         <SpotlightPicker
           session={session}
           data={data}
-          pending={pending}
           focus={keys}
+          onPicked={() => setPicking(false)}
         />
       )}
-      {control.mode === "group" && <Groups session={session} data={data} />}
-      {control.mode === "demo" && handoffAllowed(data) && (
+      <AppletControls session={session} data={data} />
+      {giveAllowed(data) && (
         <button
           type="button"
           className="primary handoff"
-          onClick={() => handoff(session, Object.keys(data.students ?? {}))}
+          onClick={() => give(session, data)}
         >
-          Handoff
+          Give
         </button>
       )}
+      {data.stage?.canReset && <Reset session={session} />}
     </>
+  );
+}
+
+/** Quiet until armed by the first click, like End, because it wipes every student's work in the phase. */
+function Reset({ session }: { session: string }) {
+  const [armed, setArmed] = useState(false);
+  useEffect(() => {
+    if (!armed) return;
+    const t = setTimeout(() => setArmed(false), END_CONFIRM_MS);
+    return () => clearTimeout(t);
+  }, [armed]);
+  return (
+    <button
+      type="button"
+      className={armed ? "end armed" : "end"}
+      onClick={() => {
+        if (!armed) return setArmed(true);
+        setArmed(false);
+        resetAll(session);
+      }}
+    >
+      Reset
+    </button>
   );
 }
 
@@ -374,36 +374,18 @@ export function End({ session, data }: { session: string; data: Session }) {
   );
 }
 
-/** Steps the phase everyone is held to, by the applet's phase names. */
-function Paced({ session, data }: { session: string; data: Session }) {
-  const phases = data.applet.manifest.phases;
-  const at = Math.min(data.control.pacedPhase ?? 0, phases.length - 1);
-  return (
-    <Stepper
-      value={phases[at]}
-      current={at}
-      min={0}
-      max={phases.length - 1}
-      onStep={(d) => setControl(session, { pacedPhase: at + d })}
-    />
-  );
-}
-
-/**
- * Every student by name. Tapping one spotlights them, tapping them again ends the spotlight.
- * With a spotlight mode pending, the first tap switches the class into it with that student.
- */
+/** Every student by name. Tapping one spotlights them, tapping them again ends the spotlight. */
 function SpotlightPicker({
   session,
   data,
-  pending,
   focus,
+  onPicked,
 }: {
   session: string;
   data: Session;
-  pending: Mode | null;
   /** Focus the search on open. Off on touch, where it would raise the keyboard. */
   focus: boolean;
+  onPicked: () => void;
 }) {
   const current = data.control.spotlight;
   const [query, setQuery] = useState("");
@@ -411,13 +393,10 @@ function SpotlightPicker({
   const students = Object.entries(data.students ?? {})
     .filter(([, s]) => !q || s.name.toLowerCase().includes(q))
     .sort(([, a], [, b]) => a.name.localeCompare(b.name));
-  const pick = (uid: string) =>
-    setControl(
-      session,
-      pending
-        ? { mode: pending, spotlight: uid }
-        : { spotlight: current === uid ? null : uid },
-    );
+  const pick = (uid: string) => {
+    onPicked();
+    setControl(session, { spotlight: current === uid ? null : uid });
+  };
   return (
     <div className="spotlight-picker">
       <input
@@ -439,7 +418,7 @@ function SpotlightPicker({
           <button
             key={uid}
             type="button"
-            aria-pressed={!pending && current === uid}
+            aria-pressed={current === uid}
             data-offline={!data.presence?.[uid] || undefined}
             onClick={() => pick(uid)}
           >

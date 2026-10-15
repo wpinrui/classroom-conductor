@@ -1,4 +1,3 @@
-import { MODES, type Mode } from "../firebase/types";
 import type { Manifest, PreparedState, Slide } from "./contract";
 
 const MANIFEST_RE =
@@ -23,8 +22,23 @@ function isPrepared(
 /** Same limit as a scripted timer. */
 const MAX_TIMER_SECONDS = 24 * 3600;
 
-const isMode = (v: unknown): v is Mode =>
-  typeof v === "string" && (MODES as readonly string[]).includes(v);
+/** Mode ids a slide may name: demo, work and dark, plus the old ten modes, which map onto them. */
+const SLIDE_MODES = [
+  "demo",
+  "work",
+  "dark",
+  "spotlight",
+  "anonymousSpotlight",
+  "gallery",
+  "independent",
+  "group",
+  "paced",
+  "freeze",
+  "focus",
+  "reveal",
+];
+const isMode = (v: unknown): v is string =>
+  typeof v === "string" && SLIDE_MODES.includes(v);
 
 const nonEmpty = (v: unknown): v is string =>
   typeof v === "string" && v.trim() !== "";
@@ -55,7 +69,7 @@ function parseSlide(
   }
   if (s.mode !== undefined) {
     if (!isMode(s.mode)) fail(`names an unknown mode: ${String(s.mode)}`);
-    out.mode = s.mode as Mode;
+    out.mode = s.mode as string;
   }
   if (s.cue !== undefined) {
     if (!nonEmpty(s.cue)) fail("cue must be a non-empty string");
@@ -147,21 +161,6 @@ export function parseManifest(html: string): Manifest {
     throw new ManifestError(
       "handoff must be true, false or a list of phase indexes",
     );
-  let modes: Mode[][] | undefined;
-  if (m.modes !== undefined) {
-    if (!Array.isArray(m.modes) || !m.modes.every(isStringArray))
-      throw new ManifestError("modes must be a list of mode lists");
-    if (m.modes.length !== phaseCount)
-      throw new ManifestError("modes must have exactly one list per phase");
-    if (m.modes.some((list) => list.length === 0))
-      throw new ManifestError(
-        "each phase in modes must allow at least one mode",
-      );
-    const unknown = m.modes.flat().find((id) => !isMode(id));
-    if (unknown !== undefined)
-      throw new ManifestError(`modes names an unknown mode: ${unknown}`);
-    modes = m.modes as Mode[][];
-  }
   let slides: Slide[] | undefined;
   if (m.slides !== undefined) {
     if (!Array.isArray(m.slides))
@@ -190,7 +189,6 @@ export function parseManifest(html: string): Manifest {
           ),
         }
       : {}),
-    ...(modes ? { modes } : {}),
     ...(m.handoff === false || Array.isArray(m.handoff)
       ? { handoff: m.handoff as false | number[] }
       : {}),

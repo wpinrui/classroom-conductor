@@ -56,7 +56,7 @@ beforeEach(async () => {
   await db.ref(paths.session(S)).set({
     teacher: "t",
     applet: { name: "Fractions", html: "<html>fractions</html>", manifest },
-    control: { mode: "independent" },
+    control: { mode: "work" },
   });
   await db.ref(paths.live(S)).set(true);
 });

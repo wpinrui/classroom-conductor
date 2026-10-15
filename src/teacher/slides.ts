@@ -1,10 +1,9 @@
 import type { Slide, SlideCue } from "../applet/contract";
-import type { Mode } from "../firebase/types";
 
 /** What a step leaves in force: the last phase, and the last mode or reveal, declared at or before it. */
 export interface SlideEffect {
   phase?: number;
-  mode?: Mode;
+  mode?: string;
   /** Prepared state name, when the mode comes from a reveal step. */
   reveal?: string;
 }
