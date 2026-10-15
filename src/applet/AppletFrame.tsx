@@ -64,6 +64,13 @@ interface Props {
   onShortcut?: () => void;
   /** Called with the teacher controls the applet publishes. */
   onControls?: (controls: AppletControl[]) => void;
+  /** Called when the applet connects, saying whether it answers Reset. */
+  onConnect?: (info: { reset: boolean }) => void;
+  /**
+   * The teacher's last Reset. Sent once to an applet whose state has not answered it,
+   * then onUpdate marks every state with it.
+   */
+  reset?: number;
   /** A control the teacher used on the remote. n grows with every use, so each one is sent once. */
   control?: { id: string; value?: boolean | string; n: number } | null;
 }
@@ -93,6 +100,8 @@ export function AppletFrame({
   onControls,
   control,
   onShortcut,
+  onConnect,
+  reset,
 }: Props) {
   const teacherState = useContext(TeacherStateContext);
   const teacher = owner === "student" ? teacherState : null;
@@ -114,6 +123,8 @@ export function AppletFrame({
   const known = useRef<Known | null>(null);
   const connected = useRef(false);
   const seq = useRef(0);
+  // The Reset this frame has answered, starting from the one its saved state answered.
+  const answered = useRef(state?.reset ?? 0);
   const latest = useRef({
     state,
     onUpdate,
@@ -129,6 +140,8 @@ export function AppletFrame({
     onHotkey,
     slideshow,
     contextJson,
+    onConnect,
+    reset,
   });
   latest.current = {
     state,
@@ -145,6 +158,8 @@ export function AppletFrame({
     onHotkey,
     slideshow,
     contextJson,
+    onConnect,
+    reset,
   };
   const srcDoc = useMemo(() => withBridge(html), [html]);
 
@@ -162,6 +177,14 @@ export function AppletFrame({
       phase: s.phase,
       seq: seq.current,
     });
+  };
+
+  /** Asks the applet to answer a Reset it has not seen yet. */
+  const sendReset = () => {
+    const r = latest.current.reset;
+    if (!r || r <= answered.current || !known.current) return;
+    answered.current = r;
+    post({ cc: "reset", phase: known.current.phase });
   };
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: re-run per page load only
@@ -199,11 +222,14 @@ export function AppletFrame({
         latest.current.onSlideshowToggle?.();
       } else if (m?.cc === "connect") {
         connected.current = true;
+        latest.current.onConnect?.({ reset: m.reset === true });
         post({ cc: "phaseLimit", maxPhase });
         if (latest.current.slideshow !== undefined)
           post({ cc: "slideshow", on: latest.current.slideshow });
         postContext();
         if (state) push(state);
+        else known.current = { json: "null", phase: 0 };
+        sendReset();
       } else if (m?.cc === "update") {
         if (m.seq !== seq.current) return;
         const next = { json: JSON.stringify(m.state), phase: m.phase };
@@ -214,7 +240,11 @@ export function AppletFrame({
         const k = known.current;
         if (k && k.json === next.json && k.phase === next.phase) return;
         known.current = next;
-        onUpdate?.({ ...next, at: Date.now() });
+        onUpdate?.({
+          ...next,
+          at: Date.now(),
+          ...(answered.current ? { reset: answered.current } : {}),
+        });
       }
     };
     window.addEventListener("message", onMessage);
@@ -261,6 +291,11 @@ export function AppletFrame({
         ...(control.value === undefined ? {} : { value: control.value }),
       });
   }, [control?.n]);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: sendReset reads the latest values through refs
+  useEffect(() => {
+    if (connected.current) sendReset();
+  }, [reset]);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: post only when the limit changes
   useEffect(() => {

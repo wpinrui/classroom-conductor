@@ -1,14 +1,11 @@
 import { useEffect, useRef } from "react";
 import { setControl, setStage } from "../firebase/client";
-import type { Mode, Session, Stage } from "../firebase/types";
-import { defaultsFor } from "../teacher/modes";
+import type { Session, Stage } from "../firebase/types";
 import { isTextTarget, NEXT_KEYS, PREV_KEYS } from "../teacher/slides";
 
 // What the remote and the projection's hotkeys ask of the projection. Each writes stage paths.
 
 type Overlay = "blank" | "join" | "rules";
-
-const SPOTLIGHTS: Mode[] = ["spotlight", "anonymousSpotlight"];
 
 export const toggleOverlay = (session: string, stage: Stage, key: Overlay) =>
   setStage(session, { [key]: !stage[key] || null });
@@ -52,26 +49,15 @@ export const sendControl = (
     },
   });
 
-/** Remembers the mode before a spotlight, so Escape can return to it. */
-export function useBeforeSpotlight(mode: Mode | undefined) {
-  const before = useRef<Mode>("independent");
-  if (mode && !SPOTLIGHTS.includes(mode)) before.current = mode;
-  return before;
-}
-
 /** Closes the join screen, rules and wheel on the projector, else leaves a spotlight. False when there was nothing to do. */
-export function escapeStage(
-  session: string,
-  data: Session,
-  before: Mode,
-): boolean {
+export function escapeStage(session: string, data: Session): boolean {
   const stage = data.stage ?? {};
   if (stage.join || stage.rules || stage.wheel?.open) {
     setStage(session, { join: null, rules: null, "wheel/open": null });
     return true;
   }
-  if (!SPOTLIGHTS.includes(data.control.mode)) return false;
-  setControl(session, { mode: before, ...defaultsFor(before, data) });
+  if (!data.control.spotlight) return false;
+  setControl(session, { spotlight: null });
   return true;
 }
 
@@ -84,24 +70,14 @@ export function useStageKeys(
   data: Session | null | undefined,
   extra?: (e: KeyboardEvent, data: Session) => boolean,
 ) {
-  const before = useBeforeSpotlight(data?.control.mode);
   const latest = useRef({ data, extra });
   latest.current = { data, extra };
-  // biome-ignore lint/correctness/useExhaustiveDependencies: reads the latest values through refs
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const { data, extra } = latest.current;
       if (!data || e.ctrlKey || e.metaKey || e.altKey) return;
       if (isTextTarget(e.target)) return;
-      if (
-        hotkey(
-          session,
-          data,
-          e.key,
-          before.current,
-          extra && (() => extra(e, data)),
-        )
-      )
+      if (hotkey(session, data, e.key, extra && (() => extra(e, data))))
         e.preventDefault();
     };
     window.addEventListener("keydown", onKey);
@@ -109,7 +85,7 @@ export function useStageKeys(
   }, [session]);
   return (key: string) => {
     const d = latest.current.data;
-    if (d) hotkey(session, d, key, before.current);
+    if (d) hotkey(session, d, key);
   };
 }
 
@@ -118,7 +94,6 @@ function hotkey(
   session: string,
   data: Session,
   key: string,
-  before: Mode,
   extra?: () => boolean,
 ): boolean {
   const stage = data.stage ?? {};
@@ -136,13 +111,12 @@ function hotkey(
   else if (k === "j") toggleOverlay(session, stage, "join");
   else if (k === "r") toggleOverlay(session, stage, "rules");
   else if (k === "s") toggleSlideshow(session, data);
-  else if (k === "Escape" || k === "escape")
-    return escapeStage(session, data, before);
+  else if (k === "Escape" || k === "escape") return escapeStage(session, data);
   else return false;
   return true;
 }
 
-/** Spotlights a student, keeping Anonymous Spotlight anonymous. Null ends the spotlight. */
+/** Spotlights a student over any mode. Null ends the spotlight. */
 export function spotlightStudent(
   session: string,
   data: Session,
@@ -150,8 +124,5 @@ export function spotlightStudent(
 ) {
   if (uid === null) return setControl(session, { spotlight: null });
   if (!data.students?.[uid]) return;
-  setControl(session, {
-    spotlight: uid,
-    ...(SPOTLIGHTS.includes(data.control.mode) ? {} : { mode: "spotlight" }),
-  });
+  setControl(session, { spotlight: uid });
 }

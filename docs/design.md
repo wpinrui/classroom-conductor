@@ -105,7 +105,7 @@ The teacher's own applet fills the viewport and stays interactive, so the teache
 
 What can appear over the applet, all driven by the database:
 
-- **Spotlight.** The spotlighted student's applet over the teacher's, view-only, with the status pill as today.
+- **Spotlight.** The spotlighted student's applet over the teacher's, with the status pill as today. The teacher can work in it, and their edits go into that student's work.
 - **Shared timer.** The countdown students see, in the status bar.
 - **Name wheel.** See Name wheel below. On the projection it is centred, `--space-4` from every edge, with no ✕.
 - **Join screen.** The join address and the code, full screen.
@@ -150,9 +150,9 @@ The remote starts in touch when `(pointer: coarse)` matches and `(hover: hover)`
 
 **Stage preview.** A view-only mirror of the projection: the teacher's applet from `teacherState`, with any spotlight on top. It lets a teacher on a phone know what the class sees. It goes black while blanked. Tapping it does nothing.
 
-**Class group.** Items 3 to 9 of Left column order: mode switcher, applet controls, mode detail, Handoff, slideshow, timer, chat limit and End.
+**Class group.** Items 3 to 9 of Left column order: mode switcher, spotlight list, applet controls, Give and Reset, slideshow, timer, chat limit and End.
 
-**Screens.** See Thumbnail grid. Tiles only render while scrolled into view, so a phone can carry a full class. Tile states are unchanged. Clicking or tapping a tile does what it does today in each mode. A whole-class Pulse button sits above the grid when the applet has a Pulse prompt.
+**Screens.** See Thumbnail grid. Tiles only render while scrolled into view, so a phone can carry a full class. Tile states are unchanged. Clicking or tapping a tile does what Thumbnail grid says. A whole-class Pulse button sits above the grid when the applet has a Pulse prompt.
 
 **Wheel.** The wheel's controls, not the wheel itself:
 
@@ -182,7 +182,7 @@ Built for a thumb. Minimum hit area 48px. No hover states carry meaning, and not
 | Timer | the timer controls |
 | Chat | chat, only when the applet has instructions |
 
-The active tab is accent. A tab's icon gets an accent dot when something there needs the teacher: a finished Pulse in Screens, an unread reply in Chat, a finished timer in Timer. The mode switcher's buttons grow to 56px tall in a 2-column grid. On Screens, a long press on a tile opens that student's Pulse, replacing the hover icons.
+The active tab is accent. A tab's icon gets an accent dot when something there needs the teacher: a finished Pulse in Screens, an unread reply in Chat, a finished timer in Timer. The mode switcher's buttons grow to 56px tall. On Screens, a long press on a tile opens that student's Pulse, replacing the hover icons.
 
 **Tablet, 48rem and wider.** Two columns. The left column is `--width-controls` wide and always holds the class group, then the timer controls. The right column holds the stage preview on top and, below it, one of Screens, Wheel or Chat, chosen by a segmented control of icon and label. Pulse sheets cover the right column only.
 
@@ -198,7 +198,7 @@ None fire while typing in a field. The Projection column says which also work, u
 
 | Key | Action | Projection |
 | --- | --- | --- |
-| 1 to 9, 0 | Modes in switcher order | no |
+| 1, 2 | Demo, Work | no |
 | G | Right column to Screens | no |
 | W | Toggle the wheel on the projector | yes |
 | Space or Enter, with Wheel showing on the remote | Spin | no |
@@ -218,10 +218,10 @@ The laptop layout's left column, and the touch layouts' Class group, run top to 
 
 1. **Join code.** Display size, mono, accent. It is the largest thing in the column.
 2. **Presence.** One stat: online over joined, `--font-size-xl`, with a person icon as its label. A success dot when everyone joined is online. On laptop, quiet icon buttons follow it: Blank, Join screen and Class rules.
-3. **Mode switcher.** See below.
+3. **Mode switcher.** See below. The spotlight list sits under it while Spotlight is open.
 4. **Applet controls**, when the applet publishes any. See Applet controls.
-4a. **Mode detail.** Only the controls the active mode needs. Spotlight and Anonymous show the name list. Paced shows a phase stepper (−, phase number, +). Reveal shows a source picker: the teacher's current state or each prepared state by name. Group shows the group size stepper and a Shuffle action. Gallery has no detail here. Its picker is Screens.
-5. **Handoff.** Primary, `--font-size-lg`, full width, in Demo only.
+5. **Give.** Primary, `--font-size-lg`, full width, in every mode. It copies what is on screen, the spotlighted student's applet or else the teacher's, into every student's work, then switches to Work.
+5a. **Reset.** Default button, full width, only when the teacher's applet answers `reset`. It asks for confirmation the same way End does, because it wipes every student's work in their phase.
 6. **Slideshow**, when the applet has slides. The toggle, "Step n of m", and the next step's label in caption size, muted. Two large Previous and Next buttons sit under it while slideshow is on.
 7. **Timer.** See Timer above.
 8. **Chat limit.** A stepper labelled with a chat icon. 0 shows as ∞.
@@ -260,17 +260,13 @@ The complete example in section 10 should publish its Spin Yes, Spin No and cloc
 
 ### Mode switcher
 
-A 2-column grid of 40px-tall buttons. The ten modes fall into three groups separated by `--space-3` of extra gap. Group membership carries no heading.
+A 2-column grid of 40px-tall buttons, in this order: Demo, Work, Spotlight, Dark.
 
-| Group | Modes, in order |
-| --- | --- |
-| Watch | Demo, Reveal, Spotlight, Anonymous, Gallery |
-| Work | Independent, Paced, Group |
-| Stop | Freeze, Focus |
+- **Demo** and **Work** are the mode. The active one is the selected state, unless a spotlight is on.
+- **Spotlight** sits over either mode. While none is on, it toggles the spotlight list. While one is on, it is the selected state and ends the spotlight. Esc also ends it, and the class returns to the mode underneath.
+- **Dark** blacks out student screens over either mode. When on, it uses danger instead of accent, because the whole room is dark.
 
-Labels, exactly: Demo, Reveal, Spotlight, Anonymous, Gallery, Independent, Paced, Group, Freeze, Focus. Anonymous sits directly after Spotlight so the pair reads together. The active mode is the selected state. Focus, when active, uses danger instead of accent, because the whole room is dark.
-
-In Spotlight and Anonymous, every student is listed by name under the switcher, with a search field above them, sorted by name, like the Reveal choices. Offline students are muted with a dashed border. The spotlighted student is the selected state. Tapping a name spotlights that student, and tapping the selected one again ends the spotlight. Long names wrap.
+The spotlight list shows every student by name, with a search field above them, sorted by name. Offline students are muted with a dashed border. The spotlighted student is the selected state. Tapping a name spotlights that student, and tapping the selected one again ends the spotlight. Long names wrap.
 
 ### Thumbnail grid
 
@@ -282,11 +278,10 @@ A tile is the student's live applet, scaled down and non-interactive, on `--colo
 | --- | --- |
 | offline | 40% opacity, name muted |
 | spotlighted | 2px accent ring |
-| in the gallery | accent ring and a filled check badge top right |
 | has a Pulse | small accent dot top left |
 | hover, laptop only | raised border, with Spotlight and Pulse icon buttons in the top right corner |
 
-In Spotlight and Anonymous, clicking a tile spotlights that student. In Gallery, clicking toggles the student in and out of the gallery. In any other mode, clicking a tile opens that student's Pulse if one exists. On touch, a long press on any tile opens that student's Pulse in every mode.
+While a spotlight is on, clicking a tile spotlights that student. Otherwise, clicking a tile opens that student's Pulse if one exists. On touch, a long press on any tile opens that student's Pulse.
 
 ### Pulse sheet
 
@@ -316,21 +311,13 @@ Reduced motion zeroes `--duration-spin`, so the result shows at once.
 
 The applet fills the viewport in every mode. The student sees no chrome except the chat launcher and the cues below. No mode name is ever shown: the cue is the design.
 
-| Mode | What the student sees |
+| State | What the student sees |
 | --- | --- |
-| Demo | The teacher's applet, view-only. A 3px accent inset edge around the viewport means "watching". A Teacher name pill sits bottom left. |
-| Reveal | The pushed state, view-only, with the same accent edge and the Teacher name pill. |
-| Spotlight | The spotlighted student's applet, view-only, with the accent edge. Their name sits bottom left in a pill: surface fill, border, overlay shadow, `--font-size-xl`, weight 600. |
-| Anonymous | As Spotlight, with the pill reading Classmate. |
-| Spotlighted student | Their own applet, editable. A 3px success inset edge means "you are on screen", and the pill reads You. |
-| Gallery | Selected students' applets in an auto-fit grid, `--space-3` gaps, each view-only with its name in caption size below it. |
-| Independent | Their own applet, editable. No cue. |
-| Paced | Their own applet, held to the teacher's phase. No cue. |
-| Group | Their group's shared applet. Member initials sit top right as overlapping pill avatars. |
-| Freeze | Their own applet, view-only, under a 30% scrim. A lock icon sits bottom left in a 48px round surface chip, mirroring the chat launcher. |
-| Focus | Solid `--color-scrim` over everything, chat included. Nothing else. |
-
-Group with no group yet: a centred card on `--color-surface`. The student's own group code sits on top at display size, mono. A code input sits below it with a primary Join. No explanatory copy.
+| Demo | The teacher's applet, view-only. A 3px accent inset edge around the viewport means "watching". |
+| Work | Their own applet, editable. No cue. |
+| Spotlight | The spotlighted student's applet, view-only, with the accent edge, over either mode. |
+| Spotlighted student | Their own applet, editable. A 3px success inset edge means "you are on screen". The teacher may be working in it too. |
+| Dark | Solid `--color-scrim` over everything, chat included. Nothing else. |
 
 View-only applets show the default cursor and swallow input. Mode changes cross-fade over `--duration-base`.
 
@@ -338,7 +325,7 @@ Loading: the viewport stays `--color-bg`. If loading passes 400ms, a single acce
 
 ## Chat
 
-A round launcher button, 48px, bottom right, `--space-4` from the edges, with a speech icon. It sits on the student stage in every mode except Focus. An accent dot on it marks an unread reply.
+A round launcher button, 48px, bottom right, `--space-4` from the edges, with a speech icon. It sits on the student stage except while Dark is on. An accent dot on it marks an unread reply.
 
 Opening it slides a drawer in from the right, `--width-chat` wide, full height, over the applet. The drawer has no title. A quiet ✕ sits top right, and Esc also closes it.
 

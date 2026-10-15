@@ -1,7 +1,5 @@
 // The applet contract. See docs/applet-spec.md for the author-facing version.
 
-import type { Mode } from "../firebase/types";
-
 /**
  * A prepared state as stored. json holds the state as JSON text, so any key and value survive the database.
  * Applets uploaded before that carry state as an object instead.
@@ -27,9 +25,7 @@ export interface Manifest {
   pulsePrompt?: string;
   namelist?: string[];
   preparedStates?: PreparedState[];
-  /** One list per phase of the modes that phase allows. The first is the phase's default. Absent allows every mode. */
-  modes?: Mode[][];
-  /** False hides the Handoff button. Absent offers it during Demo. */
+  /** False hides Give. Anything else offers it. Named for the old Handoff button. */
   handoff?: boolean | number[];
   /** The teacher's slideshow script, stepped through with the scroll wheel. */
   slides?: Slide[];
@@ -45,7 +41,7 @@ export interface Slide {
   /** The phase from this step on, until a later step names another. */
   phase?: number;
   /** The mode from this step on, until a later step names another or a reveal. */
-  mode?: Mode;
+  mode?: string;
   /** An applet action name, sent to the teacher's frame in a slide message. */
   cue?: string;
   /** Drives the name wheel like conductor.wheel. */
@@ -127,7 +123,8 @@ export function toControl(v: unknown): AppletControl | null {
 
 /** Applet to host. */
 export type AppletMessage =
-  | { cc: "connect" }
+  /** reset says whether the applet answers Reset. */
+  | { cc: "connect"; reset?: boolean }
   | { cc: "update"; state: unknown; phase: number; seq: number }
   /** Replaces the filters the name wheel offers. Only the teacher's frame is heard. */
   | { cc: "filters"; filters: WheelFilter[] }
@@ -152,6 +149,8 @@ export type AppletMessage =
 export type HostMessage =
   | { cc: "setState"; state: unknown; phase: number; seq: number }
   | { cc: "phaseLimit"; maxPhase: number | null }
+  /** Go back to the fresh start of phase. Sent to a student's own live frame. */
+  | { cc: "reset"; phase: number }
   | { cc: "context"; context: AppletContext }
   /** The name wheel landed on this student. Sent to the teacher's frame only. */
   | { cc: "wheelPicked"; student: string }

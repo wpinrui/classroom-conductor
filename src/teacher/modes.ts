@@ -1,22 +1,4 @@
-import type { Control, Mode, Session } from "../firebase/types";
-
-const SPOTLIGHTS: Mode[] = ["spotlight", "anonymousSpotlight"];
-
-/** Control fields a mode needs, filled in when it is first entered. A null field is cleared. */
-export function defaultsFor(
-  mode: Mode,
-  data: Session,
-): { [K in keyof Control]?: Control[K] | null } {
-  const c = data.control;
-  // Spotlight starts with nobody on screen. The teacher picks who.
-  if (SPOTLIGHTS.includes(mode) && !SPOTLIGHTS.includes(c.mode))
-    return { spotlight: null };
-  if (mode === "paced" && c.pacedPhase === undefined)
-    return { pacedPhase: data.teacherState?.phase ?? 0 };
-  if (mode === "reveal" && !c.reveal && data.teacherState)
-    return { reveal: { ...data.teacherState, at: Date.now() } };
-  return {};
-}
+import type { Control, Session } from "../firebase/types";
 
 /** The teacher's phase, clamped to the applet's phases. */
 export function teacherPhase(data: Session): number {
@@ -24,15 +6,19 @@ export function teacherPhase(data: Session): number {
   return Math.max(0, Math.min(data.teacherState?.phase ?? 0, last));
 }
 
-/** Modes the applet allows in the teacher's current phase. Null means every mode. */
-export function allowedModes(data: Session): Mode[] | null {
-  const modes = data.applet.manifest.modes;
-  return modes?.[teacherPhase(data)] ?? null;
-}
+/** Whether the applet offers Give. Only handoff: false in the manifest hides it. */
+export const giveAllowed = (data: Session) =>
+  data.applet.manifest.handoff !== false;
 
-/** Whether the applet offers Handoff in the teacher's current phase. */
-export function handoffAllowed(data: Session): boolean {
-  const h = data.applet.manifest.handoff;
-  if (Array.isArray(h)) return h.includes(teacherPhase(data));
-  return h !== false;
+/**
+ * What a slide's mode id does, including the ids of the old ten modes.
+ * Spotlight needs a student, so its ids change nothing.
+ */
+export function slideMode(id: string): {
+  [K in keyof Control]?: Control[K] | null;
+} {
+  if (id === "demo" || id === "reveal") return { mode: "demo", dark: null };
+  if (id === "dark" || id === "freeze" || id === "focus") return { dark: true };
+  if (id === "spotlight" || id === "anonymousSpotlight") return {};
+  return { mode: "work", dark: null };
 }

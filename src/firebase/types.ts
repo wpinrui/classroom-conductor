@@ -7,18 +7,8 @@
 
 import type { Manifest } from "../applet/contract";
 
-export const MODES = [
-  "demo",
-  "spotlight",
-  "anonymousSpotlight",
-  "gallery",
-  "independent",
-  "group",
-  "paced",
-  "freeze",
-  "focus",
-  "reveal",
-] as const;
+/** What students see: the teacher's applet, or their own. */
+export const MODES = ["demo", "work"] as const;
 export type Mode = (typeof MODES)[number];
 
 /** Applet state is arbitrary JSON, stored as a string so it round-trips exactly. */
@@ -26,6 +16,8 @@ export interface StoredState {
   json: string;
   phase: number;
   at: number;
+  /** The control.reset this state already answered. */
+  reset?: number;
 }
 
 export interface LibraryApplet {
@@ -43,15 +35,12 @@ export interface JoinCode {
 
 export interface Control {
   mode: Mode;
-  /** Student uid shown in Spotlight and Anonymous Spotlight. */
+  /** Student uid everyone sees, over any mode. */
   spotlight?: string;
-  /** Student uids shown side by side in Gallery. */
-  gallery?: Record<string, true>;
-  /** Phase everyone is held to in Paced. */
-  pacedPhase?: number;
-  /** State shown on every student's applet in Reveal. */
-  reveal?: StoredState;
-  groupSize?: number;
+  /** Student screens go black. */
+  dark?: boolean;
+  /** When the teacher last pressed Reset. Each student's own applet answers it once. */
+  reset?: number;
   /** Chat messages per student per minute. Absent means the default. 0 means unlimited. */
   chatLimit?: number;
   /** Countdown every student sees. */
@@ -86,15 +75,6 @@ export interface Student {
   /** nameKey(name); matches a namelist key when the applet has a namelist. */
   key: string;
   joinedAt: number;
-  group?: string;
-}
-
-export interface Group {
-  code: string;
-  members: Record<string, true>;
-  /** Number of members. Changes by one with every join or leave, so the rules can cap it at control.groupSize. */
-  count: number;
-  state?: StoredState;
 }
 
 export interface ChatMessage {
@@ -151,6 +131,8 @@ export interface Stage {
   controls?: string;
   /** Each new n asks the projection to pass this control to the applet. */
   control?: { id: string; value?: boolean | string; n: number };
+  /** True when the teacher's applet answers Reset. Written by the projection. */
+  canReset?: boolean;
 }
 
 export interface Session {
@@ -169,7 +151,6 @@ export interface Session {
   students?: Record<string, Student>;
   presence?: Record<string, true>;
   states?: Record<string, StoredState>;
-  groups?: Record<string, Group>;
   chat?: Record<string, Record<string, ChatMessage>>;
   requests?: Record<string, EngineRequest>;
   pulses?: Record<string, Pulse>;

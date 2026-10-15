@@ -60,24 +60,18 @@
 
 .modes {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: var(--space-3);
-}
-
-.mode-group {
-  display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-2);
 }
 
-.mode-group button {
+.modes button {
   min-width: 0;
   padding-inline: var(--space-2);
   overflow-wrap: anywhere;
 }
 
-button[data-mode="focus"][aria-pressed="true"],
-button[data-mode="focus"][aria-pressed="true"]:not(:disabled):hover {
+button[data-mode="dark"][aria-pressed="true"],
+button[data-mode="dark"][aria-pressed="true"]:not(:disabled):hover {
   background: var(--color-danger-subtle);
   border-color: var(--color-danger);
   color: var(--color-danger);
@@ -362,18 +356,6 @@ button[aria-busy="true"]::after {
   left: var(--space-2);
 }
 
-.thumb-badge {
-  position: absolute;
-  top: var(--space-2);
-  right: var(--space-2);
-  display: grid;
-  place-items: center;
-  padding: var(--space-1);
-  border-radius: var(--radius-pill);
-  background: var(--color-accent);
-  color: var(--color-on-accent);
-}
-
 .thumb-actions {
   position: absolute;
   top: var(--space-1);
@@ -409,13 +391,6 @@ button[aria-busy="true"]::after {
   z-index: var(--z-blackout);
   background: var(--color-scrim);
   cursor: none;
-}
-
-/* A spotlight mode waiting for the teacher to pick a student. */
-.mode-group button[data-armed] {
-  border-style: dashed;
-  border-color: var(--color-accent);
-  color: var(--color-accent);
 }
 
 /* A student who has reached what their phase asks for. */
