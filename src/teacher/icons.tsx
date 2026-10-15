@@ -94,3 +94,44 @@ export const CopyIcon = () => (
     <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
   </Svg>
 );
+
+export const SendIcon = () => (
+  <Svg>
+    <path d="M12 19V5M5 12l7-7 7 7" />
+  </Svg>
+);
+
+export const RulesIcon = () => (
+  <Svg>
+    <path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01" />
+  </Svg>
+);
+
+export const QrIcon = () => (
+  <Svg>
+    <rect x="3" y="3" width="7" height="7" rx="1" />
+    <rect x="14" y="3" width="7" height="7" rx="1" />
+    <rect x="3" y="14" width="7" height="7" rx="1" />
+    <path d="M14 14h3v3h-3zM20 14v.01M14 20h.01M17 20h4v-3" />
+  </Svg>
+);
+
+export const HandIcon = () => (
+  <Svg>
+    <path d="M18 11V6a2 2 0 0 0-4 0v5M14 10V4a2 2 0 0 0-4 0v6M10 10.5V6a2 2 0 0 0-4 0v8" />
+    <path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.9-6-2.4l-3.6-3.6a2 2 0 0 1 2.8-2.8L6 14" />
+  </Svg>
+);
+
+export const KeyboardIcon = () => (
+  <Svg>
+    <rect x="2" y="5" width="20" height="14" rx="2" />
+    <path d="M6 9h.01M10 9h.01M14 9h.01M18 9h.01M6 13h.01M18 13h.01M10 13h4M7 16h10" />
+  </Svg>
+);
+
+export const ClassIcon = () => (
+  <Svg>
+    <path d="M3 5h18v10H3zM8 19h8M12 15v4" />
+  </Svg>
+);

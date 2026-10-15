@@ -5,7 +5,7 @@
   top: var(--space-4);
   bottom: var(--space-4);
   left: var(--space-4);
-  right: calc(var(--width-controls) + 2 * var(--space-4));
+  right: var(--space-4);
   z-index: var(--z-sheet);
   display: flex;
   flex-direction: column;
@@ -26,15 +26,6 @@
   }
 }
 
-.wheel-close {
-  position: absolute;
-  top: var(--space-2);
-  right: var(--space-2);
-  width: 40px;
-  height: 40px;
-  padding: 0;
-}
-
 /* Pools on the left, session settings on the right, set apart by space alone. */
 .wheel-bar {
   display: flex;
@@ -43,7 +34,6 @@
   align-items: center;
   column-gap: var(--space-6);
   row-gap: var(--space-2);
-  margin: 0 48px;
 }
 
 .wheel-pools,
@@ -68,7 +58,23 @@
   color: var(--color-text-muted);
 }
 
-.wheel-pool[aria-pressed="true"] .wheel-count {
+/* On the projection the chips only show state. */
+span.wheel-pool {
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-raised);
+  font-weight: var(--font-weight-strong);
+}
+
+span.wheel-pool[data-on] {
+  background: var(--color-accent-subtle);
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.wheel-pool[aria-pressed="true"] .wheel-count,
+.wheel-pool[data-on] .wheel-count {
   color: inherit;
 }
 
@@ -142,16 +148,17 @@
   fill: var(--color-bg);
 }
 
-.stage .wheel-hub {
+.wheel-hub {
+  padding: 0;
+  font-size: var(--font-size-lg);
   position: absolute;
   left: 50%;
   top: 50%;
   translate: -50% -50%;
   width: 5.5rem;
   height: 5.5rem;
-  padding: 0;
   border-radius: var(--radius-pill);
-  font-size: var(--font-size-lg);
+  background: var(--color-accent);
   box-shadow: 0 0 0 6px var(--color-surface);
 }
 
@@ -180,4 +187,9 @@
   display: flex;
   align-items: center;
   gap: var(--space-3);
+}
+
+/* With the projection's overlay open, the wheel stops short of it. */
+.stage[data-overlay] .wheel-sheet {
+  right: calc(var(--width-controls) + 2 * var(--space-4));
 }

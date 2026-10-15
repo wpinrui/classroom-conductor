@@ -186,6 +186,7 @@ export async function startSession(
     await set(ref(db, paths.session(session)), { ...data, code });
     await set(ref(db, paths.sessionHtml(session)), await packHtml(html));
     await set(ref(db, paths.live(session)), true);
+    await set(ref(db, paths.current(teacher)), session);
     return { session, code };
   }
 }
@@ -195,8 +196,13 @@ export async function endSession(session: string, code: string) {
     [`${paths.session(session)}/ended`]: Date.now(),
     [paths.live(session)]: null,
     [paths.code(code)]: null,
+    [paths.current(uid())]: null,
   });
 }
+
+/** Patches what the projection shows. Keys may be paths such as `wheel/open`. A null field is removed. */
+export const setStage = (session: string, patch: Record<string, unknown>) =>
+  update(ref(db, paths.stage(session)), patch);
 
 /** Patches control. A null field is removed. */
 export const setControl = (

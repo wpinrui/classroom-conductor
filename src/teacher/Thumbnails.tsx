@@ -1,15 +1,18 @@
 import { useEffect, useRef, useState } from "react";
 import { AppletFrame } from "../applet/AppletFrame";
+import type { AppletContext } from "../applet/contract";
 import { requestPulse, setControl } from "../firebase/client";
 import type { Session, StoredState } from "../firebase/types";
+import { PulseButton } from "../pulse/Pulse";
 import { showPulse } from "../pulse/store";
+import { spotlightStudent } from "../stage/actions";
 import { CheckIcon, PulseIcon, SpotlightIcon } from "./icons";
 
 /** Applets render at this size, then scale down to fit the tile. */
 const FRAME_WIDTH = 1280;
-const MIN_DRAWER_PX = 120;
+/** A press held this long opens the student's Pulse on touch. */
+const LONG_PRESS_MS = 500;
 
-/** Bottom drawer of live, view-only student screens. It is also the Spotlight and Gallery picker. */
 /** The applet sets $done in a student's state once they reach what their phase asks for. */
 function isDone(json: string | undefined): boolean {
   if (!json) return false;
@@ -20,20 +23,21 @@ function isDone(json: string | undefined): boolean {
   }
 }
 
+/** Live, view-only student screens on the remote. Also the Spotlight and Gallery picker. */
 export function Thumbnails({
   session,
   data,
   html,
-  onSpotlighted,
+  touch,
 }: {
   session: string;
   data: Session;
   html: string;
-  /** Called once a student is spotlighted, so the drawer can get out of the way. */
-  onSpotlighted: () => void;
+  touch: boolean;
 }) {
   const { mode, spotlight, gallery = {} } = data.control;
   const spotlighting = mode === "spotlight" || mode === "anonymousSpotlight";
+  const hasPulse = data.applet.manifest.pulsePrompt !== undefined;
   const pulses = Object.values(data.pulses ?? {});
   const pending = new Set(
     pulses.filter((p) => p.status === "pending").map((p) => p.student),
@@ -47,12 +51,10 @@ export function Thumbnails({
   const students = Object.entries(data.students ?? {}).sort(([, a], [, b]) =>
     a.name.localeCompare(b.name),
   );
-  const [height, setHeight] = useState<number | null>(null);
 
   const click = (uid: string) => {
     if (spotlighting) {
       setControl(session, { spotlight: uid });
-      onSpotlighted();
     } else if (mode === "gallery") {
       const next = { ...gallery };
       if (next[uid]) delete next[uid];
@@ -63,30 +65,17 @@ export function Thumbnails({
       if (pid) showPulse(pid);
     }
   };
-
-  const resize = (e: React.PointerEvent) => {
-    e.currentTarget.setPointerCapture(e.pointerId);
-    const move = (m: PointerEvent) =>
-      setHeight(Math.max(MIN_DRAWER_PX, window.innerHeight - m.clientY));
-    const up = () => {
-      window.removeEventListener("pointermove", move);
-      window.removeEventListener("pointerup", up);
-    };
-    window.addEventListener("pointermove", move);
-    window.addEventListener("pointerup", up);
+  /** Opens the student's newest Pulse, or asks for one. */
+  const pulse = (uid: string) => {
+    const pid = latestPulse.get(uid);
+    if (pid) showPulse(pid);
+    else if (hasPulse && !pending.has(uid))
+      requestPulse(session, uid).then(showPulse);
   };
 
   return (
-    <section
-      className="thumbs-drawer"
-      style={height ? { height } : undefined}
-      aria-label="Student screens"
-    >
-      <div
-        className="drawer-handle"
-        aria-hidden="true"
-        onPointerDown={resize}
-      />
+    <section className="screens" aria-label="Student screens">
+      {hasPulse && <PulseButton session={session} />}
       <ul className="thumbs">
         {students.map(([uid, s]) => (
           <li
@@ -100,14 +89,13 @@ export function Thumbnails({
                 : mode === "gallery" && !!gallery[uid]) || undefined
             }
           >
-            <button
-              type="button"
-              className="thumb-view"
-              aria-label={s.name}
+            <TileButton
+              label={s.name}
               onClick={() => click(uid)}
+              onLongPress={touch ? () => pulse(uid) : undefined}
             >
               <Thumb html={html} state={data.states?.[uid] ?? null} />
-            </button>
+            </TileButton>
             <span className="thumb-name">{s.name}</span>
             {latestPulse.has(uid) && <span className="dot accent thumb-dot" />}
             {mode === "gallery" && gallery[uid] && (
@@ -115,34 +103,30 @@ export function Thumbnails({
                 <CheckIcon />
               </span>
             )}
-            <div className="thumb-actions">
-              <button
-                type="button"
-                aria-label="Spotlight"
-                data-tip="Spotlight"
-                onClick={() => {
-                  setControl(session, {
-                    spotlight: uid,
-                    ...(spotlighting ? {} : { mode: "spotlight" }),
-                  });
-                  onSpotlighted();
-                }}
-              >
-                <SpotlightIcon />
-              </button>
-              {data.applet.manifest.pulsePrompt !== undefined && (
+            {!touch && (
+              <div className="thumb-actions">
                 <button
                   type="button"
-                  aria-label="Pulse"
-                  data-tip="Pulse"
-                  aria-busy={pending.has(uid)}
-                  disabled={pending.has(uid)}
-                  onClick={() => requestPulse(session, uid).then(showPulse)}
+                  aria-label="Spotlight"
+                  data-tip="Spotlight"
+                  onClick={() => spotlightStudent(session, data, uid)}
                 >
-                  <PulseIcon />
+                  <SpotlightIcon />
                 </button>
-              )}
-            </div>
+                {hasPulse && (
+                  <button
+                    type="button"
+                    aria-label="Pulse"
+                    data-tip="Pulse"
+                    aria-busy={pending.has(uid)}
+                    disabled={pending.has(uid)}
+                    onClick={() => requestPulse(session, uid).then(showPulse)}
+                  >
+                    <PulseIcon />
+                  </button>
+                )}
+              </div>
+            )}
           </li>
         ))}
       </ul>
@@ -150,18 +134,76 @@ export function Thumbnails({
   );
 }
 
-/** One scaled, non-interactive applet that tracks its tile's width. */
-function Thumb({ html, state }: { html: string; state: StoredState | null }) {
+/** A tile's button. On touch, a long press runs onLongPress instead of the click. */
+function TileButton({
+  label,
+  onClick,
+  onLongPress,
+  children,
+}: {
+  label: string;
+  onClick: () => void;
+  onLongPress?: () => void;
+  children: React.ReactNode;
+}) {
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const fired = useRef(false);
+  const cancel = () => {
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = null;
+  };
+  return (
+    <button
+      type="button"
+      className="thumb-view"
+      aria-label={label}
+      onPointerDown={() => {
+        fired.current = false;
+        if (!onLongPress) return;
+        timer.current = setTimeout(() => {
+          fired.current = true;
+          onLongPress();
+        }, LONG_PRESS_MS);
+      }}
+      onPointerUp={cancel}
+      onPointerLeave={cancel}
+      onPointerCancel={cancel}
+      onContextMenu={(e) => onLongPress && e.preventDefault()}
+      onClick={() => {
+        if (!fired.current) onClick();
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+/** One scaled, non-interactive applet that tracks its tile's width. It renders only while on screen. */
+export function Thumb({
+  html,
+  state,
+  owner,
+}: {
+  html: string;
+  state: StoredState | null;
+  owner?: AppletContext["role"];
+}) {
   const box = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(0);
+  const [visible, setVisible] = useState(false);
   useEffect(() => {
     const el = box.current;
     if (!el) return;
     const ro = new ResizeObserver(([e]) =>
       setScale(e.contentRect.width / FRAME_WIDTH),
     );
+    const io = new IntersectionObserver(([e]) => setVisible(e.isIntersecting));
     ro.observe(el);
-    return () => ro.disconnect();
+    io.observe(el);
+    return () => {
+      ro.disconnect();
+      io.disconnect();
+    };
   }, []);
   return (
     <div
@@ -169,12 +211,15 @@ function Thumb({ html, state }: { html: string; state: StoredState | null }) {
       className="thumb-box"
       style={{ "--thumb-scale": scale } as React.CSSProperties}
     >
-      <AppletFrame
-        html={html}
-        state={state}
-        interactive={false}
-        className="thumb-frame"
-      />
+      {visible && (
+        <AppletFrame
+          html={html}
+          state={state}
+          interactive={false}
+          owner={owner}
+          className="thumb-frame"
+        />
+      )}
     </div>
   );
 }

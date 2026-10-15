@@ -16,6 +16,14 @@
   animation: pulse-in var(--duration-base) var(--ease-out);
 }
 
+/* On the remote, the sheet covers the panel it opens over. */
+.pulse-inline {
+  position: absolute;
+  inset: 0;
+  width: auto;
+  z-index: var(--z-sheet);
+}
+
 @keyframes pulse-in {
   from {
     opacity: 0;

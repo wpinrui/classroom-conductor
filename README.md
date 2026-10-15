@@ -13,7 +13,7 @@ yarn emulators               # auth + database emulators, needs Java
 yarn dev
 ```
 
-Teacher: `/teacher`. Students: `/`. Try it with `examples/counter.html`.
+Projection (the big screen): `/teacher`. Remote (every teacher control, on a phone, tablet or laptop window): `/remote`. Students: `/`. Try it with `examples/counter.html`.
 
 ## Checks
 

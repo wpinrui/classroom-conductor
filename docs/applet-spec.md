@@ -23,7 +23,9 @@ The teacher uploads the HTML file and starts a session. Students join with a cod
 | Focus | Student screens go dark. |
 | Reveal | Every student sees one state, view only. It is the teacher's state or one of the applet's prepared states. |
 
-The teacher also gets thumbnails of every student's applet, a name wheel, a countdown timer, a chatbot for students, and a Pulse that summarises the class's states.
+The teacher works across two pages. The **projection** is the screen the class sees on the big screen. It runs the teacher's own copy of the applet, full screen. The **remote** runs on a phone, a tablet or a laptop window, and holds every class tool: thumbnails of every student's applet, the modes, a name wheel, a countdown timer, the teacher's chatbot and a Pulse that summarises the class's states. The projection shows only what the class should see.
+
+The teacher's frame is the main projection view. The class sees everything it draws. Teacher controls may stay in it, so the teacher can still run the lesson from the projector. They do not have to, because the remote can carry them through `controls` (section 6). Anything the class must not see, such as answers before a reveal, belongs behind a control and never on the teacher's frame.
 
 Consequences for the applet:
 
@@ -37,8 +39,8 @@ Consequences for the applet:
 - One HTML file. Every script, style, image and font is inline, except large libraries loaded from a CDN as described under Outside network.
 - It runs in an iframe with `sandbox="allow-scripts allow-forms allow-modals"`. The origin is opaque, so `localStorage`, `sessionStorage`, cookies and IndexedDB throw or fail. Popups, downloads and navigating the top page are blocked.
 - Nothing survives a reload except the state (section 4).
-- Ctrl+., Cmd+. and the middle mouse button are taken by the Conductor before the applet's handlers see them. Do not bind them.
-- G and R, outside a text field, open the teacher's student screens and class rules. The applet still receives them, so avoid binding G or R in the teacher's view.
+- Ctrl+., Cmd+. and the middle mouse button are taken by the Conductor before the applet's handlers see them. They toggle the teacher's optional controls on the projection. Do not bind them.
+- In the teacher's own frame, B, G, J, R, W and Escape outside a text field are projection hotkeys. They blank the screen, open the student screens, show the join screen, show the class rules, open the name wheel and close it. The applet receives them first. The Conductor acts only when the applet's handler did not call `preventDefault()`, so an applet that needs one of these keys calls `preventDefault()` on it. Otherwise avoid binding them in the teacher's view.
 - In the teacher's own frame of an applet with `slides`, S is taken too. While the slideshow is on, so are the scroll wheel, PageDown, PageUp, ArrowDown, ArrowUp and Space. Keys typed into a text field are left alone (section 6, Slideshow).
 
 **Outside network**
@@ -141,6 +143,8 @@ host.connect({
   wheelPicked(studentId) {},
   // Optional. Teacher's own frame only. Move to phase, then apply each cue in order (section 6).
   slide({ phase, cues }) {},
+  // Optional. Teacher's own frame only. The teacher used one of the applet's controls on the remote (section 6).
+  control({ id, value }) {},
 });
 
 // On load, after connect, and after every change to the state or the phase.
@@ -188,6 +192,7 @@ The applet cannot read the database. The host hands it what it needs through `se
 - Pick the view from `role`, never from who is looking. Demo shows the teacher's state on student devices with role `"teacher"`. Thumbnails and Spotlight show a student's state on the teacher's device with role `"student"`.
 - Render from the state and the context together. A frame showing another student's state gets the same `teacher` context, so it can draw the same question.
 - Anything drawn from `students` must also work when it is `null`. Copy a summary into the teacher's state when students must see it, such as revealed counts.
+- The remote shows a small, view-only copy of the teacher's state with role `"teacher"` and `students: null`. Tool calls from it are ignored, like any frame that is not the teacher's own live frame. It must render from the state alone.
 - Calling `update` from `setContext` is allowed, because the host did not push that state. Call it only when the state really changed.
 
 **Recommended**
@@ -197,7 +202,7 @@ The applet cannot read the database. The host hands it what it needs through `se
 
 ## 6. Class tools
 
-The teacher's applet can script the name wheel, the timer and the spotlight. Calls take effect only from the teacher's own live frame. The same calls from any other frame are ignored, so a shared file is safe. The teacher can change or close any tool at any time and always wins.
+The teacher's applet can script the name wheel, the timer and the spotlight, and publish its own controls for the remote. Calls take effect only from the teacher's own live frame. The same calls from any other frame are ignored, so a shared file is safe. The teacher can change or close any tool at any time and always wins.
 
 **Required**
 
@@ -261,9 +266,27 @@ host.timer?.(null);                    // cancel
 - Seconds must be a number above 0 and at most 86,400. Anything else is ignored.
 - A new timer replaces the running one.
 
+### Controls
+
+```js
+host.controls?.([
+  { id: "next", label: "Next question" },
+  { id: "answers", label: "Answers", kind: "toggle", value: state.showAnswers },
+  { id: "ask", label: "Question", kind: "text", value: state.question },
+]);
+```
+
+- Publishes teacher controls. The remote draws them in its class panel with the Conductor's own buttons and inputs, so the teacher can run the lesson without touching the projector.
+- Each entry is `{ id, label, kind, value, disabled }`. `id` and `label` are non-empty strings. `kind` is `"button"`, `"toggle"` or `"text"`, and defaults to `"button"`. `value` is a boolean for a toggle and a string for text. `disabled` is optional. Malformed entries are dropped.
+- Each call replaces the whole list. An empty list hides the group.
+- Send it from the teacher's frame on first context, and again whenever a control's label, value or availability changes.
+- When the teacher uses a control, the teacher's frame gets `control({ id, value })`. `value` is absent for a button, the new boolean for a toggle and the submitted text for text. Treat it like a click inside the applet: change the state, then call `update`. Ignore an unknown `id`.
+- Every control must work from `control` alone. The teacher may never touch the projector.
+- Keep in-frame buttons for the same actions if the teacher should also be able to click them on the projector.
+
 ### Slideshow
 
-The teacher can drive the lesson from the manifest's `slides`. S switches the slideshow on and off. While it is on, the scroll wheel, PageDown, ArrowDown and Space step forward. PageUp and ArrowUp step back. Clickers send PageDown and PageUp, so they work too. Each scroll of the wheel is one step. Students see no difference, because a step only does what the teacher could do by hand.
+The teacher can drive the lesson from the manifest's `slides`, on the remote or by keys on the projection. S switches the slideshow on and off. While it is on, the scroll wheel, PageDown, ArrowDown and Space step forward. PageUp and ArrowUp step back. Clickers send PageDown and PageUp, so they work too. Each scroll of the wheel is one step. Students see no difference, because a step only does what the teacher could do by hand.
 
 The teacher can leave the slideshow at any time, act by hand and come back. Coming back resumes at the same step and changes nothing until the next step.
 
@@ -364,7 +387,7 @@ All recommended.
 
 ## 10. Complete example
 
-A yes or no vote. The teacher types a question. Students vote, then explain. The teacher sees live counts, spins the wheel over either answer, and the pick is spotlighted.
+A yes or no vote. The teacher types a question. Students vote, then explain. The teacher sees live counts, spins the wheel over either answer, and the pick is spotlighted. The spin and clock buttons are also published as remote controls.
 
 ```html
 <!doctype html>
@@ -465,6 +488,15 @@ A yes or no vote. The teacher types a question. Students vote, then explain. The
       $("spinNo").onclick = () => host.wheel?.({ filter: "No", spin: true });
       $("clock").onclick = () => host.timer?.(60);
 
+      // The same three actions as remote controls, so the teacher need not touch the projector.
+      function publishControls() {
+        host.controls?.([
+          { id: "spinYes", label: "Spin Yes" },
+          { id: "spinNo", label: "Spin No" },
+          { id: "clock", label: "1:00" },
+        ]);
+      }
+
       host.connect({
         setState(s, p) {
           state = { ...DEFAULTS, ...s };
@@ -481,6 +513,7 @@ A yes or no vote. The teacher types a question. Students vote, then explain. The
             if (!wheelSet) {
               wheelSet = true;
               host.wheel?.({ replacement: false });
+              publishControls();
             }
             host.filters?.([
               { name: "Yes", students: voters("yes") },
@@ -488,6 +521,9 @@ A yes or no vote. The teacher types a question. Students vote, then explain. The
             ]);
           }
           render();
+        },
+        control({ id }) {
+          $(id)?.onclick?.();
         },
         wheelPicked(id) {
           picked = id;
@@ -517,6 +553,8 @@ A yes or no vote. The teacher types a question. Students vote, then explain. The
 - The phase never passes the limit.
 - The view comes from `context.role`, and the applet renders without a context.
 - Filters and tool calls are guarded with `?.` and sent from teacher actions or once on first context.
+- The teacher's frame shows nothing the class should not see yet.
+- If the applet publishes `controls`, every one of them works from `control` alone, with no click inside the applet needed.
 - `slides`, if present, gives every step a `label`, uses declared phases and modes, and names only prepared states that exist.
 - `slide` moves to the phase first, then applies the cues in order, and calls `update` like any other change.
 - Cues are setters, so replaying a phase run's cues from its start rebuilds the same screen.
