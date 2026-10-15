@@ -1,5 +1,7 @@
 // Every database path in one place. See types.ts for what lives where.
 export const paths = {
+  /** The teacher's live session id. Both teacher pages follow it. */
+  current: (teacher: string) => `teachers/${teacher}/current`,
   applets: (teacher: string) => `teachers/${teacher}/applets`,
   applet: (teacher: string, id: string) => `teachers/${teacher}/applets/${id}`,
   /** A library applet's page, compressed, kept apart so listing the library stays light. */
@@ -13,6 +15,7 @@ export const paths = {
   control: (s: string) => `sessions/${s}/control`,
   wheel: (s: string) => `sessions/${s}/control/wheel`,
   timer: (s: string) => `sessions/${s}/control/timer`,
+  stage: (s: string) => `sessions/${s}/stage`,
   teacherTimer: (s: string) => `sessions/${s}/teacherTimer`,
   teacherState: (s: string) => `sessions/${s}/teacherState`,
   students: (s: string) => `sessions/${s}/students`,

@@ -83,7 +83,7 @@ export function PulsePanel({ session }: { session: string }) {
   const name = nameOf(open);
 
   return (
-    <aside className="pulse-sheet">
+    <aside className="pulse-sheet pulse-inline">
       <button
         type="button"
         className="quiet pulse-close"

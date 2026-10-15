@@ -1,36 +1,6 @@
 /* Teacher session layout. Colours and type come from tokens. See docs/design.md. */
 
-.stage .controls {
-  position: absolute;
-  overflow-x: hidden;
-  overflow-y: auto;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  top: var(--space-4);
-  right: var(--space-4);
-  bottom: var(--space-4);
-  width: var(--width-controls);
-  max-height: none;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-6);
-  padding: var(--space-4);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-overlay);
-  z-index: var(--z-controls);
-}
-
-/* The panel scrolls when its contents outgrow it, rather than squeezing them. */
-.stage .controls > * {
-  flex-shrink: 0;
-  min-width: 0;
-}
-
-.stage .controls button {
-  min-height: 40px;
-}
-
-.stage .join-code {
+.join-code {
   min-height: 0;
   padding: 0;
   border: 0;
@@ -43,6 +13,11 @@
   font-size: var(--font-size-display);
   font-weight: var(--font-weight-display);
   line-height: 1.1;
+}
+
+.join-code[aria-pressed="true"],
+.join-code[aria-pressed="true"]:not(:disabled):hover {
+  background: var(--color-accent-subtle);
 }
 
 .presence {
@@ -83,7 +58,7 @@
   padding: var(--space-2);
 }
 
-.stage .modes {
+.modes {
   display: grid;
   grid-template-columns: 1fr;
   gap: var(--space-3);
@@ -149,7 +124,7 @@ button[aria-busy="true"]::after {
   gap: var(--space-2);
 }
 
-.stage .stepper button {
+.stepper button {
   width: 40px;
   padding: 0;
   font-size: var(--font-size-lg);
@@ -285,34 +260,12 @@ button[aria-busy="true"]::after {
   cursor: grab;
 }
 
-/* Thumbnail drawer */
-
-.thumbs-drawer {
-  position: absolute;
-  left: var(--space-4);
-  right: calc(var(--width-controls) + 2 * var(--space-4));
-  bottom: var(--space-4);
-  height: 40vh;
-  display: flex;
-  flex-direction: column;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-overlay);
-  z-index: var(--z-drawer);
-}
-
-.drawer-handle {
-  height: var(--space-3);
-  flex-shrink: 0;
-  cursor: ns-resize;
-}
+/* Student screens */
 
 .thumbs {
   list-style: none;
   margin: 0;
-  padding: 0 var(--space-4) var(--space-4);
-  overflow: auto;
+  padding: 0;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
   align-content: start;
@@ -342,7 +295,7 @@ button[aria-busy="true"]::after {
   color: var(--color-text-muted);
 }
 
-.stage .thumb-view {
+.thumb-view {
   display: block;
   width: 100%;
   padding: 0;
@@ -409,7 +362,7 @@ button[aria-busy="true"]::after {
   transition: opacity var(--duration-fast) var(--ease-out);
 }
 
-.stage .thumb-actions button {
+.thumb-actions button {
   min-height: 0;
   padding: var(--space-1);
   display: grid;
@@ -447,25 +400,6 @@ button[aria-busy="true"]::after {
 .thumb[data-done] .thumb-view {
   border-color: var(--color-success);
   box-shadow: 0 0 0 2px var(--color-success);
-}
-
-/* The panel clips its sides, so its tooltips open inward: from the right edge, or from the left for the labels on the left. */
-.stage .controls [data-tip]::before {
-  left: auto;
-  right: 0;
-  translate: 0 0;
-}
-
-.stage .controls .stat[data-tip]::before,
-.stage .controls .stepper-label[data-tip]::before {
-  left: 0;
-  right: auto;
-}
-
-/* With the controls hidden, the drawer and the wheel take the space the panel left. */
-.stage[data-bare] .thumbs-drawer,
-.stage[data-bare] .wheel-sheet {
-  right: var(--space-4);
 }
 
 /* Full-screen join screen for the projector. */
@@ -527,4 +461,104 @@ button[aria-busy="true"]::after {
   font-size: clamp(2rem, 4.5vw, 4rem);
   font-weight: var(--font-weight-strong);
   color: var(--color-text);
+}
+
+/* Applet controls on the remote: a 2-column grid, text controls spanning both. */
+.applet-controls {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.applet-controls button {
+  min-width: 0;
+  padding-inline: var(--space-2);
+  overflow-wrap: anywhere;
+}
+
+.text-control {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: var(--space-2);
+}
+
+.text-control input {
+  flex: 1;
+  min-width: 0;
+}
+
+.slideshow-steps {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+}
+
+.slideshow-steps button {
+  min-height: 56px;
+  font-size: var(--font-size-xl);
+}
+
+/* The projection's optional controls overlay, floating on the right like the old panel. */
+.stage .controls {
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-4);
+  bottom: var(--space-4);
+  width: var(--width-controls);
+  overflow-x: hidden;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  padding: var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-overlay);
+  z-index: var(--z-controls);
+}
+
+.stage .controls > * {
+  flex-shrink: 0;
+  min-width: 0;
+}
+
+.stage .controls button {
+  min-height: 40px;
+}
+
+/* The panel clips its sides, so its tooltips open inward. */
+.stage .controls [data-tip]::before {
+  left: auto;
+  right: 0;
+  translate: 0 0;
+}
+
+.stage .thumbs-drawer {
+  position: absolute;
+  left: var(--space-4);
+  right: calc(var(--width-controls) + 2 * var(--space-4));
+  bottom: var(--space-4);
+  height: 40vh;
+  overflow: auto;
+  padding: var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-overlay);
+  z-index: var(--z-drawer);
+}
+
+.projection-sheet {
+  position: fixed;
+  top: var(--space-4);
+  bottom: var(--space-4);
+  left: var(--space-4);
+  z-index: var(--z-sheet);
+  width: min(48rem, 100vw - var(--width-controls) - 3rem);
+  padding: var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-overlay);
 }

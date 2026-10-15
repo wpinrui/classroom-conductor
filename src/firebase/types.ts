@@ -121,6 +121,38 @@ export interface Pulse {
   output?: string;
 }
 
+/**
+ * What the remote asks the projection to show. Only the teacher reads or writes it.
+ * Counters ask for one action each time they grow, so every page acts on each request once.
+ */
+export interface Stage {
+  blank?: boolean;
+  join?: boolean;
+  rules?: boolean;
+  wheel?: {
+    open?: boolean;
+    /** Chosen pool: a filter name, or absent for everyone. */
+    pool?: string;
+    /** Grows once per spin request. */
+    spin?: number;
+    /** Written by the projection when spin n lands. uid is absent when the pool was empty. */
+    result?: { uid?: string; n: number };
+    /** The applet's filters as JSON text, written by the projection. */
+    filters?: string;
+  };
+  slideshow?: {
+    on?: boolean;
+    /** The current step, written by the projection. Absent before the first step. */
+    at?: number;
+    /** Each new n asks the projection to step once in dir. */
+    step?: { dir: 1 | -1; n: number };
+  };
+  /** The applet's teacher controls as JSON text, written by the projection. */
+  controls?: string;
+  /** Each new n asks the projection to pass this control to the applet. */
+  control?: { id: string; value?: boolean | string; n: number };
+}
+
 export interface Session {
   teacher: string;
   code: string;
@@ -141,4 +173,5 @@ export interface Session {
   chat?: Record<string, Record<string, ChatMessage>>;
   requests?: Record<string, EngineRequest>;
   pulses?: Record<string, Pulse>;
+  stage?: Stage;
 }

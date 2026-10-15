@@ -1,16 +1,23 @@
-import { useState } from "react";
-import { useNavigate } from "react-router";
+import { useEffect, useState } from "react";
 import { deleteApplet, startSession, uploadApplet } from "../firebase/client";
 import { useLibrary } from "../hooks/session";
 import { useAuth } from "../hooks/useAuth";
-import { routes } from "../routes";
 
-export function Library() {
+const DELETE_CONFIRM_MS = 3000;
+
+/** The remote's library. Starting an applet makes it the live session, which both teacher pages follow. */
+export function Library({ touch }: { touch: boolean }) {
   const user = useAuth();
   const library = useLibrary(user?.uid ?? null);
-  const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
+  // On touch there is no hover to warn first, so delete asks for a second tap.
+  const [armed, setArmed] = useState<string | null>(null);
+  useEffect(() => {
+    if (!armed) return;
+    const t = setTimeout(() => setArmed(null), DELETE_CONFIRM_MS);
+    return () => clearTimeout(t);
+  }, [armed]);
 
   const upload = async (files: FileList | null) => {
     setError(null);
@@ -23,10 +30,8 @@ export function Library() {
     }
   };
 
-  const start = async (id: string) => {
-    const { session } = await startSession(id);
-    navigate(routes.teach(session));
-  };
+  const start = (id: string) =>
+    startSession(id).catch((e) => setError((e as Error).message));
 
   const applets = Object.entries(library ?? {}).sort(
     ([, a], [, b]) => b.createdAt - a.createdAt,
@@ -37,7 +42,7 @@ export function Library() {
       className="library"
       data-dragging={dragging || undefined}
       onDragOver={(e) => {
-        if (!e.dataTransfer.types.includes("Files")) return;
+        if (touch || !e.dataTransfer.types.includes("Files")) return;
         e.preventDefault();
         setDragging(true);
       }}
@@ -73,9 +78,15 @@ export function Library() {
             </button>
             <button
               type="button"
-              className="quiet destructive"
+              className={
+                armed === id ? "destructive armed" : "quiet destructive"
+              }
               aria-label="Delete"
-              onClick={() => deleteApplet(id)}
+              onClick={() => {
+                if (touch && armed !== id) return setArmed(id);
+                setArmed(null);
+                deleteApplet(id);
+              }}
             >
               ✕
             </button>

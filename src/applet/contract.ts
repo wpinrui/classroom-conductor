@@ -100,6 +100,31 @@ export interface WheelOptions {
   spin?: boolean;
 }
 
+/** A teacher control the applet publishes for the remote. */
+export interface AppletControl {
+  id: string;
+  label: string;
+  kind: "button" | "toggle" | "text";
+  /** A toggle's state or a text control's text. */
+  value?: boolean | string;
+  disabled?: boolean;
+}
+
+/** The control's well-formed shape, or null when it is malformed. */
+export function toControl(v: unknown): AppletControl | null {
+  const c = v as Partial<AppletControl>;
+  if (typeof c !== "object" || c === null) return null;
+  if (typeof c.id !== "string" || c.id.trim() === "") return null;
+  if (typeof c.label !== "string" || c.label.trim() === "") return null;
+  const kind = c.kind ?? "button";
+  if (kind !== "button" && kind !== "toggle" && kind !== "text") return null;
+  const out: AppletControl = { id: c.id, label: c.label, kind };
+  if (kind === "toggle") out.value = c.value === true;
+  if (kind === "text") out.value = typeof c.value === "string" ? c.value : "";
+  if (c.disabled === true) out.disabled = true;
+  return out;
+}
+
 /** Applet to host. */
 export type AppletMessage =
   | { cc: "connect" }
@@ -110,13 +135,15 @@ export type AppletMessage =
   | { cc: "wheel"; options: unknown }
   /** Spotlights a student, or ends the spotlight when student is null. Only the teacher's frame is heard. */
   | { cc: "spotlight"; student: unknown }
-  /** The controls shortcut, pressed while the applet has focus. */
+  /** The overlay shortcut, pressed while the applet has focus. */
   | { cc: "shortcut" }
+  /** Replaces the teacher controls the remote shows. Only the teacher's frame is heard. */
+  | { cc: "controls"; controls: unknown }
   /** A slideshow step key or wheel gesture inside the teacher's frame. */
   | { cc: "step"; dir: 1 | -1 }
   /** S pressed inside the teacher's frame. */
   | { cc: "slideshowToggle" }
-  /** A teacher hotkey pressed inside the applet, outside a text field. The applet still receives the key. */
+  /** A projection hotkey pressed inside the applet, outside a text field, that the applet did not preventDefault. */
   | { cc: "hotkey"; key: string }
   /** Starts a countdown, or cancels it when seconds is null. Shared unless shared is false. Only the teacher's frame is heard. */
   | { cc: "timer"; seconds: number | null; shared: boolean };
@@ -131,4 +158,6 @@ export type HostMessage =
   /** Slideshow on or off. Sent to the teacher's frame only, and only when the applet has slides. */
   | { cc: "slideshow"; on: boolean }
   /** Move to phase and apply the cues in order. Sent to the teacher's frame only. */
-  | { cc: "slide"; phase: number; cues: SlideCue[] };
+  | { cc: "slide"; phase: number; cues: SlideCue[] }
+  /** The teacher used one of the applet's controls on the remote. Sent to the teacher's frame only. */
+  | { cc: "control"; id: string; value?: boolean | string };

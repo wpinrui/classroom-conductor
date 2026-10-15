@@ -7,16 +7,22 @@ import "./chat.css";
 
 /**
  * The chatbot drawer. Students open it from a launcher bottom right. The
- * teacher has no launcher and no rate limit, and opens it with ChatToggle.
+ * teacher's chat sits inline on the remote, with no rate limit. shown says
+ * whether the teacher can see it, so a reply counts as read.
  */
 export function Chat({
   session,
   uid,
   teacher = false,
+  shown = false,
+  children,
 }: {
   session: string;
   uid: string;
   teacher?: boolean;
+  shown?: boolean;
+  /** Drawn above the messages. */
+  children?: React.ReactNode;
 }) {
   const control = useControl(session);
   const chat = useChat(session, uid);
@@ -40,6 +46,9 @@ export function Chat({
   const cooldown = teacher ? null : chatCooldown(sent, control?.chatLimit, now);
 
   useEffect(() => setChat({ unread }), [unread]);
+  useEffect(() => {
+    if (teacher) setChat({ open: shown });
+  }, [teacher, shown]);
   useEffect(() => () => setChat({ open: false, unread: false }), []);
 
   // Replies already there on load count as read.
@@ -64,14 +73,14 @@ export function Chat({
   }, [open, messages.length, pending]);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || teacher) return;
     input.current?.focus();
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") setChat({ open: false });
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open]);
+  }, [open, teacher]);
 
   // Auto-grow; CSS caps the height at six lines.
   // biome-ignore lint/correctness/useExhaustiveDependencies: resize on every draft change
@@ -113,18 +122,23 @@ export function Chat({
         </button>
       )}
       <aside
-        className={teacher ? "chat-drawer chat-over" : "chat-drawer"}
+        className={teacher ? "chat-inline" : "chat-drawer"}
         data-open={open}
         inert={!open}
+        hidden={teacher && !shown}
       >
-        <button
-          type="button"
-          className="quiet chat-close"
-          aria-label="Close"
-          onClick={() => setOpen(false)}
-        >
-          ✕
-        </button>
+        {teacher ? (
+          (children ?? <span />)
+        ) : (
+          <button
+            type="button"
+            className="quiet chat-close"
+            aria-label="Close"
+            onClick={() => setOpen(false)}
+          >
+            ✕
+          </button>
+        )}
         <div className="chat-log">
           {messages.map((m) => (
             <p key={m.id} className={`chat-message chat-${m.role}`}>
@@ -192,24 +206,6 @@ export function Chat({
         </form>
       </aside>
     </>
-  );
-}
-
-/** Opens and closes the teacher's chat drawer from the controls panel. */
-export function ChatToggle({ className }: { className?: string }) {
-  const { open, unread } = useChatState();
-  return (
-    <button
-      type="button"
-      className={`chat-toggle ${className ?? ""}`}
-      aria-label="Chat"
-      data-tip="Chat"
-      aria-pressed={open}
-      onClick={() => setChat({ open: !open })}
-    >
-      <SpeechIcon />
-      {unread && <span className="chat-unread" />}
-    </button>
   );
 }
 

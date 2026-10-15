@@ -1,9 +1,9 @@
 import { BrowserRouter, Route, Routes } from "react-router";
+import { Remote } from "./remote/Remote";
 import { Join } from "./student/Join";
 import { StudentSession } from "./student/StudentSession";
-import { Library } from "./teacher/Library";
 import { TeacherGate } from "./teacher/TeacherGate";
-import { TeacherSession } from "./teacher/TeacherSession";
+import { Projection, ProjectionLink } from "./teacher/TeacherSession";
 
 export function AppRoutes() {
   return (
@@ -11,8 +11,11 @@ export function AppRoutes() {
       <Route path="/" element={<Join />} />
       <Route path="/play/:session" element={<StudentSession />} />
       <Route path="/teacher" element={<TeacherGate />}>
-        <Route index element={<Library />} />
-        <Route path="session/:session" element={<TeacherSession />} />
+        <Route index element={<Projection />} />
+        <Route path="session/:session" element={<ProjectionLink />} />
+      </Route>
+      <Route path="/remote" element={<TeacherGate />}>
+        <Route index element={<Remote />} />
       </Route>
     </Routes>
   );

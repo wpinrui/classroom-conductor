@@ -1,13 +1,15 @@
 import { createContext, useContext, useEffect, useMemo, useRef } from "react";
 import type { StoredState } from "../firebase/types";
 import { withBridge } from "./bridge";
-import type {
-  AppletContext,
-  AppletMessage,
-  ClassMember,
-  HostMessage,
-  SlideCue,
-  WheelFilter,
+import {
+  type AppletContext,
+  type AppletControl,
+  type AppletMessage,
+  type ClassMember,
+  type HostMessage,
+  type SlideCue,
+  toControl,
+  type WheelFilter,
 } from "./contract";
 
 /** The teacher's live state, handed to every student frame below it. */
@@ -34,8 +36,6 @@ interface Props {
   /** False makes the applet view-only. */
   interactive?: boolean;
   className?: string;
-  /** Called when the controls shortcut is pressed inside the applet. */
-  onShortcut?: () => void;
   /** Whose state this frame shows. The applet sees it as context.role. */
   owner?: AppletContext["role"];
   /** Every student, for the teacher's own frame. */
@@ -58,8 +58,14 @@ interface Props {
   onStep?: (dir: 1 | -1) => void;
   /** Called when S is pressed inside the applet. */
   onSlideshowToggle?: () => void;
-  /** Called when a teacher hotkey is pressed inside the applet. */
+  /** Called when a projection hotkey is pressed inside the applet. */
   onHotkey?: (key: string) => void;
+  /** Called when the overlay shortcut is pressed inside the applet. */
+  onShortcut?: () => void;
+  /** Called with the teacher controls the applet publishes. */
+  onControls?: (controls: AppletControl[]) => void;
+  /** A control the teacher used on the remote. n grows with every use, so each one is sent once. */
+  control?: { id: string; value?: boolean | string; n: number } | null;
 }
 
 type Known = { json: string; phase: number };
@@ -72,7 +78,6 @@ export function AppletFrame({
   maxPhase = null,
   interactive = true,
   className,
-  onShortcut,
   owner = "student",
   students,
   onFilters,
@@ -85,6 +90,9 @@ export function AppletFrame({
   onStep,
   onSlideshowToggle,
   onHotkey,
+  onControls,
+  control,
+  onShortcut,
 }: Props) {
   const teacherState = useContext(TeacherStateContext);
   const teacher = owner === "student" ? teacherState : null;
@@ -110,6 +118,7 @@ export function AppletFrame({
     state,
     onUpdate,
     maxPhase,
+    onControls,
     onShortcut,
     onFilters,
     onWheel,
@@ -125,6 +134,7 @@ export function AppletFrame({
     state,
     onUpdate,
     maxPhase,
+    onControls,
     onShortcut,
     onFilters,
     onWheel,
@@ -165,6 +175,13 @@ export function AppletFrame({
       const { state, onUpdate, maxPhase } = latest.current;
       if (m?.cc === "shortcut") {
         latest.current.onShortcut?.();
+      } else if (m?.cc === "controls") {
+        if (Array.isArray(m.controls))
+          latest.current.onControls?.(
+            m.controls
+              .map(toControl)
+              .filter((c): c is AppletControl => c !== null),
+          );
       } else if (m?.cc === "filters") {
         if (Array.isArray(m.filters))
           latest.current.onFilters?.(m.filters.filter(isFilter));
@@ -234,6 +251,16 @@ export function AppletFrame({
     if (connected.current && slide)
       post({ cc: "slide", phase: slide.phase, cues: slide.cues });
   }, [slide?.n]);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: post once per use
+  useEffect(() => {
+    if (connected.current && control)
+      post({
+        cc: "control",
+        id: control.id,
+        ...(control.value === undefined ? {} : { value: control.value }),
+      });
+  }, [control?.n]);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: post only when the limit changes
   useEffect(() => {
